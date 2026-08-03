@@ -1,0 +1,22 @@
+# --- Core (cần cho scaffold + test, không cần GPU/API) ---
+PyYAML>=6.0
+pytest>=8.0
+streamlit>=1.36
+
+# --- Gate 0 (scripts/gate0_data_check.py) — chạy trên Colab/Kaggle, CPU đủ ---
+# Không thuộc core scaffold; cài riêng khi chạy cổng dữ liệu:
+#   pip install datasets scikit-learn pandas numpy
+# datasets>=2.19
+# scikit-learn>=1.3
+# pandas>=2.0
+# numpy>=1.24
+
+# --- GATED: chỉ dùng sau khi Gate 0 GO (Tuần 2+) ---
+# Bỏ comment khi thực sự cần, để scaffold cài nhẹ và test nhanh.
+# sentence-transformers>=3.0     # bge-m3 embedder + reranker
+# FlagEmbedding>=1.2             # bge-m3 dense+sparse
+# qdrant-client>=1.9            # vector store
+# google-generativeai>=0.7      # gemini-2.5-flash
+# datasets>=2.19               # tải HF dataset (loader)
+# ragas>=0.1                    # đánh giá (Tuần 6)
+# beautifulsoup4>=4.12          # strip HTML nâng cao (cleaner hiện dùng regex)

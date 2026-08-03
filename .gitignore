@@ -1,0 +1,29 @@
+# Secrets & env
+.env
+.venv/
+venv/
+
+# Data (không commit dữ liệu thô/đã xử lý)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Qdrant local storage
+qdrant_storage/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Claude Code — per-máy, không share (settings.json thì CÓ commit)
+.claude/settings.local.json
