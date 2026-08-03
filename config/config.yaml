@@ -1,0 +1,31 @@
+models:
+  embedder: BAAI/bge-m3
+  reranker: BAAI/bge-reranker-v2-m3
+  llm: gemini-2.5-flash
+
+retrieval:
+  hybrid: true          # dense + sparse (bge-m3)
+  top_k_dense: 20       # số ứng viên lấy ra trước rerank
+  top_k_rerank: 5       # số chunk giữ lại sau rerank
+
+chunking:
+  size: 512             # ABLATION: chạy thêm 256 (Tuần 2)
+  overlap: 50
+
+grader:
+  # 2 ngưỡng trên rerank score.
+  # LƯU Ý: đây là giá trị TẠM. Ngưỡng thật được chọn từ đường cong
+  # risk–coverage ở Tuần 6 sau khi có dữ liệu đánh giá thật.
+  correct_threshold: 0.6     # score >= correct_threshold      -> CORRECT
+  incorrect_threshold: 0.3   # score <  incorrect_threshold     -> INCORRECT
+                             # ở giữa 2 ngưỡng                  -> AMBIGUOUS
+
+corrective:
+  max_iter: 1           # số lần rewrite tối đa khi INCORRECT (đúng 1 lần)
+
+generation:
+  temperature: 0.2
+
+qdrant:
+  url: ${QDRANT_URL}
+  collection: vimed_rag

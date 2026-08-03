@@ -1,0 +1,12 @@
+Truy vấn gốc dưới đây truy hồi được ngữ cảnh KHÔNG liên quan. Hãy viết lại truy vấn để tìm kiếm tốt hơn.
+
+Yêu cầu:
+- Giữ đúng ý định y tế ban đầu.
+- Bổ sung thuật ngữ y khoa/đồng nghĩa tiếng Việt liên quan (VD: "đái tháo đường" cho "tiểu đường").
+- Làm rõ, cụ thể hơn; KHÔNG thêm thông tin bịa đặt.
+- CHỈ trả về truy vấn đã viết lại, không giải thích.
+
+TRUY VẤN GỐC:
+{query}
+
+TRUY VẤN VIẾT LẠI:
