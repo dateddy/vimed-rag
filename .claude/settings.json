@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Edit(/.claude/skills/contract-guard/**)",
+      "Edit(/.claude/skills/gate-check/**)",
+      "Edit(/.claude/skills/session-compress/**)",
+      "Bash(git status *)",
+      "Bash(sed 's/^?? //')",
+      "Bash(sed 's/^!! //')",
+      "Bash(git add *)",
+      "Bash(python .claude/skills/git-commit/scripts/precommit_scan.py)",
+      "Bash(git commit *)",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}
