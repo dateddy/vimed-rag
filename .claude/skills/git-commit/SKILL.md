@@ -14,8 +14,9 @@ description: >-
 # git-commit
 
 Produce a history that reads like a changelog: one commit = one intent, message
-says *why*. This repository is **shared with a second person (Member B)**, so
-every rule below about scope and history rewriting is load-bearing, not style.
+says *why*. This is a **solo project** (DEC-013), so the history is the only
+reviewer there is — every rule below about scope and history rewriting is
+load-bearing, not style.
 
 ## Hard rules — never violate
 

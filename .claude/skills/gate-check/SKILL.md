@@ -3,7 +3,7 @@ name: gate-check
 description: >
   Dùng khi chạy hoặc diễn giải Gate 0/1/2, hoặc khi được hỏi "đã đủ điều kiện build
   chưa / can we start building / đã pass Gate chưa / gate check / kiểm tra gate /
-  data sufficiency". Map kết quả sang verdict GO/NO-GO và cập nhật blocker của Member A.
+  data sufficiency". Map kết quả sang verdict GO/NO-GO và cập nhật blocker trong STATUS.
   KHÔNG dùng để review diff (dùng contract-guard).
 ---
 
@@ -24,11 +24,11 @@ Chạy / diễn giải Gate, ánh xạ sang verdict cố định, cập nhật s
    - **NO-GO #1** (corpus < 150/khoa) → bù `hungnm/vietnamese-medical-qa` hoặc đổi/gộp khoa.
    - **NO-GO #3** (alignment fail — đáp án không nằm trong corpus) → NGHIÊM TRỌNG, DỪNG;
      quyết eval strategy TRƯỚC khi viết dòng build nào.
-4. Cập nhật dòng **Blocker** trong `brain/state/STATUS-A.md` theo verdict mới nhất.
+4. Cập nhật dòng **Blocker** trong `brain/state/STATUS.md` theo verdict mới nhất.
 
 ## Output
 - Verdict: `GO` | `NO-GO #1` | `NO-GO #3` + hành động kế tiếp tương ứng.
-- Diff một dòng Blocker đã cập nhật trong `STATUS-A.md`.
+- Diff một dòng Blocker đã cập nhật trong `STATUS.md`.
 
 ## Cấm
 - **Cấm tự quyết đổi dataset.** Đề xuất được, nhưng đổi corpus/eval là decision của người —

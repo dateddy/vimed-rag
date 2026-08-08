@@ -20,7 +20,7 @@ Nén cuối phiên thành handoff gọn + cập nhật đúng lớp.
 2. Quyết định **mới** trong phiên → **append** vào `brain/decisions/DECISIONS.md`
    (dòng `DEC-00X` mới; không sửa dòng cũ).
 3. Thay đổi **thiết kế** → sửa file tương ứng trong `brain/contracts/`.
-4. Ghi đè `brain/state/STATUS-A.md` (và/hoặc `STATUS-B.md` nếu là Member B) với trạng thái mới.
+4. Ghi đè `brain/state/STATUS.md` với trạng thái mới (file state DUY NHẤT — dự án 1 người, DEC-013).
 5. Handoff cũ hơn 2 tuần → chuyển vào `brain/handoff/archive/`.
 
 ## Nguyên tắc bắt buộc

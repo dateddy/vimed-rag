@@ -6,9 +6,10 @@
 ## Dự án
 - **ViMed-RAG**: Safety-aware Corrective RAG with Calibrated Abstention for Trustworthy Vietnamese Medical QA.
 - Hệ hỏi-đáp y tế tiếng Việt: Corrective RAG + trích dẫn nguồn + **từ chối có hiệu chỉnh (calibrated abstention)** để kiểm soát hallucination.
-- Môn **IT Project** · nhóm **2 người** · Tuần 0 + 8 tuần.
+- Môn **IT Project** · **1 người (Đạt)** · Tuần 0 + 8 tuần.
 - Phạm vi **2 khoa**: tim mạch + tiểu đường.
-- Nhóm: **Member A (Đạt)** = infra/retrieval/pipeline · **Member B** = eval/generation/test set.
+- **Solo từ 2026-08-08** (DEC-013): Đạt gánh cả 2 luồng — infra/retrieval/pipeline **và**
+  eval/generation/test set. Không còn vai "Member A/B"; state gộp về `brain/state/STATUS.md`.
 
 ## Tech stack (CHỐT — không đổi)
 | Vai trò | Chọn |
@@ -35,7 +36,6 @@
 | Kiểm ràng buộc + trục đóng góp / claim | `brain/contracts/constraints.md` |
 | Đủ điều kiện build chưa? | `brain/contracts/gates.md` |
 | Lý do một quyết định | `brain/decisions/DECISIONS.md` |
-| Trạng thái của Member A | `brain/state/STATUS-A.md` |
-| Trạng thái của Member B | `brain/state/STATUS-B.md` |
+| Trạng thái hiện tại + backlog | `brain/state/STATUS.md` |
 
 > Contract đổi = đổi thiết kế → phải kèm 1 dòng mới trong `brain/decisions/DECISIONS.md`.

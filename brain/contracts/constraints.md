@@ -30,3 +30,7 @@ tin cậy → dựng **đường cong risk–coverage** → chọn ngưỡng tr�
 - [ ] Chưa có reviewer y khoa.
 - [ ] Nhãn abstention theo khả năng truy xuất + policy, KHÔNG theo đánh giá lâm sàng.
 - [ ] RAG **giảm** chứ không **diệt** hallucination.
+- [ ] **Không có inter-annotator agreement (κ)** — dự án 1 người (DEC-013). Bù lại bằng
+      *nguồn nhãn kiểm chứng được*, không bằng đồng thuận người: nhóm A/B kiểm bằng script,
+      D bằng policy tự công bố, E bằng ViMedAQA ground truth. Nhóm C (nhãn theo phán đoán)
+      đã bị **bỏ** vì không kiểm chứng được (DEC-014).
