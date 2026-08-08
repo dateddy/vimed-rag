@@ -45,21 +45,25 @@ if hasattr(sys.stdout, "reconfigure"):
 # CONFIG  —  CHỈNH PHẦN NÀY SAU KHI CHẠY LẦN 1 (INSPECT_ONLY=True)
 # ============================================================================
 
-INSPECT_ONLY = True   # True: chỉ in schema + sample. False: chạy full check.
+INSPECT_ONLY = False  # True: chỉ in schema + sample. False: chạy full check.
 
 # --- Datasets ---
-CORPUS_DATASET = "urnus11/Vietnamese-Healthcare"
-CORPUS_SPLIT = "train"
+CORPUS_DATASET = "urnus11/Vietnamese-Healthcare"   # GATED — cần HF_TOKEN + accept terms
+# Dataset KHÔNG có split "train". Split thật: full | medical_qa |
+# vinmec_article_content | vinmec_article_main | vinmec_article_subtitle.
+# Chọn article_content = 32,604 bài viết đầy đủ -> đúng nghĩa "bài" của tiêu chí #1.
+CORPUS_SPLIT = "vinmec_article_content"
 # Tên cột chứa nội dung bài viết. Để None để tự đoán (cột text dài nhất).
-CORPUS_TEXT_COL = None
-# Nếu muốn ghép nhiều cột (VD title + body): điền list, VD ["title", "content"].
-CORPUS_TEXT_COLS = None
+CORPUS_TEXT_COL = "content"
+# Ghép title + content: keyword khoa hay nằm ở title ("Nhồi máu cơ tim", "Tiểu đường
+# type 2") trong khi body chỉ viết "bệnh này" -> ghép để không sót bài khi lọc khoa.
+CORPUS_TEXT_COLS = ["title", "content"]
 
-EVAL_DATASET = "ViMedAQA"          # đổi thành đường dẫn HF thật, VD "tmnam20/ViMedAQA"
-EVAL_SPLIT = "train"
-EVAL_QUESTION_COL = None            # None = tự đoán trong {question, query, cauhoi}
-EVAL_ANSWER_COL = None              # None = tự đoán trong {answer, answers, dapan}
-EVAL_CATEGORY_COL = None            # cột chủ đề nếu có (VD "type"/"category"); None nếu không
+EVAL_DATASET = "tmnam20/ViMedAQA"   # public, không gated (verify 2026-08-07)
+EVAL_SPLIT = "train"                # config "all": train=39,881 / test=2,217 / val=2,215
+EVAL_QUESTION_COL = "question"
+EVAL_ANSWER_COL = "answer"
+EVAL_CATEGORY_COL = "topic"         # ClassLabel: body-part | disease | drug | medicine
 
 # --- Ngưỡng pass ---
 MIN_ARTICLES_PER_SPECIALTY = 150
@@ -71,17 +75,19 @@ ALIGNMENT_SAMPLE_N = 30           # số QA lấy mẫu để check (in 10 ca x�
 
 # --- Keyword 2 khoa: FALLBACK khi chạy standalone (không có config/specialties.yaml) ---
 # Repo có config/specialties.yaml -> load_specialty_keywords() ưu tiên đọc từ đó.
+# PHẢI KHỚP config/specialties.yaml — sync tay khi đổi bên đó (siết 2026-08-07,
+# xem DEC-010). Lệch nhau = chạy standalone ra số khác chạy trong repo.
 _FALLBACK_SPECIALTY_KEYWORDS = {
     "tim_mach": [
-        "tim mạch", "tim", "huyết áp", "tăng huyết áp", "mạch vành",
-        "nhồi máu cơ tim", "nhồi máu", "suy tim", "loạn nhịp", "rối loạn nhịp",
-        "xơ vữa", "động mạch", "cholesterol", "mỡ máu", "van tim",
-        "thiếu máu cơ tim", "đau thắt ngực", "đột quỵ", "tai biến",
+        "tim mạch", "bệnh tim", "trái tim", "suy tim", "nhịp tim", "cơ tim",
+        "van tim", "màng ngoài tim", "tim bẩm sinh", "đau tim", "sốc tim",
+        "ngừng tim", "phẫu thuật tim", "thông tim", "điện tim", "điện tâm đồ",
+        "mạch vành", "xơ vữa động mạch", "đau thắt ngực", "huyết áp",
+        "cholesterol", "mỡ máu", "rối loạn lipid máu",
     ],
     "tieu_duong": [
-        "tiểu đường", "đái tháo đường", "đái tháo", "đường huyết", "đường máu",
-        "insulin", "kháng insulin", "glucose", "hba1c", "hạ đường huyết",
-        "tăng đường huyết", "biến chứng tiểu đường", "metformin",
+        "tiểu đường", "đái tháo đường", "đường huyết", "đường máu",
+        "insulin", "glucose", "hba1c", "metformin",
     ],
 }
 

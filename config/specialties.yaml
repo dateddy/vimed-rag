@@ -1,34 +1,58 @@
+# Single source of truth cho 2 khoa. Đổi file này = đổi phạm vi dữ liệu.
+#
+# Siết lại 2026-08-07 sau khi audit trên corpus thật (32,543 bài vinmec).
+# Nguyên tắc: keyword phải là CỤM ĐẶC HIỆU của khoa, không phải từ đơn.
+# Đã loại (bằng chứng trong DEC-010):
+#   tim          -> bắt "tim thai" (sản), "nhịp tim khi chạy" (thể thao)
+#   động mạch    -> bắt "động mạch lách/phế quản/chi dưới" (CĐHA toàn thân)
+#   tai biến     -> tiếng Việt y khoa = biến chứng nói chung ("tai biến gây mê")
+#   nhồi máu     -> bắt "nhồi máu não" (thần kinh), "nhồi máu thận" (thận)
+#   loạn nhịp    -> bắt "rối loạn nhịp điệu sinh học"
+#   xơ vữa       -> bắt "xơ vữa mạc treo"
+#   đái tháo     -> bắt "đái tháo nhạt" (tuyến yên, KHÔNG phải đái tháo đường)
+# Đã bỏ vì thừa (bị cụm ngắn hơn nuốt, solo=0): tăng huyết áp, rối loạn nhịp,
+#   hạ/tăng đường huyết, kháng insulin, biến chứng tiểu đường.
+#
+# ĐỘT QUỴ: cố ý KHÔNG đưa vào tim_mach — theo phân khoa VN đột quỵ thuộc thần
+# kinh. Muốn theo định nghĩa CVD của WHO (gồm mạch máu não) thì thêm lại 2 dòng:
+#   - đột quỵ
+#   - tai biến mạch máu não
+#
+# 'siêu âm tim' CỐ Ý không có: nó nuốt luôn 'siêu âm tim thai' (sản khoa) vì
+# khớp theo ranh giới từ. Muốn lấy được thì cần cơ chế exclude-list trong
+# matched_specialties() — chưa có, và không đáng đổi code chỉ vì ~9 bài.
+
 tim_mach:
   - tim mạch
-  - tim
-  - huyết áp
-  - tăng huyết áp
-  - mạch vành
-  - nhồi máu cơ tim
-  - nhồi máu
+  - bệnh tim
+  - trái tim
   - suy tim
-  - loạn nhịp
-  - rối loạn nhịp
-  - xơ vữa
-  - động mạch
+  - nhịp tim          # nuốt luôn "rối loạn nhịp tim"
+  - cơ tim            # nuốt luôn "nhồi máu cơ tim", "thiếu máu cơ tim"
+  - van tim
+  - màng ngoài tim
+  - tim bẩm sinh
+  - đau tim
+  - sốc tim
+  - ngừng tim
+  - phẫu thuật tim
+  - thông tim
+  - điện tim
+  - điện tâm đồ
+  - mạch vành
+  - xơ vữa động mạch
+  - đau thắt ngực
+  - huyết áp
   - cholesterol
   - mỡ máu
-  - van tim
-  - thiếu máu cơ tim
-  - đau thắt ngực
-  - đột quỵ
-  - tai biến
+  - rối loạn lipid máu
+
 tieu_duong:
   - tiểu đường
   - đái tháo đường
-  - đái tháo
   - đường huyết
   - đường máu
   - insulin
-  - kháng insulin
   - glucose
   - hba1c
-  - hạ đường huyết
-  - tăng đường huyết
-  - biến chứng tiểu đường
   - metformin
