@@ -36,6 +36,23 @@ Bảng trên là lần chạy gốc, giữ nguyên làm lịch sử. Siết `spe
 Tiêu chí #2 mất 778 QA nhưng vẫn dư **66 lần** ngưỡng. Alignment còn *khá hơn*
 (median 0.409 → 0.444) vì đã loại bài sai khoa khỏi corpus.
 
+### Tái kiểm sau khi chốt chính sách gán khoa (DEC-016) — vẫn **GO**
+
+Chính sách chuyển từ "keyword có mặt ở đâu cũng tính" sang **"TITLE hoặc ≥25 lần"**.
+Corpus co từ 16.917 → **1.425 bài** (gần 12×), nên verdict phải đo lại.
+
+| # | Trước (có mặt là tính) | Sau (TITLE hoặc ≥25) | Ngưỡng | |
+|---|---|---|---|---|
+| 1 | 14.618 · 8.848 | **727 · 698** (trùng 1.1%) | ≥150/khoa | PASS |
+| 2 | 2.645 QA | **2.645 QA** (không đổi — chính sách áp cho corpus, không áp cho eval) | ≥40 | PASS |
+| 3 | 30/30 · median 0.444 | **29/30 = 97%** · median 0.378 | ≥60% | PASS |
+
+Tiêu chí #3 mất 1 QA và median tụt 0.444 → 0.378, đúng như kỳ vọng khi corpus nhỏ đi
+12 lần — nhưng vẫn dư **37 điểm phần trăm** trên sàn. Tái lập: `scripts/alignment_audit.py`.
+
+> ⚠️ **Giới hạn #2 dưới đây đã ĐÓNG bằng DEC-016.** Trùng khoa từ 38.7% → 1.1%.
+> Giữ nguyên đoạn cũ làm lịch sử.
+
 ### ⚠️ Giới hạn của lần chạy này — ghi vào phần Limitations của báo cáo
 
 1. **Tiêu chí #3 là proxy trùng lặp chủ đề, KHÔNG phải answerability thật.** Nó chỉ hỏi
