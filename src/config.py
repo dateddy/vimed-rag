@@ -31,6 +31,24 @@ class ModelsConfig:
 
 
 @dataclass(frozen=True)
+class DataConfig:
+    """Nguồn corpus + chính sách gán khoa (DEC-016).
+
+    ``specialty_min_keyword_count`` là ngưỡng "hoặc xuất hiện >= N lần" của
+    chính sách gán khoa. Đọc từ config, KHÔNG hard-code trong loader — đổi số
+    này là đổi corpus nên phải chạy lại Gate 0.
+    """
+
+    dataset: str
+    split: str
+    title_col: str
+    content_col: str
+    min_article_chars: int
+    processed_dir: str
+    specialty_min_keyword_count: int
+
+
+@dataclass(frozen=True)
 class RetrievalConfig:
     hybrid: bool
     top_k_dense: int
@@ -70,6 +88,7 @@ class AppConfig:
     """Cấu hình toàn cục, gộp mọi khối con + bảng keyword chuyên khoa."""
 
     models: ModelsConfig
+    data: DataConfig
     retrieval: RetrievalConfig
     chunking: ChunkingConfig
     grader: GraderConfig
@@ -143,6 +162,7 @@ def load_config(
 
     return AppConfig(
         models=ModelsConfig(**raw["models"]),
+        data=DataConfig(**raw["data"]),
         retrieval=RetrievalConfig(**raw["retrieval"]),
         chunking=ChunkingConfig(**raw["chunking"]),
         grader=GraderConfig(**raw["grader"]),

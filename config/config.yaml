@@ -3,6 +3,26 @@ models:
   reranker: BAAI/bge-reranker-v2-m3
   llm: gemini-2.5-flash
 
+data:
+  # Corpus GATED trên HuggingFace -> cần HF_TOKEN trong env mới tải được.
+  # Dataset không có split "train"; vinmec_article_content = bài viết đầy đủ.
+  dataset: urnus11/Vietnamese-Healthcare
+  split: vinmec_article_content
+  title_col: title
+  content_col: content
+  min_article_chars: 100        # ngắn hơn -> loại. Khớp Gate 0, đừng đổi tuỳ tiện.
+  processed_dir: data/processed
+
+  # CHÍNH SÁCH GÁN KHOA — DEC-016.
+  # Bài thuộc khoa X nếu keyword của X nằm ở TIÊU ĐỀ **hoặc** xuất hiện >= ngưỡng
+  # này trong (tiêu đề + thân bài). Từ vựng 2 khoa: config/specialties.yaml.
+  #
+  # ĐỔI SỐ NÀY = ĐỔI CORPUS, phải chạy lại Gate 0. 25 -> 727 tim_mach / 698
+  # tieu_duong, title-hit 61%, ~8% Qdrant Cloud free 1GB cho cả 2 collection.
+  # Nếu Tuần 3 thấy retrieval nhiễu thì nâng lên 30 (546/658, title-hit 72%).
+  # Tái lập số: python scripts/policy_cost_audit.py
+  specialty_min_keyword_count: 25
+
 retrieval:
   hybrid: true          # dense + sparse (bge-m3)
   top_k_dense: 20       # số ứng viên lấy ra trước rerank

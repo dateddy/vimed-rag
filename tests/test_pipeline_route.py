@@ -8,6 +8,7 @@ from src.config import (
     AppConfig,
     ChunkingConfig,
     CorrectiveConfig,
+    DataConfig,
     GenerationConfig,
     GraderConfig,
     ModelsConfig,
@@ -25,6 +26,8 @@ from src.schemas import TerminalAction
 def _cfg(max_iter: int = 1) -> AppConfig:
     return AppConfig(
         models=ModelsConfig("e", "r", "l"),
+        # Pipeline không đụng tới khối `data`; điền giá trị giả cho đủ contract.
+        data=DataConfig("d", "s", "title", "content", 100, "data/processed", 25),
         retrieval=RetrievalConfig(True, 20, 5),
         chunking=ChunkingConfig(512, 50),
         grader=GraderConfig(correct_threshold=0.6, incorrect_threshold=0.3),
