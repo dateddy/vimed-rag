@@ -108,6 +108,10 @@ POLICIES = {
         s for s in SPECS if d["title_hit"][s] or d["counts"][s] >= 8
     ],
     "F. khoa trội (>=3, kia <1/2)": dominant,
+    # Chính sách ĐÃ CHỐT cho loader.py — DEC-016. Giữ 4 dòng trên làm đối chứng.
+    "== CHỐT: TITLE hoặc >=25 (DEC-016)": lambda d: [
+        s for s in SPECS if d["title_hit"][s] or d["counts"][s] >= 25
+    ],
 }
 
 print(f"{'chính sách':32s} {'#doc':>7s} {'found':>10s} {'median':>8s} {'mean':>7s}  verdict")
