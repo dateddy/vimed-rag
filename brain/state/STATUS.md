@@ -14,6 +14,8 @@
 - **`loader.py` đã wire thật** — bỏ `NotImplementedError`, áp DEC-016, chạy trên corpus
   thật ra **đúng số đã chốt**: 727 tim_mach · 698 tieu_duong · trùng 15 = 1.1%.
   Corpus ở `data/processed/corpus.jsonl` (1.410 bài, 12.8 MB, gitignore — không commit).
+  Hình dạng dữ liệu ra: **DEC-017** — lọc khoa phải dùng `specialties` (tuple), KHÔNG
+  phải `specialty` đơn, nếu không Tuần 3 âm thầm đánh rơi 15 bài trùng khoa.
 - Ranh giới GATED kế tiếp: chunk → **embed (`BgeM3Embedder`, Tuần 2)** → **index
   (`QdrantIndexer`, Tuần 3)**. `run_ingestion.py` dừng đúng ở đó.
 
@@ -28,7 +30,12 @@
    ≥150 bài/khoa và thống kê theo khoa đã xong (`python scripts/run_ingestion.py`).
 2. **Tuần 2 — `BgeM3Embedder` thật + index HAI collection** (chunk 256 và 512, DEC-004).
    Ngân sách đã tính sẵn: ~8% Qdrant Cloud free 1GB, còn rất nhiều chỗ.
-   Song song: **test set v1 ~20 câu** từ ViMedAQA (chặn đo retrieval ở Tuần 3).
+   Trước khi index: **in 20–30 chunk ra đọc bằng mắt** (plan liệt kê "chunking kém →
+   retrieval rác" là rủi ro riêng). Song song: **test set v1 ~20 câu** từ ViMedAQA
+   (chặn đo retrieval ở Tuần 3) — nhưng đọc format RAGAS trước, xem việc treo bên dưới.
+   ⚠️ Embedding chạy trên **Kaggle T4**, mà `corpus.jsonl` bị gitignore nên **không tự có
+   ở đó**: phải upload thành Kaggle Dataset hoặc chạy lại ingestion trên Kaggle với
+   `HF_TOKEN`. Quyết cách nào TRƯỚC khi mở notebook.
 3. Hỏi GVHD xác nhận claim (5 phút, treo từ Session 2) — **và báo luôn việc dự án còn 1 người**
    + xin xác nhận việc bỏ Cohen's κ (DEC-014). Thầy không chịu thì phải đảo trước Tuần 5.
 
@@ -68,6 +75,10 @@ Thứ tự dưới đây là thứ tự làm, không phải thứ tự tuần.
 
 ## Việc treo ngoài code
 - **Xác nhận claim với GVHD** — treo từ Session 2; DEC-001…006 vẫn chưa được duyệt.
+- **Đọc phần format dataset của RAGAS TRƯỚC khi soạn test set v1** — plan cảnh báo thẳng:
+  test set viết sai format thì Tuần 6 phải làm lại. Việc đọc duy nhất có deadline thật.
+- **`.claude/settings.json` vẫn dirty có chủ đích** (treo từ Session 4): 26 dòng allowlist
+  trỏ scratchpad đã chết + `Bash(env)` in ra `HF_TOKEN`. Dọn hoặc bỏ qua, đừng commit nguyên trạng.
 - Sync bản `.html` của plan (gửi file để cập nhật) — treo từ Session 2.
 - **Chưa mở lại Streamlit bằng mắt** sau khi thêm khối `data` vào config (Session 5).
   Đã kiểm phần rủi ro: `load_config()` chạy được và `app/streamlit_app.py` compile sạch
