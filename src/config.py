@@ -79,8 +79,15 @@ class GenerationConfig:
 
 @dataclass(frozen=True)
 class QdrantConfig:
+    """Kết nối vector store — Qdrant Cloud (DEC-018).
+
+    ``api_key`` bắt buộc với Cloud, để trống khi chạy Docker local (dự phòng).
+    Mặc định "" để code cũ dựng ``QdrantConfig(url, collection)`` vẫn chạy.
+    """
+
     url: str
     collection: str
+    api_key: str = ""
 
 
 @dataclass(frozen=True)

@@ -1,3 +1,6 @@
+# DỰ PHÒNG — không phải đường chạy chính.
+# DEC-018: mặc định dùng Qdrant Cloud (free 1GB). File này chỉ dùng khi cần
+# chạy offline; lúc đó đặt QDRANT_URL=http://localhost:6333 và bỏ trống API key.
 services:
   qdrant:
     image: qdrant/qdrant:latest

@@ -3,6 +3,11 @@ PyYAML>=6.0
 pytest>=8.0
 streamlit>=1.36
 
+# --- Vector store (DEC-018: Qdrant Cloud) ---
+# Cần từ Tuần 1 để smoke test kết nối (scripts/smoke_qdrant.py). Client HTTP thuần,
+# không tải model — không vi phạm ràng buộc "không gọi model thật khi import/test".
+qdrant-client>=1.9
+
 # --- Gate 0 (scripts/gate0_data_check.py) — chạy trên Colab/Kaggle, CPU đủ ---
 # Không thuộc core scaffold; cài riêng khi chạy cổng dữ liệu:
 #   pip install datasets scikit-learn pandas numpy
@@ -15,7 +20,6 @@ streamlit>=1.36
 # Bỏ comment khi thực sự cần, để scaffold cài nhẹ và test nhanh.
 # sentence-transformers>=3.0     # bge-m3 embedder + reranker
 # FlagEmbedding>=1.2             # bge-m3 dense+sparse
-# qdrant-client>=1.9            # vector store
 # google-generativeai>=0.7      # gemini-2.5-flash
 # datasets>=2.19               # tải HF dataset (loader)
 # ragas>=0.1                    # đánh giá (Tuần 6)

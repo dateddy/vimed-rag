@@ -47,5 +47,11 @@ generation:
   temperature: 0.2
 
 qdrant:
+  # DEC-018 — chạy trên Qdrant Cloud (free 1GB), KHÔNG dựng Docker local.
+  # URL cluster + API key nằm trong .env (không commit) — xem .env.example.
+  # docker-compose.yml giữ lại làm phương án dự phòng offline.
   url: ${QDRANT_URL}
+  api_key: ${QDRANT_API_KEY}
+  # Tên gốc. Tuần 2 index HAI collection cho ablation chunk-size (DEC-004):
+  # vimed_rag_256 và vimed_rag_512 — cả hai dùng ~8% free tier (DEC-016).
   collection: vimed_rag
