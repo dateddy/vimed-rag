@@ -2,16 +2,30 @@
   "permissions": {
     "allow": [
       "Bash(python -c ' *)",
+      "Bash(python -V)",
       "Edit(/.claude/skills/contract-guard/**)",
       "Edit(/.claude/skills/gate-check/**)",
       "Edit(/.claude/skills/session-compress/**)",
+
       "Bash(git status *)",
-      "Bash(sed 's/^?? //')",
-      "Bash(sed 's/^!! //')",
       "Bash(git add *)",
-      "Bash(python .claude/skills/git-commit/scripts/precommit_scan.py)",
       "Bash(git commit *)",
-      "Bash(git check-ignore *)"
+      "Bash(git show *)",
+      "Bash(git mv *)",
+      "Bash(git rm *)",
+      "Bash(git check-ignore *)",
+      "Bash(python .claude/skills/git-commit/scripts/precommit_scan.py)",
+
+      "Bash(PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest --collect-only -q)",
+      "Bash(PYTHONIOENCODING=utf-8 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest *)",
+
+      "Read(//c/Users/Vivobook/.cache/huggingface/**)",
+      "PowerShell($env:HF_TOKEN = [Environment]::GetEnvironmentVariable\\('HF_TOKEN','User'\\); $env:PYTHONIOENCODING='utf-8'; $env:HF_HUB_DISABLE_SYMLINKS_WARNING='1'; Set-Location \"c:\\\\Users\\\\Vivobook\\\\Documents\\\\research1\\\\vimed-rag\"; python scripts/gate0_data_check.py)",
+      "PowerShell($env:HF_TOKEN = [Environment]::GetEnvironmentVariable\\('HF_TOKEN','User'\\); $env:PYTHONIOENCODING='utf-8'; $env:HF_HUB_DISABLE_SYMLINKS_WARNING='1'; Set-Location \"c:\\\\Users\\\\Vivobook\\\\Documents\\\\research1\\\\vimed-rag\"; python scripts/policy_audit.py)",
+      "PowerShell($env:HF_TOKEN = [Environment]::GetEnvironmentVariable\\('HF_TOKEN','User'\\); $env:PYTHONIOENCODING='utf-8'; $env:HF_HUB_DISABLE_SYMLINKS_WARNING='1'; Set-Location \"c:\\\\Users\\\\Vivobook\\\\Documents\\\\research1\\\\vimed-rag\"; python scripts/kw_audit.py)",
+      "PowerShell($env:HF_TOKEN = [Environment]::GetEnvironmentVariable\\('HF_TOKEN','User'\\); $env:PYTHONIOENCODING='utf-8'; $env:HF_HUB_DISABLE_SYMLINKS_WARNING='1'; Set-Location \"c:\\\\Users\\\\Vivobook\\\\Documents\\\\research1\\\\vimed-rag\"; python scripts/alignment_audit.py)",
+      "PowerShell($env:HF_TOKEN = [Environment]::GetEnvironmentVariable\\('HF_TOKEN','User'\\); $env:PYTHONIOENCODING='utf-8'; $env:HF_HUB_DISABLE_SYMLINKS_WARNING='1'; Set-Location \"c:\\\\Users\\\\Vivobook\\\\Documents\\\\research1\\\\vimed-rag\"; python scripts/policy_cost_audit.py)",
+      "PowerShell($env:HF_TOKEN = [Environment]::GetEnvironmentVariable\\('HF_TOKEN','User'\\); $env:PYTHONIOENCODING='utf-8'; $env:HF_HUB_DISABLE_SYMLINKS_WARNING='1'; Set-Location \"c:\\\\Users\\\\Vivobook\\\\Documents\\\\research1\\\\vimed-rag\"; python scripts/run_ingestion.py)"
     ]
   }
 }
