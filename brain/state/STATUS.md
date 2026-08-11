@@ -3,10 +3,12 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-08-09 (Session 5 — loader thật, corpus đã nằm trong `data/processed/`)
+**Cập nhật lần cuối:** 2026-08-12 (Session 6 — **DoD Tuần 1 ĐÓNG**, Qdrant Cloud đã kết nối)
 
 ## Đang làm
-- Tuần 1: infra / data. **38 test xanh** (20 cũ + 18 test loader mới), Streamlit chạy bằng Fake.
+- **✅ DoD TUẦN 1 ĐÓNG** (cả 3 tiêu chí): repo clone chạy được (**38 test xanh**) ·
+  ≥150 bài/khoa đã clean + tag (727/698) · **Qdrant chạy** (Cloud, đã smoke test).
+- Bước vào **Tuần 2 — Embedding & Indexing**. Streamlit vẫn đang chạy bằng Fake.
 - **Gate 0 = GO**, đã tái kiểm dưới chính sách gán khoa mới — cả 3 tiêu chí PASS.
   Số liệu + giới hạn: `../contracts/gates.md`. Quyết định: DEC-007…012, DEC-016.
 - **Chuyển sang 1 người** (DEC-013): workstream eval/generation/test set trước thuộc
@@ -16,6 +18,14 @@
   Corpus ở `data/processed/corpus.jsonl` (1.410 bài, 12.8 MB, gitignore — không commit).
   Hình dạng dữ liệu ra: **DEC-017** — lọc khoa phải dùng `specialties` (tuple), KHÔNG
   phải `specialty` đơn, nếu không Tuần 3 âm thầm đánh rơi 15 bài trùng khoa.
+- **GVHD đã duyệt claim (DEC-019)** — DEC-001…006 + DEC-014 thông qua, đã báo dự án còn
+  1 người. Việc treo lớn nhất, mở từ Session 2, đã đóng. Rủi ro "phải đảo DEC-014 trước
+  Tuần 5" **tắt hẳn**. Limitations báo cáo vẫn phải ghi "không có inter-annotator agreement".
+- **Vector store = Qdrant Cloud, không Docker local (DEC-018).** Lý do: Docker Desktop
+  chưa hề được cài trên máy, mà Tuần 7 deploy HF Spaces thì bắt buộc phải có Qdrant truy
+  cập được từ internet. `docker-compose.yml` hạ xuống làm dự phòng offline.
+  **Cluster đã sống**: `eu-west-1-0.aws`, 0 collection. Tái kiểm bất cứ lúc nào:
+  `python scripts/smoke_qdrant.py` (không ghi gì lên cluster).
 - Ranh giới GATED kế tiếp: chunk → **embed (`BgeM3Embedder`, Tuần 2)** → **index
   (`QdrantIndexer`, Tuần 3)**. `run_ingestion.py` dừng đúng ở đó.
 
@@ -26,18 +36,21 @@
   terminal đang mở — phải mở terminal mới).
 
 ## 3 việc kế tiếp
-1. **Đóng nốt DoD Tuần 1: Qdrant chạy được.** `docker-compose up -d` rồi xác nhận kết nối.
-   ≥150 bài/khoa và thống kê theo khoa đã xong (`python scripts/run_ingestion.py`).
+1. **Chunk + SOI 20–30 CHUNK BẰNG MẮT.** Chạy local, không cần GPU/Kaggle, ~45 phút.
+   Kiểm: không cắt giữa câu, không dính rác HTML, không có chunk toàn menu/footer.
+   Plan liệt kê "chunking kém → retrieval rác" là rủi ro riêng — và đây là **lần cuối
+   sửa rẻ**: sai mà phát hiện sau khi embed là phải embed lại cả 2 collection.
+   Kết quả bước này cũng là dữ liệu để nhìn ablation 256 vs 512 (DEC-004).
 2. **Tuần 2 — `BgeM3Embedder` thật + index HAI collection** (chunk 256 và 512, DEC-004).
    Ngân sách đã tính sẵn: ~8% Qdrant Cloud free 1GB, còn rất nhiều chỗ.
-   Trước khi index: **in 20–30 chunk ra đọc bằng mắt** (plan liệt kê "chunking kém →
-   retrieval rác" là rủi ro riêng). Song song: **test set v1 ~20 câu** từ ViMedAQA
-   (chặn đo retrieval ở Tuần 3) — nhưng đọc format RAGAS trước, xem việc treo bên dưới.
    ⚠️ Embedding chạy trên **Kaggle T4**, mà `corpus.jsonl` bị gitignore nên **không tự có
    ở đó**: phải upload thành Kaggle Dataset hoặc chạy lại ingestion trên Kaggle với
    `HF_TOKEN`. Quyết cách nào TRƯỚC khi mở notebook.
-3. Hỏi GVHD xác nhận claim (5 phút, treo từ Session 2) — **và báo luôn việc dự án còn 1 người**
-   + xin xác nhận việc bỏ Cohen's κ (DEC-014). Thầy không chịu thì phải đảo trước Tuần 5.
+   ⚠️ Index từ Kaggle lên Qdrant Cloud thì notebook cần `QDRANT_URL` + `QDRANT_API_KEY` —
+   dùng **Kaggle Secrets**, đừng dán thẳng vào cell (notebook hay bị share/public).
+3. **Đọc phần format dataset của RAGAS + pin phiên bản vào `requirements.txt`** TRƯỚC khi
+   soạn test set v1. Đây là việc đọc duy nhất có deadline thật: sai format thì Tuần 6 làm lại.
+   ~~Hỏi GVHD xác nhận claim~~ → **xong 2026-08-11, DEC-019.**
 
 ## Đã biết về corpus — đừng đo lại
 - **1.425 và 1.410 đều đúng, đừng tưởng lệch.** 1.425 = 727 + 698 (cộng dồn theo khoa,
@@ -74,12 +87,26 @@ Thứ tự dưới đây là thứ tự làm, không phải thứ tự tuần.
 - **Báo cáo + slides** Tuần 8.
 
 ## Việc treo ngoài code
-- **Xác nhận claim với GVHD** — treo từ Session 2; DEC-001…006 vẫn chưa được duyệt.
+- ~~Xác nhận claim với GVHD~~ — **ĐÓNG 2026-08-11 (DEC-019).**
+- ~~Dọn `.claude/settings.json`~~ — **ĐÓNG 2026-08-11**: 42 → 22 rule. Bỏ `Bash(env)` +
+  lệnh in prefix `HF_TOKEN` (rò secret), 8 rule trỏ scratchpad session cũ đã chết, và các
+  lệnh một-lần. Giữ git/pytest/5 script audit; thêm 1 rule pytest chung.
 - **Đọc phần format dataset của RAGAS TRƯỚC khi soạn test set v1** — plan cảnh báo thẳng:
   test set viết sai format thì Tuần 6 phải làm lại. Việc đọc duy nhất có deadline thật.
-- **`.claude/settings.json` vẫn dirty có chủ đích** (treo từ Session 4): 26 dòng allowlist
-  trỏ scratchpad đã chết + `Bash(env)` in ra `HF_TOKEN`. Dọn hoặc bỏ qua, đừng commit nguyên trạng.
+  **Kèm theo: pin phiên bản RAGAS vào `requirements.txt`** — `ragas>=0.1` hiện quá lỏng,
+  0.1.x và 0.2+ dùng tên trường KHÁC NHAU (`question`/`answer`/`contexts`/`ground_truth`
+  vs `user_input`/`response`/`retrieved_contexts`/`reference`). Không pin = viết test set
+  theo một schema rồi cài phải schema kia.
 - Sync bản `.html` của plan (gửi file để cập nhật) — treo từ Session 2.
+- **Rotate API key Qdrant** — key hiện tại từng bị dán nhầm vào `.env.example` (file được
+  git track). Chưa kịp commit nên **không có gì lên remote**, đã gỡ sạch. Nhưng key đã đi
+  qua context nên rotate cho sạch: dashboard → xoá key cũ → tạo mới → sửa 1 dòng `.env`.
+  **Quy tắc:** `.env.example` chỉ chứa placeholder; giá trị thật chỉ nằm ở `.env`.
+- **Thống kê theo khoa chưa được lưu thành file.** `run_ingestion.py` chỉ *in* ra stdout,
+  mà `data/processed/` thì gitignore → deliverable Tuần 1 "corpus + thống kê theo khoa"
+  hiện chỉ tồn tại trong brain (727/698/15 ở DEC-016 + mục "Đã biết về corpus" trên).
+  Đủ để bảo vệ, nhưng nếu muốn có artifact trong repo thì ghi `docs/corpus-stats.md`
+  (~10 phút). Chưa làm, không chặn gì.
 - **Chưa mở lại Streamlit bằng mắt** sau khi thêm khối `data` vào config (Session 5).
   Đã kiểm phần rủi ro: `load_config()` chạy được và `app/streamlit_app.py` compile sạch
   (app chỉ gọi `load_config()`, không tự dựng `AppConfig`). Còn lại là xác nhận UI.
