@@ -3,11 +3,15 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-08-12 (Session 6 — **DoD Tuần 1 ĐÓNG**, Qdrant Cloud đã kết nối)
+**Cập nhật lần cuối:** 2026-08-13 (Session 7 — **soi chunk xong, chunking chốt (DEC-020)**)
 
 ## Đang làm
 - **✅ DoD TUẦN 1 ĐÓNG** (cả 3 tiêu chí): repo clone chạy được (**38 test xanh**) ·
   ≥150 bài/khoa đã clean + tag (727/698) · **Qdrant chạy** (Cloud, đã smoke test).
+- **✅ SOI CHUNK XONG — chunking chốt `512/50`, không sửa gì (DEC-020).** Cả 3 tiêu chí
+  (rác HTML · menu/footer · bảng vỡ) PASS bằng máy trên toàn bộ 4.972 chunk; 25 mẫu soi
+  tay không mẫu nào mất nghĩa. **Cửa sổ "sửa rẻ" đã đóng đúng cách** — từ đây đổi chunking
+  = phải embed lại cả 2 collection. Tái lập: `python scripts/chunk_audit.py --size 512`.
 - Bước vào **Tuần 2 — Embedding & Indexing**. Streamlit vẫn đang chạy bằng Fake.
 - **Gate 0 = GO**, đã tái kiểm dưới chính sách gán khoa mới — cả 3 tiêu chí PASS.
   Số liệu + giới hạn: `../contracts/gates.md`. Quyết định: DEC-007…012, DEC-016.
@@ -36,21 +40,19 @@
   terminal đang mở — phải mở terminal mới).
 
 ## 3 việc kế tiếp
-1. **Chunk + SOI 20–30 CHUNK BẰNG MẮT.** Chạy local, không cần GPU/Kaggle, ~45 phút.
-   Kiểm: không cắt giữa câu, không dính rác HTML, không có chunk toàn menu/footer.
-   Plan liệt kê "chunking kém → retrieval rác" là rủi ro riêng — và đây là **lần cuối
-   sửa rẻ**: sai mà phát hiện sau khi embed là phải embed lại cả 2 collection.
-   Kết quả bước này cũng là dữ liệu để nhìn ablation 256 vs 512 (DEC-004).
-2. **Tuần 2 — `BgeM3Embedder` thật + index HAI collection** (chunk 256 và 512, DEC-004).
+1. **Tuần 2 — `BgeM3Embedder` thật + index HAI collection** (chunk 256 và 512, DEC-004).
    Ngân sách đã tính sẵn: ~8% Qdrant Cloud free 1GB, còn rất nhiều chỗ.
    ⚠️ Embedding chạy trên **Kaggle T4**, mà `corpus.jsonl` bị gitignore nên **không tự có
    ở đó**: phải upload thành Kaggle Dataset hoặc chạy lại ingestion trên Kaggle với
    `HF_TOKEN`. Quyết cách nào TRƯỚC khi mở notebook.
    ⚠️ Index từ Kaggle lên Qdrant Cloud thì notebook cần `QDRANT_URL` + `QDRANT_API_KEY` —
    dùng **Kaggle Secrets**, đừng dán thẳng vào cell (notebook hay bị share/public).
-3. **Đọc phần format dataset của RAGAS + pin phiên bản vào `requirements.txt`** TRƯỚC khi
+2. **Đọc phần format dataset của RAGAS + pin phiên bản vào `requirements.txt`** TRƯỚC khi
    soạn test set v1. Đây là việc đọc duy nhất có deadline thật: sai format thì Tuần 6 làm lại.
    ~~Hỏi GVHD xác nhận claim~~ → **xong 2026-08-11, DEC-019.**
+3. **Test set v1 (~20 câu) từ ViMedAQA** — đường găng tiếp quản từ Member B, chặn đo
+   retrieval ở Tuần 3. Làm SAU khi đã đọc format RAGAS ở việc 2, không làm trước.
+   ~~Soi chunk bằng mắt~~ → **xong 2026-08-13, DEC-020.**
 
 ## Đã biết về corpus — đừng đo lại
 - **1.425 và 1.410 đều đúng, đừng tưởng lệch.** 1.425 = 727 + 698 (cộng dồn theo khoa,
@@ -68,6 +70,18 @@
   Covid") lọt vào **cả 2 khoa** vì nhắc huyết áp + tiểu đường rất nhiều. Cùng nguyên nhân.
 - **Ngân sách Qdrant Cloud free 1GB:** chính sách đã chốt dùng ~8% cho CẢ 2 collection
   (chunk 256 + 512). Chính sách cũ dùng 89% → không deploy được. Còn rất nhiều chỗ trống.
+- **Số chunk đã đo, đừng chunk lại để đếm** (`scripts/chunk_audit.py`, DEC-020):
+  **512/50 → 4.972 chunk** (3,5 chunk/bài, max 10, dense 19,4 MB = 1,9% free tier);
+  **256/50 → 10.246 chunk** (7,3 chunk/bài, max 21, dense 40,0 MB = 3,9%).
+  Tổng 15.218 vector, dense 59 MB = 5,8% — cộng sparse + payload ra đúng vùng ~8% ở
+  DEC-016, **không phải tính lại ngân sách**.
+- **Đuôi vụn là lý do thật để ưu tiên 256 trong ablation:** 512 có 151 chunk (3,0%) ngắn
+  hơn 20% size; 256 chỉ có 4 (0,0%). Ghi lại để Tuần 2 khỏi đoán.
+- **Nhiễu chunk còn lại, đã đo, đã quyết KHÔNG chữa:** caption ảnh bị nhét giữa dòng văn
+  (thấy ở mẫu 3, 6, 7 — do `_WS_RE` trong `cleaner.py` gộp `\n`) · byline "Bài viết được
+  tư vấn chuyên môn bởi BS…Vinmec" ở đầu 17,6% bài. Byline chỉ chiếm **0,16%** token toàn
+  corpus → không đáng chạy lại ingestion. **Nhưng byline có tên bác sĩ + tên bệnh viện:**
+  Tuần 4–5 làm citation phải để ý đừng để hệ thống trích dẫn thành "BS X khẳng định…".
 
 ## Backlog tiếp quản từ Member B (chưa bắt đầu — đường găng)
 
@@ -97,7 +111,8 @@ Thứ tự dưới đây là thứ tự làm, không phải thứ tự tuần.
   0.1.x và 0.2+ dùng tên trường KHÁC NHAU (`question`/`answer`/`contexts`/`ground_truth`
   vs `user_input`/`response`/`retrieved_contexts`/`reference`). Không pin = viết test set
   theo một schema rồi cài phải schema kia.
-- Sync bản `.html` của plan (gửi file để cập nhật) — treo từ Session 2.
+- ~~Sync bản `.html` của plan~~ — **BỎ QUA (quyết định 2026-08-12).** Bản `.html` giờ
+  lệch `.md` ở DEC-013…019. Đừng nêu lại việc này ở phiên sau.
 - **Rotate API key Qdrant** — key hiện tại từng bị dán nhầm vào `.env.example` (file được
   git track). Chưa kịp commit nên **không có gì lên remote**, đã gỡ sạch. Nhưng key đã đi
   qua context nên rotate cho sạch: dashboard → xoá key cũ → tạo mới → sửa 1 dòng `.env`.
