@@ -27,8 +27,41 @@ class TerminalAction(str, Enum):
 
 
 @dataclass
+class ChunkRecord:
+    """Một chunk ở thời điểm **INDEX** — chưa có điểm, chưa qua truy hồi.
+
+    Tách khỏi :class:`RetrievedChunk` có chủ đích (DEC-021):
+
+    - ``score`` là điểm rerank, **vô nghĩa** lúc index — để nó ở đây là mời gọi
+      ghi rác vào payload Qdrant.
+    - ``RetrievedChunk.specialty`` là **số ít**. Index qua nó thì 15 bài thuộc
+      cả hai khoa chỉ vào được một khoa và Tuần 3 lọc payload sẽ âm thầm đánh
+      rơi chúng — đúng lỗi DEC-017 đã cảnh báo. Ở đây dùng ``specialties``
+      (tuple, giữ TẤT CẢ khoa khớp) làm trường lọc.
+    - ``chunk_idx``/``n_chunks`` cần cho point ID tất định (chạy lại = upsert
+      đè, không nhân đôi) và cho trích dẫn "đoạn i/n" ở Tuần 4.
+    """
+
+    doc_id: str
+    chunk_idx: int
+    n_chunks: int
+    text: str
+    specialties: tuple[str, ...] = ()
+    title: str | None = None
+    source: str | None = None
+
+    @property
+    def specialty(self) -> str | None:
+        """Khoa đầu tiên — chỉ để hiển thị/payload 1 giá trị (DEC-017)."""
+        return self.specialties[0] if self.specialties else None
+
+
+@dataclass
 class RetrievedChunk:
-    """Một đoạn văn bản được truy hồi kèm điểm tin cậy."""
+    """Một đoạn văn bản được truy hồi kèm điểm tin cậy.
+
+    Type ở thời điểm **TRUY HỒI**. Lúc index dùng :class:`ChunkRecord`.
+    """
 
     doc_id: str
     text: str

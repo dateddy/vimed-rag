@@ -7,7 +7,10 @@ thuần logic (không nạp tokenizer của bge-m3). Khi Gate 0 GO có thể tha
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from src.config import ChunkingConfig
+from src.schemas import ChunkRecord
 
 
 def _tokenize(text: str) -> list[str]:
@@ -59,3 +62,40 @@ def chunk_documents(
     for doc in docs:
         result.extend(chunk_text(doc, cfg.size, cfg.overlap))
     return result
+
+
+def chunk_records(
+    docs: Iterable,
+    size: int,
+    overlap: int,
+) -> list[ChunkRecord]:
+    """Cắt :class:`RawDocument` thành :class:`ChunkRecord` sẵn sàng để index.
+
+    Mỗi chunk **thừa hưởng nguyên** ``doc.specialties`` (tuple, tất cả khoa
+    khớp) chứ không phải ``doc.specialty`` số ít — DEC-017. Thu về số ít ở
+    đây là cách âm thầm nhất để đánh rơi 15 bài thuộc cả hai khoa: index vẫn
+    chạy, số point vẫn đúng, chỉ có filter khoa ở Tuần 3 là thiếu bài.
+
+    Args:
+        docs: các ``RawDocument`` từ ``load_documents()``.
+        size: token/chunk. ``overlap``: token chồng lấn.
+
+    Returns:
+        ChunkRecord theo đúng thứ tự bài, ``chunk_idx`` chạy từ 0 trong mỗi bài.
+    """
+    records: list[ChunkRecord] = []
+    for doc in docs:
+        pieces = chunk_text(doc.text, size, overlap)
+        for idx, text in enumerate(pieces):
+            records.append(
+                ChunkRecord(
+                    doc_id=doc.doc_id,
+                    chunk_idx=idx,
+                    n_chunks=len(pieces),
+                    text=text,
+                    specialties=tuple(doc.specialties),
+                    title=doc.title,
+                    source=doc.source,
+                )
+            )
+    return records

@@ -78,6 +78,28 @@ class GenerationConfig:
 
 
 @dataclass(frozen=True)
+class IndexConfig:
+    """Tham số dựng chỉ mục (Tuần 2) — DEC-021.
+
+    ``sizes`` là các chunk size sẽ index thành collection riêng cho ablation
+    DEC-004 (``vimed_rag_256`` + ``vimed_rag_512``). ``overlap`` vẫn lấy từ
+    khối ``chunking`` để không có hai nguồn sự thật.
+
+    ``max_length`` là giới hạn subword của bge-m3, KHÔNG cùng đơn vị với
+    ``chunking.size`` (chunker tách theo khoảng trắng). Xem comment trong
+    ``config/config.yaml``.
+    """
+
+    sizes: list[int]
+    dense_dim: int
+    distance: str
+    embed_batch: int
+    upsert_batch: int
+    max_length: int
+    use_fp16: bool
+
+
+@dataclass(frozen=True)
 class QdrantConfig:
     """Kết nối vector store — Qdrant Cloud (DEC-018).
 
@@ -102,6 +124,7 @@ class AppConfig:
     corrective: CorrectiveConfig
     generation: GenerationConfig
     qdrant: QdrantConfig
+    index: IndexConfig
     specialties: dict[str, list[str]] = field(default_factory=dict)
 
 
@@ -176,6 +199,7 @@ def load_config(
         corrective=CorrectiveConfig(**raw["corrective"]),
         generation=GenerationConfig(**raw["generation"]),
         qdrant=QdrantConfig(**raw["qdrant"]),
+        index=IndexConfig(**raw["index"]),
         specialties=specialties,
     )
 

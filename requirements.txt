@@ -16,11 +16,20 @@ qdrant-client>=1.9
 # pandas>=2.0
 # numpy>=1.24
 
-# --- GATED: chỉ dùng sau khi Gate 0 GO (Tuần 2+) ---
+# --- Tuần 2: embed + index (DEC-021) — CHỈ cài trên máy có GPU (Kaggle T4) ---
+# KHÔNG thuộc core scaffold: kéo theo torch ~2.5GB. `src/retrieval/embedder.py`
+# import FlagEmbedding BÊN TRONG hàm nên test local vẫn chạy khi thiếu gói này.
+#   pip install "FlagEmbedding>=1.2,<2.0"
+# FlagEmbedding>=1.2,<2.0        # bge-m3 dense+sparse trong 1 lượt forward
+#
+# sentence-transformers KHÔNG dùng cho embedder: nó chỉ ra dense, mà
+# retrieval.hybrid=true cần sparse. Tuần 3 rerank thì có thể dùng lại.
+
+# --- GATED: chỉ dùng sau khi Gate 0 GO (Tuần 3+) ---
 # Bỏ comment khi thực sự cần, để scaffold cài nhẹ và test nhanh.
-# sentence-transformers>=3.0     # bge-m3 embedder + reranker
-# FlagEmbedding>=1.2             # bge-m3 dense+sparse
+# sentence-transformers>=3.0     # bge-reranker-v2-m3 (Tuần 3)
 # google-generativeai>=0.7      # gemini-2.5-flash
 # datasets>=2.19               # tải HF dataset (loader)
-# ragas>=0.1                    # đánh giá (Tuần 6)
+# ragas>=0.1                    # đánh giá (Tuần 6) — PHẢI PIN trước khi soạn
+#                               # test set: 0.1.x và 0.2+ đổi tên trường.
 # beautifulsoup4>=4.12          # strip HTML nâng cao (cleaner hiện dùng regex)

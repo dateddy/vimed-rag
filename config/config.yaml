@@ -55,3 +55,22 @@ qdrant:
   # Tên gốc. Tuần 2 index HAI collection cho ablation chunk-size (DEC-004):
   # vimed_rag_256 và vimed_rag_512 — cả hai dùng ~8% free tier (DEC-016).
   collection: vimed_rag
+
+index:
+  # DEC-021 — tham số dựng chỉ mục (Tuần 2). Đổi số ở đây = phải embed lại.
+  #
+  # Mỗi size thành MỘT collection riêng: <qdrant.collection>_<size>.
+  # Số chunk đã đo sẵn (DEC-020): 256 -> 10.246 · 512 -> 4.972.
+  sizes: [256, 512]
+
+  dense_dim: 1024       # bge-m3 dense. Đổi model = đổi số này = phải recreate.
+  distance: Cosine      # bge-m3 huấn luyện với cosine similarity.
+
+  # max_length tính bằng SUBWORD của bge-m3, KHÔNG cùng đơn vị với
+  # chunking.size (chunker tách theo khoảng trắng). 512 từ tiếng Việt ~
+  # 700-900 subword -> 1024 vừa đủ, không cắt cụt mà vẫn nhanh trên T4.
+  max_length: 1024
+
+  embed_batch: 16       # T4 16GB: 16 x 1024 subword vừa VRAM, không OOM.
+  upsert_batch: 128     # số point/lần gửi lên Qdrant Cloud.
+  use_fp16: true        # T4 có tensor core fp16; CPU thì build_index tự tắt.

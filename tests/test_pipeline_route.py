@@ -11,6 +11,7 @@ from src.config import (
     DataConfig,
     GenerationConfig,
     GraderConfig,
+    IndexConfig,
     ModelsConfig,
     QdrantConfig,
     RetrievalConfig,
@@ -34,6 +35,8 @@ def _cfg(max_iter: int = 1) -> AppConfig:
         corrective=CorrectiveConfig(max_iter=max_iter),
         generation=GenerationConfig(0.2),
         qdrant=QdrantConfig("http://x", "c"),
+        # Pipeline không đụng khối `index` (chỉ dùng lúc dựng chỉ mục); giả nốt.
+        index=IndexConfig([256, 512], 1024, "Cosine", 16, 128, 1024, False),
         specialties={},
     )
 
