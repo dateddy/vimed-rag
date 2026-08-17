@@ -3,8 +3,8 @@
 Gate 0 = GO (`brain/contracts/gates.md`) nên giai đoạn này đã mở khoá. Chính
 sách gán khoa theo DEC-016, ngưỡng đọc từ `config/config.yaml` khối `data`.
 
-Giai đoạn 2 (chunk → embed → index Qdrant) vẫn GATED: `BgeM3Embedder` chờ
-Tuần 2, `QdrantIndexer` chờ Tuần 3. Script này dừng đúng ở ranh giới đó.
+Giai đoạn 2 (chunk → embed → index Qdrant) nằm ở `scripts/build_index.py`
+(Tuần 2, DEC-021) — script này dừng đúng ở ranh giới `corpus.jsonl`.
 
 CHẠY:
     # corpus là dataset gated -> cần HF_TOKEN trong env (mở terminal mới sau setx)
@@ -116,8 +116,8 @@ def main() -> int:
         print(f"\nĐã ghi {n} bài -> {out}")
 
     print(
-        "\nGIAI ĐOẠN 2 VẪN GATED: chunk -> embed (BgeM3Embedder, Tuần 2) -> "
-        "index (QdrantIndexer, Tuần 3)."
+        "\nGIAI ĐOẠN 2: chunk -> embed -> index chạy bằng "
+        "`python scripts/build_index.py --size 512` (cần GPU)."
     )
     return 0 if passed else 1
 
