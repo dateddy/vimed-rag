@@ -9,6 +9,7 @@ Bản đồ lớp context. Tách theo **tốc độ thay đổi**, không theo c
 | `contracts/gates.md` | Gate 0 data-sufficiency: tiêu chí + verdict GO/NO-GO | Hỏi "đủ điều kiện build chưa" | Đạt | Gần bất biến |
 | `decisions/DECISIONS.md` | Nhật ký quyết định append-only (DEC-00X) | Cần lý do một quyết định | Đạt | Append-only, không sửa dòng cũ |
 | `state/STATUS.md` | Trạng thái hiện tại + backlog tiếp quản từ Member B | Đầu/cuối mỗi session | Đạt | Ghi đè mỗi session |
+| `../notebooks/kaggle_build_index.ipynb` | Dây nối chạy embed+index trên Kaggle T4 (logic nằm ở `scripts/`) | Khi chạy hoặc chạy lại index | Đạt | Sống tới hết Tuần 3 |
 | `handoff/2026-08-13-session07.md` | Handoff Session 7 (soi chunk xong · chunking chốt 512/50) | **Đầu phiên sau, cần biết dừng ở đâu** | Đạt | Archive sau 2 tuần |
 | `handoff/2026-08-12-session06.md` | Handoff Session 6 (DoD Tuần 1 đóng · Qdrant Cloud · GVHD duyệt) | Chỉ khi cần lịch sử DEC-018/019 | Đạt | Archive sau 2 tuần |
 | `handoff/2026-08-09-session05.md` | Handoff Session 5 (loader thật + corpus vào `data/processed/`) | Chỉ khi cần lịch sử DEC-017 | Đạt | Archive sau 2 tuần |

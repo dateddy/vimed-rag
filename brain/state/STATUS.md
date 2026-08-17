@@ -3,9 +3,17 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-08-13 (Session 7 — **soi chunk xong, chunking chốt (DEC-020)**)
+**Cập nhật lần cuối:** 2026-08-13 (Session 8 — **lớp embed+index đã code xong, chờ chạy GPU**)
 
 ## Đang làm
+- **🔨 TUẦN 2 — code xong toàn bộ phần chạy được không GPU (DEC-021).** `BgeM3Embedder`
+  + `QdrantIndexer` + `scripts/build_index.py` + `scripts/verify_index.py` +
+  `notebooks/kaggle_build_index.ipynb`. **50 test xanh** (38 cũ + 12 mới).
+  Hai lớp bảo vệ đã chạy THẬT trước khi tốn GPU:
+  · `--dry-run` ra đúng **4.972** (512) / **10.246** (256) — khớp DEC-020;
+  · `--fake --limit 20 --smoke` ghi 20 point lên Qdrant Cloud thật rồi tự xoá →
+  schema dense+sparse+payload index OK, cluster trở lại 0 collection.
+  **Còn lại đúng 2 việc tay:** upload corpus thành Kaggle Dataset + chạy notebook trên T4.
 - **✅ DoD TUẦN 1 ĐÓNG** (cả 3 tiêu chí): repo clone chạy được (**38 test xanh**) ·
   ≥150 bài/khoa đã clean + tag (727/698) · **Qdrant chạy** (Cloud, đã smoke test).
 - **✅ SOI CHUNK XONG — chunking chốt `512/50`, không sửa gì (DEC-020).** Cả 3 tiêu chí
@@ -30,8 +38,14 @@
   cập được từ internet. `docker-compose.yml` hạ xuống làm dự phòng offline.
   **Cluster đã sống**: `eu-west-1-0.aws`, 0 collection. Tái kiểm bất cứ lúc nào:
   `python scripts/smoke_qdrant.py` (không ghi gì lên cluster).
-- Ranh giới GATED kế tiếp: chunk → **embed (`BgeM3Embedder`, Tuần 2)** → **index
-  (`QdrantIndexer`, Tuần 3)**. `run_ingestion.py` dừng đúng ở đó.
+- **Ranh giới GATED đã lùi.** `BgeM3Embedder` + `QdrantIndexer` đã implement (DEC-021);
+  `run_ingestion.py` dừng ở `corpus.jsonl`, `build_index.py` gánh tiếp. Còn GATED:
+  `HybridRetriever` (Tuần 3) · `LLMRewriter`/`GeminiGenerator` (Tuần 4) ·
+  `run_ragas`/`risk_coverage` (Tuần 6).
+- **Chốt của DEC-021 cần nhớ khi làm Tuần 3:** vector có TÊN — dense là `"dense"`,
+  sparse là `"sparse"` (hằng `DENSE_VECTOR`/`SPARSE_VECTOR` trong `indexer.py`).
+  Lọc khoa phải match payload **`specialties`** (list, có KEYWORD index), KHÔNG phải
+  `specialty` số ít. Collection: `vimed_rag_512` và `vimed_rag_256`.
 
 ## Blocker
 - **Không còn blocker chặn build.**
@@ -40,13 +54,14 @@
   terminal đang mở — phải mở terminal mới).
 
 ## 3 việc kế tiếp
-1. **Tuần 2 — `BgeM3Embedder` thật + index HAI collection** (chunk 256 và 512, DEC-004).
-   Ngân sách đã tính sẵn: ~8% Qdrant Cloud free 1GB, còn rất nhiều chỗ.
-   ⚠️ Embedding chạy trên **Kaggle T4**, mà `corpus.jsonl` bị gitignore nên **không tự có
-   ở đó**: phải upload thành Kaggle Dataset hoặc chạy lại ingestion trên Kaggle với
-   `HF_TOKEN`. Quyết cách nào TRƯỚC khi mở notebook.
-   ⚠️ Index từ Kaggle lên Qdrant Cloud thì notebook cần `QDRANT_URL` + `QDRANT_API_KEY` —
-   dùng **Kaggle Secrets**, đừng dán thẳng vào cell (notebook hay bị share/public).
+1. **Chạy index thật trên Kaggle T4 — chỉ còn việc tay, code đã xong.**
+   Chốt cách đưa corpus: **upload `corpus.jsonl` thành Kaggle Dataset private**
+   (KHÔNG chạy lại ingestion — DEC-020 đo trên đúng file đó, sinh lại là số hết hiệu lực).
+   a. Upload `data/processed/corpus.jsonl` (12,8 MB) → Kaggle Dataset private.
+   b. Add-ons → Secrets: `QDRANT_URL` + `QDRANT_API_KEY`. **Đừng dán vào cell.**
+   c. Mở `notebooks/kaggle_build_index.ipynb`, sửa `CORPUS` cho khớp slug, chạy tuần tự.
+   d. `verify_index.py` phải PASS cả 2 size trước khi coi Tuần 2 là xong.
+   Kiểm chéo: 512 → 4.972 point · 256 → 10.246 point. Chạy lại an toàn (upsert đè).
 2. **Đọc phần format dataset của RAGAS + pin phiên bản vào `requirements.txt`** TRƯỚC khi
    soạn test set v1. Đây là việc đọc duy nhất có deadline thật: sai format thì Tuần 6 làm lại.
    ~~Hỏi GVHD xác nhận claim~~ → **xong 2026-08-11, DEC-019.**
