@@ -3,17 +3,22 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-08-13 (Session 8 — **lớp embed+index đã code xong, chờ chạy GPU**)
+**Cập nhật lần cuối:** 2026-08-18 (Session 8 — **TUẦN 2 ĐÓNG: 2 collection đã index + verify PASS**)
 
 ## Đang làm
-- **🔨 TUẦN 2 — code xong toàn bộ phần chạy được không GPU (DEC-021).** `BgeM3Embedder`
-  + `QdrantIndexer` + `scripts/build_index.py` + `scripts/verify_index.py` +
-  `notebooks/kaggle_build_index.ipynb`. **50 test xanh** (38 cũ + 12 mới).
-  Hai lớp bảo vệ đã chạy THẬT trước khi tốn GPU:
-  · `--dry-run` ra đúng **4.972** (512) / **10.246** (256) — khớp DEC-020;
-  · `--fake --limit 20 --smoke` ghi 20 point lên Qdrant Cloud thật rồi tự xoá →
-  schema dense+sparse+payload index OK, cluster trở lại 0 collection.
-  **Còn lại đúng 2 việc tay:** upload corpus thành Kaggle Dataset + chạy notebook trên T4.
+- **✅ TUẦN 2 ĐÓNG — HAI COLLECTION ĐÃ SỐNG TRÊN QDRANT CLOUD.** Chạy trên **Kaggle T4**
+  bằng `notebooks/kaggle_build_index.ipynb`. `verify_index.py` **PASS cả 4 mục
+  cho cả 2 size**:
+  · `vimed_rag_512` = **4.972 point** · `vimed_rag_256` = **10.246 point** (khớp DEC-020)
+  · dense 1024/Cosine + sparse đều có · search trả kết quả
+  · **chunk thuộc 2 khoa: 67 (512) / 140 (256)** — bất biến DEC-017 đứng vững trên
+    dữ liệu thật, không phải chỉ trong test.
+  Code: `BgeM3Embedder` + `QdrantIndexer` + `build_index.py` + `verify_index.py`
+  + `notebooks/kaggle_build_index.ipynb` (bản đã chạy thật). **50 test xanh** (38 cũ + 12 mới).
+- **Dung lượng thật đã đo (telemetry Qdrant):** vectors 76,6 MB + payload 21,1 MB =
+  **97,7 MB ≈ 9,5% free tier 1GB**. DEC-016 dự toán ~8% → lệch +1,5 điểm, trong sai số,
+  **không cần ghi DECISIONS mới**. Còn trống ~90%, thoải mái cho Tuần 3–7.
+- **Tuần 3 mở**: hybrid retrieval + rerank (`HybridRetriever`) đã hết vật cản hạ tầng.
 - **✅ DoD TUẦN 1 ĐÓNG** (cả 3 tiêu chí): repo clone chạy được (**38 test xanh**) ·
   ≥150 bài/khoa đã clean + tag (727/698) · **Qdrant chạy** (Cloud, đã smoke test).
 - **✅ SOI CHUNK XONG — chunking chốt `512/50`, không sửa gì (DEC-020).** Cả 3 tiêu chí
@@ -54,20 +59,37 @@
   terminal đang mở — phải mở terminal mới).
 
 ## 3 việc kế tiếp
-1. **Chạy index thật trên Kaggle T4 — chỉ còn việc tay, code đã xong.**
-   Chốt cách đưa corpus: **upload `corpus.jsonl` thành Kaggle Dataset private**
-   (KHÔNG chạy lại ingestion — DEC-020 đo trên đúng file đó, sinh lại là số hết hiệu lực).
-   a. Upload `data/processed/corpus.jsonl` (12,8 MB) → Kaggle Dataset private.
-   b. Add-ons → Secrets: `QDRANT_URL` + `QDRANT_API_KEY`. **Đừng dán vào cell.**
-   c. Mở `notebooks/kaggle_build_index.ipynb`, sửa `CORPUS` cho khớp slug, chạy tuần tự.
-   d. `verify_index.py` phải PASS cả 2 size trước khi coi Tuần 2 là xong.
-   Kiểm chéo: 512 → 4.972 point · 256 → 10.246 point. Chạy lại an toàn (upsert đè).
-2. **Đọc phần format dataset của RAGAS + pin phiên bản vào `requirements.txt`** TRƯỚC khi
+1. **Đọc phần format dataset của RAGAS + pin phiên bản vào `requirements.txt`** TRƯỚC khi
    soạn test set v1. Đây là việc đọc duy nhất có deadline thật: sai format thì Tuần 6 làm lại.
+   `ragas>=0.1` hiện quá lỏng — 0.1.x và 0.2+ dùng tên trường KHÁC NHAU.
    ~~Hỏi GVHD xác nhận claim~~ → **xong 2026-08-11, DEC-019.**
-3. **Test set v1 (~20 câu) từ ViMedAQA** — đường găng tiếp quản từ Member B, chặn đo
-   retrieval ở Tuần 3. Làm SAU khi đã đọc format RAGAS ở việc 2, không làm trước.
+2. **Test set v1 (~20 câu) từ ViMedAQA** — đường găng tiếp quản từ Member B, chặn đo
+   retrieval ở Tuần 3. Làm SAU khi đã đọc format RAGAS ở việc 1, không làm trước.
    ~~Soi chunk bằng mắt~~ → **xong 2026-08-13, DEC-020.**
+3. **Tuần 3 — `HybridRetriever`**: dense+sparse trên Qdrant + rerank
+   `bge-reranker-v2-m3`. Hạ tầng đã sẵn sàng, không còn vật cản.
+   ⚠️ Nhớ 2 chốt của DEC-021: vector có TÊN (`"dense"`/`"sparse"`), lọc khoa phải match
+   payload **`specialties`** (list) chứ không `specialty` số ít.
+   ~~Chạy index trên GPU~~ → **xong 2026-08-18, cả 2 collection PASS.**
+
+## Đã biết về hạ tầng — đừng thử lại
+
+- **Máy local KHÔNG embed được, đã đo, đừng thử lại.** i5-1135G7 (4 nhân, GPU Intel
+  Iris Xe không CUDA), torch bản `+cpu`: **0,22 chunk/s** trên chunk thật 512.
+  → 6,2 giờ cho size 512, ~12–13 giờ cho cả hai. Ép thêm thread không cứu được (4 nhân
+  vật lý). Đo bằng 20 chunk thật, warmup tách riêng.
+- **Lần đo đó xác nhận `BgeM3Embedder` chạy đúng với model + corpus THẬT:** dense
+  dim 1024, sparse trung bình **140 token khác 0**/chunk, sạch với `transformers 5.5.4`.
+  Nghĩa là code không còn rủi ro — chỉ thiếu phần cứng.
+- **Kaggle: "không chọn được Accelerator" + "git clone fail" = MỘT nguyên nhân duy nhất
+  — tài khoản chưa xác minh SĐT.** Kaggle khoá **GPU và Internet cùng lúc**, nên hai
+  triệu chứng nhìn rời rạc thực ra là một. **Đã xác minh → cả hai hết ngay**, index chạy
+  bình thường. Nếu gặp lại (đổi máy/tài khoản): xác minh SĐT trước, đừng debug riêng lẻ.
+- **`notebooks/colab_build_index.ipynb` viết ra nhưng CHƯA TỪNG CHẠY.** Sinh ra lúc còn
+  tưởng Kaggle không cứu được. Giữ làm dự phòng khi Kaggle hết quota GPU (30h/tuần),
+  nhưng **đừng tin nó chạy được** — chưa có lần thực thi nào. Dùng nó thì phải soi lại
+  cell upload corpus + Colab Secrets trước.
+- **Model bge-m3 (~2,3 GB) đã cache** ở `~/.cache/huggingface` trên máy local.
 
 ## Đã biết về corpus — đừng đo lại
 - **1.425 và 1.410 đều đúng, đừng tưởng lệch.** 1.425 = 727 + 698 (cộng dồn theo khoa,
