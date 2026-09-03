@@ -11,6 +11,8 @@ GraderState    = CORRECT | AMBIGUOUS | INCORRECT
 TerminalAction = ANSWER | ANSWER_WITH_CAUTION | ABSTAIN
 
 answer(query):
+    hit = check_policy(query)       # DEC-024; thuần rule, KHÔNG LLM; trace POLICY
+    if hit -> ABSTAIN(rule=hit.id)  # KHÔNG retrieve, KHÔNG generate
     ctx   = retrieve(query)         # trace RETRIEVE
     state = grade(ctx)              # rerank score, KHÔNG gọi LLM; trace GRADE
     CORRECT   -> ANSWER
@@ -21,15 +23,29 @@ answer(query):
                  else -> ABSTAIN
 ```
 
+- `check_policy()` **thuần rule** (regex/keyword từ `config/abstention_policy.md`, không LLM).
+  Chạy **trước** retrieval: rẻ nhất, và rule cấp cứu phải trả lời ngay không kèm nội dung tra cứu.
 - `grader.grade()` **thuần** (score + 2 ngưỡng từ config, không model).
 - `max_iter=1` = đúng 1 lần rewrite, không loop vô hạn.
 - `trace: list[TraceStep]` đủ để Tuần 6 tách metric theo nhánh + vẽ risk–coverage.
 
-## Chống hallucination = defense-in-depth 7 lớp (mục 4)
+## Chống hallucination = defense-in-depth 8 lớp (mục 4 + DEC-024)
 
-grounding → retrieval → grounded generation → ngưỡng calibrated → grader → rewrite → ABSTAIN.
+**policy gate** → grounding → retrieval → grounded generation → ngưỡng calibrated →
+grader → rewrite → ABSTAIN.
 
 RAGAS faithfulness chỉ **ĐO**, không phải prevention.
+
+### HAI cơ chế ABSTAIN — `trace` phải phân biệt được
+
+| Cơ chế | Kích hoạt bởi | Ý nghĩa |
+|---|---|---|
+| ABSTAIN-do-**policy** | `check_policy()` khớp một rule | "Câu này hệ thống KHÔNG ĐƯỢC trả lời", kể cả khi corpus có thừa thông tin |
+| ABSTAIN-do-**retrieval** | vẫn INCORRECT sau `max_iter=1` | "Hệ thống KHÔNG ĐỦ CĂN CỨ để trả lời" |
+
+Gộp hai cái này lại thì Tuần 6 **không tách được** risk–coverage: cơ chế 1 là hằng số theo
+thiết kế, chỉ cơ chế 2 mới nằm trên đường cong hiệu chỉnh. `TraceStep.step = "POLICY"` và
+`note` mang `rule_id` là chỗ giữ khác biệt đó.
 
 ## Kiến trúc kỹ thuật đã chốt (mục 5)
 
