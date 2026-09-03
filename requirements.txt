@@ -30,6 +30,31 @@ qdrant-client>=1.9
 # sentence-transformers>=3.0     # bge-reranker-v2-m3 (Tuần 3)
 # google-generativeai>=0.7      # gemini-2.5-flash
 # datasets>=2.19               # tải HF dataset (loader)
-# ragas>=0.1                    # đánh giá (Tuần 6) — PHẢI PIN trước khi soạn
-#                               # test set: 0.1.x và 0.2+ đổi tên trường.
+# ragas==0.4.3                  # đánh giá (Tuần 6). PIN CỨNG, KHÔNG dùng `>=`.
+#
+#   Verify 2026-08-19: ragas KHÔNG có bản >= 1.0 (88 release đều 0.x, mới nhất
+#   0.4.3). `pip install --dry-run ragas==0.4.3` resolve sạch trên Python 3.13.2
+#   + numpy 2.4.4 + datasets 4.8.4 + pydantic 2.13.4 → 33 gói.
+#
+#   TÊN TRƯỜNG (SingleTurnSample) — chép ở đây để soạn test set khỏi mở lại docs.
+#   Cảnh báo cũ "0.1.x vs 0.2+" đã LỖI THỜI: 0.4.x dùng họ tên mới, KHÔNG phải
+#   question / answer / contexts / ground_truth.
+#     user_input             str        câu hỏi
+#     reference              str        đáp án vàng                  } chỉ
+#     reference_contexts     list[str]  VĂN BẢN chunk đáng lẽ lấy được } nhóm
+#     reference_context_ids  list[str]  ID chunk đáng lẽ lấy được    } E
+#     retrieved_contexts     list[str]  chunk retriever trả về (Tuần 3)
+#     response               str        câu trả lời hệ thống sinh (Tuần 4)
+#
+#   `reference_contexts` + `reference_context_ids` PHẢI thu LÚC soạn nhóm E,
+#   không thu bù sau được. Chúng mở khoá 3 metric KHÔNG cần LLM:
+#     NonLLMContextRecall                  retrieved_contexts + reference_contexts
+#     NonLLMContextPrecisionWithReference   (như trên)
+#     IDBasedContextPrecision              retrieved_context_ids + reference_context_ids
+#   Chỉ Faithfulness buộc có LLM — hoặc FaithfulnesswithHHEM (classifier T5 nhỏ,
+#   không gọi API), tránh được bẫy "judge cùng họ Gemini với generator".
+#
+#   CONTRACT: ragas kéo theo 7 gói họ langchain + openai 2.x. Là dependency của
+#   thư viện eval chạy OFFLINE sau pipeline, KHÔNG phải orchestration —
+#   `RAGPipeline._route()` vẫn Python thuần. Xem DEC-022. GIỮ COMMENT tới Tuần 6.
 # beautifulsoup4>=4.12          # strip HTML nâng cao (cleaner hiện dùng regex)
