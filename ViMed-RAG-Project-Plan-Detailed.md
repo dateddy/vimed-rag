@@ -423,7 +423,8 @@ keywords_tim = ["tim", "huyết áp", "mạch vành", "nhồi máu", "cholestero
 | **Không có reviewer y khoa** | Nhãn abstention **theo cấu trúc** (nhóm A/B kiểm chứng bằng máy, D theo policy, E theo ground truth); **mỗi nhãn ghi `label_source`**. Ghi rõ giới hạn trong báo cáo |
 | **Không có κ (dự án 1 người)** ⚠️ | Bỏ nhóm C (nhãn theo phán đoán); giữ 4 nhóm có nguồn máy kiểm được (DEC-014). Bảo chứng bằng **tính tái tạo**, không bằng đồng thuận. Nói thẳng trong Limitations + chuẩn bị câu trả lời Q&A |
 | **Trượt tiến độ Tuần 4–6 khi solo** (rủi ro thật lớn nhất) ⚠️ | Front-load test set + rubric về Tuần 2; **checkpoint hết Tuần 5: chưa có nhãn → cắt E2 ngay**; thứ tự cắt: E2 → ablation reranker → ablation chunk. Giữ risk–coverage + Static-vs-Corrective bằng mọi giá |
-| Hallucination y tế | Defense-in-depth 7 lớp (mục 1.5) + ABSTAIN + đo bằng RAGAS faithfulness |
+| **Test set giọng sách giáo khoa, không phải giọng bệnh nhân** ⚠️ | Ghi thẳng vào Limitations (DEC-029). ViMedAQA sinh câu theo lối trích xuất → ngôi thứ ba, đúng thuật ngữ corpus; chỉ nhóm D là giọng bệnh nhân (8/50). Số retrieval có thể lạc quan, ngưỡng risk–coverage có thể quá dễ dãi. Phương án đo độ lệch (viết lại nhóm E sang giọng bệnh nhân, giữ nguyên nhãn) đã cân nhắc và **hoãn** — nếu làm thì xếp TRÊN E2 trong thứ tự cắt DEC-015 |
+| Hallucination y tế | Defense-in-depth **8 lớp** (mục 1.5 + policy gate, DEC-024) + ABSTAIN + đo bằng RAGAS faithfulness |
 | **Solo → không ai phát hiện mình đang trượt** | Cuối mỗi tuần ghi đè `brain/state/STATUS.md` (Đang làm / Blocker / 3 việc kế tiếp) và đối chiếu với DoD của tuần đó. Đây là thứ thay cho buổi sync 2 người |
 
 ---

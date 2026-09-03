@@ -30,6 +30,17 @@ tin cậy → dựng **đường cong risk–coverage** → chọn ngưỡng tr�
 - [ ] Chưa có reviewer y khoa.
 - [ ] Nhãn abstention theo khả năng truy xuất + policy, KHÔNG theo đánh giá lâm sàng.
 - [ ] RAG **giảm** chứ không **diệt** hallucination.
+- [ ] **Test set mang văn phong SÁCH GIÁO KHOA, không phải giọng người bệnh** (DEC-029).
+      Câu hỏi lấy từ ViMedAQA, sinh theo lối trích xuất nên ở ngôi thứ ba và dùng đúng
+      thuật ngữ của bài viết ("Đái tháo đường thể MODY là gì?"). Người bệnh thật hỏi
+      ngôi thứ nhất, dẫn bởi triệu chứng ("đứng dậy hay chóng mặt, có liên quan không?").
+      Chỉ nhóm D nói giọng bệnh nhân — **8/50 = 16%**.
+      → Số đo retrieval có thể **lạc quan hơn thực tế** (câu sách giáo khoa chồng lấn từ
+      vựng với corpus nên sparse khớp gần nguyên văn), và ngưỡng chọn từ risk–coverage
+      có thể **quá dễ dãi** với truy vấn đời thường. **Độ lệch này CHƯA được đo.**
+- [ ] **Hệ thống trả lời MỘT lượt, không dẫn dắt người dùng** (DEC-029). Không có hội thoại
+      nhiều lượt, không hỏi lại để làm rõ, không đưa người bệnh đi từ lối sống → tiền sử →
+      điều trị. Mỗi câu hỏi là một lượt độc lập.
 - [ ] **Không có inter-annotator agreement (κ)** — dự án 1 người (DEC-013). Bù lại bằng
       *nguồn nhãn kiểm chứng được*, không bằng đồng thuận người: nhóm A/B kiểm bằng script,
       D bằng policy tự công bố, E bằng ViMedAQA ground truth. Nhóm C (nhãn theo phán đoán)
