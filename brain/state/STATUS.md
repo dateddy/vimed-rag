@@ -6,6 +6,33 @@
 **Cập nhật lần cuối:** 2026-08-18 (Session 8 — **TUẦN 2 ĐÓNG: 2 collection đã index + verify PASS**)
 
 ## Đang làm
+
+- **🔀 ĐỔI THỨ TỰ (2026-08-19): làm SAFETY SUBSET TRƯỚC Tuần 3.** Lý do: nhóm E (12 câu
+  answerable) là tập con của test set v1 — cái đang chặn đo retrieval — nên làm trước là
+  được 12/20 câu miễn phí; và DEC-015 đặt tripwire "hết Tuần 5 chưa có nhãn → cắt E2"
+  ngay ở đây. Tiến độ: **Bước 0 XONG** (DEC-022, pin `ragas==0.4.3`) · **Bước 1 XONG**
+  (`config/abstention_policy.md` v1, DEC-023 + DEC-024) · **Bước 2 XONG** (nhóm E, 12 câu,
+  DEC-025) · **Bước 3 XONG** (nhóm A 18 + nhóm B 12, DEC-026…030).
+  · **Bước 4 XONG** (nhóm D, 8 câu viết tay).
+  **✅ SAFETY SUBSET ĐÓNG: `data/testset.jsonl` = 50/50 câu (A18/B12/D8/E12),
+  24/24 tiêu chí nghiệm thu PASS.** Tái lập: `python scripts/build_testset.py`.
+  **Kế tiếp: TUẦN 3 — `HybridRetriever`.** Đường găng đã thông: nhóm E kèm
+  `reference_context_ids` nên dùng luôn làm ground truth đo recall@k.
+- **Bước 3 bắt được một lỗi của Bước 2 — đọc DEC-027 trước khi đụng lại test set.**
+  Dựng nhóm A vô tình thành phép kiểm chéo: `Aspirin STELLA` vừa là nhóm E (ANSWER)
+  vừa là nhóm A (ABSTAIN). Gốc: TF-IDF cao trên ĐÁP ÁN không bảo đảm THỰC THỂ được
+  phủ. Bộ lọc mới loại **41,6%** QA "trong khoa" của ViMedAQA vì thực thể vắng mặt.
+  Hai script giờ dùng **cùng phép kiểm, ngược chiều**: E đòi thực thể CÓ MẶT, A/B đòi
+  VẮNG MẶT — không thể mâu thuẫn nữa.
+- **⚠️ `specialty` của nhóm A/B KHÔNG đáng tin (DEC-030), đã đánh dấu
+  `specialty_verified: false`.** Nó đến từ bộ lọc keyword sai cả hai hướng
+  (`Ung thư xương` lọt vào A; `Hẹp van 2 lá` bị loại). Phân bố `tim_mach 15/tieu_duong 3`
+  là hiện vật của bộ lọc, KHÔNG phải sự thật. **Tuần 6 chỉ tách abstention theo nhóm
+  A/B/D/E, TUYỆT ĐỐI không tách theo khoa trên nhóm A/B.**
+- **⚠️ DEC-024 đổi contract:** defense-in-depth **7 → 8 lớp**, thêm policy gate chạy TRƯỚC
+  retrieval. Không có lớp này thì nhóm D có abstention recall **0%** (corpus CÓ bài
+  metformin → grader CORRECT → ANSWER). `trace` phải tách ABSTAIN-do-policy khỏi
+  ABSTAIN-do-retrieval, nếu không Tuần 6 không vẽ được risk–coverage đúng.
 - **✅ TUẦN 2 ĐÓNG — HAI COLLECTION ĐÃ SỐNG TRÊN QDRANT CLOUD.** Chạy trên **Kaggle T4**
   bằng `notebooks/kaggle_build_index.ipynb`. `verify_index.py` **PASS cả 4 mục
   cho cả 2 size**:
@@ -25,7 +52,7 @@
   (rác HTML · menu/footer · bảng vỡ) PASS bằng máy trên toàn bộ 4.972 chunk; 25 mẫu soi
   tay không mẫu nào mất nghĩa. **Cửa sổ "sửa rẻ" đã đóng đúng cách** — từ đây đổi chunking
   = phải embed lại cả 2 collection. Tái lập: `python scripts/chunk_audit.py --size 512`.
-- Bước vào **Tuần 2 — Embedding & Indexing**. Streamlit vẫn đang chạy bằng Fake.
+- Bước vào **Tuần 3 — Hybrid retrieval & rerank**. Streamlit vẫn đang chạy bằng Fake.
 - **Gate 0 = GO**, đã tái kiểm dưới chính sách gán khoa mới — cả 3 tiêu chí PASS.
   Số liệu + giới hạn: `../contracts/gates.md`. Quyết định: DEC-007…012, DEC-016.
 - **Chuyển sang 1 người** (DEC-013): workstream eval/generation/test set trước thuộc
@@ -41,8 +68,9 @@
 - **Vector store = Qdrant Cloud, không Docker local (DEC-018).** Lý do: Docker Desktop
   chưa hề được cài trên máy, mà Tuần 7 deploy HF Spaces thì bắt buộc phải có Qdrant truy
   cập được từ internet. `docker-compose.yml` hạ xuống làm dự phòng offline.
-  **Cluster đã sống**: `eu-west-1-0.aws`, 0 collection. Tái kiểm bất cứ lúc nào:
-  `python scripts/smoke_qdrant.py` (không ghi gì lên cluster).
+  **Cluster đã sống**: `eu-west-1-0.aws`, **2 collection** (`vimed_rag_512` +
+  `vimed_rag_256`). Tái kiểm bất cứ lúc nào: `python scripts/smoke_qdrant.py`
+  (kết nối) · `python scripts/verify_index.py --size 512` (nội dung). Cả hai chỉ đọc.
 - **Ranh giới GATED đã lùi.** `BgeM3Embedder` + `QdrantIndexer` đã implement (DEC-021);
   `run_ingestion.py` dừng ở `corpus.jsonl`, `build_index.py` gánh tiếp. Còn GATED:
   `HybridRetriever` (Tuần 3) · `LLMRewriter`/`GeminiGenerator` (Tuần 4) ·
@@ -59,9 +87,11 @@
   terminal đang mở — phải mở terminal mới).
 
 ## 3 việc kế tiếp
-1. **Đọc phần format dataset của RAGAS + pin phiên bản vào `requirements.txt`** TRƯỚC khi
-   soạn test set v1. Đây là việc đọc duy nhất có deadline thật: sai format thì Tuần 6 làm lại.
-   `ragas>=0.1` hiện quá lỏng — 0.1.x và 0.2+ dùng tên trường KHÁC NHAU.
+1. ~~Đọc format RAGAS + pin phiên bản~~ → **XONG 2026-08-19, DEC-022.** Pin `ragas==0.4.3`
+   (giữ comment tới Tuần 6). Cảnh báo "0.1.x vs 0.2+" đã lỗi thời — ragas chưa từng có bản
+   ≥1.0. **Chốt quan trọng hơn tên cột:** nhóm E phải thu `reference_contexts` (VĂN BẢN chunk)
+   + `reference_context_ids` NGAY lúc soạn → 3/4 metric Tuần 6 chạy không cần LLM.
+   Tên trường + ma trận metric chép sẵn trong `requirements.txt`.
    ~~Hỏi GVHD xác nhận claim~~ → **xong 2026-08-11, DEC-019.**
 2. **Test set v1 (~20 câu) từ ViMedAQA** — đường găng tiếp quản từ Member B, chặn đo
    retrieval ở Tuần 3. Làm SAU khi đã đọc format RAGAS ở việc 1, không làm trước.
@@ -138,16 +168,33 @@ Thứ tự dưới đây là thứ tự làm, không phải thứ tự tuần.
 - **Báo cáo + slides** Tuần 8.
 
 ## Việc treo ngoài code
+- ~~Việc 1.4 — kiểm bằng máy policy vs nhóm E~~ — **ĐÓNG 2026-08-23 (DEC-031), 6/6 PASS.**
+  Đã mechanize policy sớm (`config/abstention_policy.yaml`, kéo từ Tuần 5 về) nên
+  `check_policy()` ở Tuần 4–5 chỉ còn là nạp yaml + gọi `match_rules()`.
+  Tiêu chí rộng hơn bản đầu: khớp D **8/8** · **0** khớp ở E/A/B · **0** ca ranh giới.
+  Tái lập: `python scripts/check_policy_coverage.py`.
+- **Phương án B đã cân nhắc và HOÃN (DEC-029), đừng nghĩ lại từ đầu:** viết lại 12 câu
+  nhóm E sang giọng bệnh nhân, giữ nguyên `reference` + `reference_context_ids`, rồi đo
+  cùng câu ở HAI văn phong. Rẻ về nhãn (không cần soi lại), cho một trục kết quả thứ hai
+  cạnh Static-vs-Corrective. **Điều kiện làm:** chỉ khi 50 câu đã đóng và còn thời gian —
+  và phải xếp TRÊN E2 trong thứ tự cắt DEC-015, tức chấp nhận E2 chết trước.
+- **ABSTAIN-do-retrieval vẫn mang theo chunk — rủi ro UI, quyết ở Tuần 7.**
+  `pipeline.py:99` truyền `ctx` vào `chunks` ở nhánh từ chối. Nếu UI hiển thị chúng thì
+  màn hình "tôi không đủ căn cứ để trả lời" lại kèm 5 nguồn trông rất thuyết phục →
+  người dùng hiểu ngược đúng cái thông điệp an toàn mà cả đề tài đang muốn truyền.
+  Policy-ABSTAIN không dính (chunks rỗng vì gate chạy trước retrieval).
+  Không chặn gì bây giờ; đừng để rơi khi làm UI thật.
+- **`config/prompts/abstain.txt` là MỘT thông điệp dùng chung**, giờ cần ≥3 biến thể:
+  policy thường · cấp cứu (D-3, ngắn nhất có thể) · hết căn cứ do retrieval. Việc Tuần 4–5.
 - ~~Xác nhận claim với GVHD~~ — **ĐÓNG 2026-08-11 (DEC-019).**
 - ~~Dọn `.claude/settings.json`~~ — **ĐÓNG 2026-08-11**: 42 → 22 rule. Bỏ `Bash(env)` +
   lệnh in prefix `HF_TOKEN` (rò secret), 8 rule trỏ scratchpad session cũ đã chết, và các
   lệnh một-lần. Giữ git/pytest/5 script audit; thêm 1 rule pytest chung.
-- **Đọc phần format dataset của RAGAS TRƯỚC khi soạn test set v1** — plan cảnh báo thẳng:
-  test set viết sai format thì Tuần 6 phải làm lại. Việc đọc duy nhất có deadline thật.
-  **Kèm theo: pin phiên bản RAGAS vào `requirements.txt`** — `ragas>=0.1` hiện quá lỏng,
-  0.1.x và 0.2+ dùng tên trường KHÁC NHAU (`question`/`answer`/`contexts`/`ground_truth`
-  vs `user_input`/`response`/`retrieved_contexts`/`reference`). Không pin = viết test set
-  theo một schema rồi cài phải schema kia.
+- ~~Đọc format RAGAS + pin phiên bản~~ — **ĐÓNG 2026-08-19 (DEC-022).** `ragas==0.4.3`.
+  **Việc treo MỚI kéo theo:** ragas kéo 7 gói họ langchain + openai. Đã kết luận không vi
+  phạm ràng buộc #1 (eval offline, không phải orchestration) và ghi vào DEC-022 — nhưng
+  khi nào bỏ comment dòng ragas ở Tuần 6 thì `contract-guard` sẽ báo, **đừng hoảng**, trỏ
+  về DEC-022. Env hiện tại vẫn sạch, `pip list` không có langchain.
 - ~~Sync bản `.html` của plan~~ — **BỎ QUA (quyết định 2026-08-12).** Bản `.html` giờ
   lệch `.md` ở DEC-013…019. Đừng nêu lại việc này ở phiên sau.
 - **Rotate API key Qdrant** — key hiện tại từng bị dán nhầm vào `.env.example` (file được
