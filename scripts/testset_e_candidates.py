@@ -216,9 +216,13 @@ def main() -> None:
     # recall@k ở Tuần 3 nên dồn cục vào vài bài là hỏng phép đo.
     per = max(1, args.n // len(specs))
     picked: list[dict] = []
+    # `seen` đếm CHUNG cho cả hai khoa, KHÔNG reset theo từng khoa. Để nó trong
+    # vòng lặp khoa thì bài thuộc CẢ HAI khoa (DEC-017) nhận `max_per_doc` slot
+    # ở MỖI khoa, tức lọt tới 4 câu/bài — phá đúng ràng buộc DEC-025c sinh ra để
+    # chống dồn cục. Đo được ở lần sinh `--n 120`: 5 bài lọt 3 câu.
+    seen: collections.Counter = collections.Counter()
     for s in specs:
         pool = sorted([r for r in kept if r["specs"][0] == s], key=lambda r: -r["max_sim"])
-        seen: collections.Counter = collections.Counter()
         sel: list[dict] = []
         for r in pool:
             d = r["top3"][0][0]
@@ -243,16 +247,38 @@ def main() -> None:
         r["snippet"], r["snippet_sim"] = snippet, s_sim
         r["doc"] = best_doc
 
+    # Chỉ mục ViMedAQA của các câu E ĐÃ nhận vào testset -> đánh dấu để khỏi soi lại.
+    accepted: dict[int, str] = {}
+    ts_path = ROOT / "data" / "testset.jsonl"
+    if ts_path.exists():
+        for line in ts_path.open(encoding="utf-8"):
+            row = json.loads(line)
+            if row.get("group") == "E":
+                accepted[int(row["label_source"].split(":")[-1])] = row["id"]
+
     OUT_MD.parent.mkdir(parents=True, exist_ok=True)
     with OUT_MD.open("w", encoding="utf-8") as f:
+        n_old = sum(1 for r in picked if r["idx"] in accepted)
         f.write("# Ứng viên nhóm E — SOI TAY 100%, script không gán nhãn\n\n")
-        f.write(f"Sàn max-sim **{floor:.3f}** · {len(picked)} ứng viên trên {n_docs} bài "
-                f"· cần chọn **12**.\n\n")
+        f.write(f"Sàn max-sim **{floor:.3f}** · {len(picked)} ứng viên trên {n_docs} bài.\n\n")
+        f.write(f"**{n_old} câu ĐÃ NHẬN từ trước** (đánh dấu ✅ — bỏ qua, đừng soi lại) · "
+                f"**{len(picked) - n_old} ứng viên MỚI cần soi**.\n\n")
+        f.write("Mục tiêu: nâng nhóm E lên **35–40 câu**. Lý do: 12 câu làm `recall@20` "
+                "nhảy từng bước 8,3 điểm, không tách nổi 6 cấu hình retrieval (DEC-038) "
+                "và quá ít để đặt ngưỡng grader (DEC-039).\n\n")
         f.write("Với mỗi ứng viên hỏi đúng 1 câu: **đáp án có thật sự nằm trong ĐOẠN TRÍCH "
                 "dưới đây không?** Có thì giữ. Không chắc thì BỎ, đừng cố.\n\n")
+        f.write("> ⚠️ **Đừng chỉ lấy từ trên xuống rồi dừng.** Danh sách xếp theo `max_sim` "
+                "giảm dần, nên duyệt top-down sẽ cho một nhóm E toàn câu **dễ** — đáp án "
+                "chồng lấn từ vựng gần như nguyên văn với corpus. Nhóm E là ground truth "
+                "đo recall, nên chọn toàn câu dễ sẽ làm chỉ số retrieval **lạc quan hơn "
+                "thực tế**, cùng lớp thiên lệch mà DEC-029 đã ghi về văn phong truy vấn. "
+                "Nên rải đều: lấy một phần ở đầu, một phần ở giữa, một phần gần sàn.\n\n")
         f.write(TRAPS)
         for n, r in enumerate(picked, 1):
-            f.write(f"## E-cand {n:02d} · sim {r['max_sim']:.3f} · {r['specs']} · {r['topic']}\n\n")
+            mark = f" · ✅ ĐÃ NHẬN ({accepted[r['idx']]})" if r["idx"] in accepted else ""
+            f.write(f"## E-cand {n:02d} · sim {r['max_sim']:.3f} · {r['specs']} "
+                    f"· {r['topic']}{mark}\n\n")
             f.write(f"**Hỏi:** {r['q']}\n\n")
             f.write(f"**Đáp án (ViMedAQA):** {r['a']}\n\n")
             f.write(f"**Bài khớp nhất:** `{r['doc']['doc_id']}` — {r['doc'].get('title', '')}\n\n")
@@ -281,7 +307,9 @@ def main() -> None:
 
     print(f"\n[out] {OUT_MD.relative_to(ROOT)}   <- MỞ FILE NÀY ĐỂ SOI TAY")
     print(f"[out] {OUT_JSONL.relative_to(ROOT)}  <- nháp, eyeballed=false")
-    print("\nBước tiếp: soi tay, giữ 12 câu, đặt eyeballed=true, gộp vào data/testset.jsonl")
+    print(f"\n[out] {len(accepted)} câu đã nhận được đánh dấu ✅ — bỏ qua khi soi.")
+    print("Bước tiếp: soi các ứng viên MỚI, chọn thêm ~23-28 câu cho đủ 35-40, rồi thêm")
+    print("chỉ mục ViMedAQA của chúng vào KEEP_E_IDX trong scripts/build_testset.py.")
 
 
 if __name__ == "__main__":
