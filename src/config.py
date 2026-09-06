@@ -53,6 +53,10 @@ class RetrievalConfig:
     hybrid: bool
     top_k_dense: int
     top_k_rerank: int
+    # Cửa sổ subword khi rerank chấm cặp (truy vấn, chunk) — DEC-042.
+    # Có default để mọi chỗ dựng bằng tham số vị trí (`RetrievalConfig(True, 20, 5)`)
+    # không phải sửa.
+    rerank_max_length: int = 512
 
 
 @dataclass(frozen=True)

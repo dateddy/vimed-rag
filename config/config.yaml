@@ -25,8 +25,25 @@ data:
 
 retrieval:
   hybrid: true          # dense + sparse (bge-m3)
-  top_k_dense: 20       # số ứng viên lấy ra trước rerank
+
+  # CHỐT CHI PHÍ TUẦN 7 — DEC-042. Rerank chiếm ~99% thời gian mỗi truy vấn,
+  # nên hai số dưới đây quyết định HF Spaces CPU free có dùng được hay không.
+  #
+  #   1024 + top20 -> 3,75s/cặp x 20 = 75,0s/truy vấn   (không deploy được)
+  #    512 + top20 -> 1,72s/cặp x 20 = 34,5s/truy vấn
+  #    512 + top10 -> 1,72s/cặp x 10 = 17,2s/truy vấn   <- ĐANG DÙNG
+  #
+  # Bằng chứng cho từng lần cắt (đo 2026-09-06/07, 12 câu nhóm E):
+  #  - 1024 -> 512: mrr@5 sau rerank KHÔNG tụt (0,528 -> 0,542), recall không đổi.
+  #  - 20 -> 10: hạng chunk của bài vàng xấu nhất là **7**, và recall@10 =
+  #    recall@20 = 0,750 -> cắt xuống 10 không mất câu nào.
+  #
+  # ⚠️ ĐIỀU KIỆN ĐẢO QUYẾT ĐỊNH: biên chỉ còn 3 bậc (7 so với 10). Sau khi nhóm E
+  # mở lên 35-40 câu (DEC-041) PHẢI đo lại hạng chunk; thấy câu nào >10 thì trả
+  # top_k_dense về 20 và chấp nhận 34,5s.
+  top_k_dense: 10       # số ứng viên lấy ra trước rerank
   top_k_rerank: 5       # số chunk giữ lại sau rerank
+  rerank_max_length: 512  # cửa sổ subword của cross-encoder khi chấm cặp
 
 chunking:
   size: 512             # ABLATION: chạy thêm 256 (Tuần 2)
@@ -34,8 +51,21 @@ chunking:
 
 grader:
   # 2 ngưỡng trên rerank score.
-  # LƯU Ý: đây là giá trị TẠM. Ngưỡng thật được chọn từ đường cong
-  # risk–coverage ở Tuần 6 sau khi có dữ liệu đánh giá thật.
+  #
+  # ⛔ ĐÃ ĐO 2026-09-06 VÀ BỊ BÁC BỎ — DEC-039. GIỮ NGUYÊN SỐ, ĐỪNG NỐI VÀO
+  # PIPELINE. Ở correct_threshold=0.6, **10/30 câu nhóm A/B vẫn được TRẢ LỜI**
+  # (33% câu corpus không có tài liệu) — đi thẳng ngược claim của đề tài.
+  # Quét ngưỡng ở ĐÚNG cấu hình triển khai (top_k_dense=10, rerank_max_length=512
+  # — DEC-042) cho một **DẢI AN TOÀN** chứ không chỉ một điểm:
+  #   A/B cao nhất  +2.15  |  E thứ 9  +3.12  ->  dải (+2.15, +3.12] rộng 0.97 logit
+  #   điểm giữa dải: +2.63 logit = **sigmoid 0.933**
+  # Trong cả dải đó: 9/12 câu E được trả lời, **0/30 câu A/B lọt lưới**.
+  # (Cấu hình cũ max_length=1024 chỉ cho dải rộng 0.58 -> cắt cửa sổ subword
+  #  làm ngưỡng DỄ đặt hơn, không chỉ rẻ hơn.) Bảng: docs/retrieval-eval-deploy.md
+  #
+  # KHÔNG đổi thành 0.9 ngay: ngưỡng đó chọn trên chính 42 câu dùng để đánh
+  # giá, không có tập giữ lại. Ngưỡng thật vẫn chốt ở Tuần 6 từ đường cong
+  # risk–coverage, BẮT BUỘC có tập giữ lại. Bảng quét: docs/retrieval-eval.md
   correct_threshold: 0.6     # score >= correct_threshold      -> CORRECT
   incorrect_threshold: 0.3   # score <  incorrect_threshold     -> INCORRECT
                              # ở giữa 2 ngưỡng                  -> AMBIGUOUS
