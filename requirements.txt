@@ -22,12 +22,24 @@ qdrant-client>=1.9
 #   pip install "FlagEmbedding>=1.2,<2.0"
 # FlagEmbedding>=1.2,<2.0        # bge-m3 dense+sparse trong 1 lượt forward
 #
+# TUẦN 3 CẦN LẠI GÓI NÀY, nhưng KHÔNG cần GPU: chỉ encode 1 query + rerank
+# ~20 cặp mỗi truy vấn, CPU thừa sức (khác Tuần 2 phải embed 4.972 chunk).
+# Tuần 7 HF Spaces CPU cũng chạy đúng đường này.
+#
 # sentence-transformers KHÔNG dùng cho embedder: nó chỉ ra dense, mà
-# retrieval.hybrid=true cần sparse. Tuần 3 rerank thì có thể dùng lại.
+# retrieval.hybrid=true cần sparse.
+#
+# RERANKER Tuần 3 KHÔNG cần thêm gói nào — DEC-037. `FlagEmbedding` gọi
+# `tokenizer.prepare_for_model()`, API đã bị gỡ ở transformers 5.x nên nhánh
+# reranker của nó CHẾT; `src/retrieval/reranker.py` vì thế đi thẳng
+# `transformers.AutoModelForSequenceClassification` (torch + transformers đã
+# theo sẵn embedder) và tự áp sigmoid trong repo.
+#   FlagEmbedding  -> CHỈ còn dùng cho bge-m3 (nhánh sparse).
 
 # --- GATED: chỉ dùng sau khi Gate 0 GO (Tuần 3+) ---
 # Bỏ comment khi thực sự cần, để scaffold cài nhẹ và test nhanh.
-# sentence-transformers>=3.0     # bge-reranker-v2-m3 (Tuần 3)
+# sentence-transformers>=3.0     # LOẠI ở Tuần 3 — DEC-033 + DEC-037. Đừng mở lại:
+                               # reranker đi thẳng transformers, xem khối Tuần 2 trên.
 # google-generativeai>=0.7      # gemini-2.5-flash
 # datasets>=2.19               # tải HF dataset (loader)
 # ragas==0.4.3                  # đánh giá (Tuần 6). PIN CỨNG, KHÔNG dùng `>=`.
