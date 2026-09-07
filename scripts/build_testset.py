@@ -86,14 +86,23 @@ _EYEBALLED_ON = {
 
 # ---------------------------------------------------------- nhóm A và B ----
 # Đạt soi tay 2026-08-23 trên 36 ứng viên mỗi nhóm.
-# Số ở đây là id trong `testset_ab_candidates.jsonl` **của lần sinh cuối cùng**
-# (--n-a 48 --n-b 36, có xếp hạng theo gợi ý khoa). Sinh lại với tham số khác
-# thì phải soi lại — id KHÔNG bền như chỉ mục ViMedAQA ở nhóm E.
-KEEP_A = [1, 3, 4, 5, 6, 7, 11,            # disease (7)
-          13, 14, 15, 17, 19, 21,          # drug (6)
-          25, 27, 29,                      # medicine (3)
-          33, 36]                          # body-part (2)
-KEEP_B = [1, 2, 3, 4, 6, 7, 8, 10, 12, 13, 15, 18]
+#
+# Khoá theo **CHỈ MỤC ViMedAQA**, KHÔNG theo id ứng viên (`A-cand-07`) — DEC-050.
+# Id ứng viên DỊCH CHUYỂN mỗi lần sinh lại `testset_ab_candidates.jsonl` với
+# tham số khác, mà `data/processed/*` thì gitignore. Bản cũ khoá theo id nên
+# KHÔNG rebuild được từ clone sạch: `testset.jsonl` vẫn an toàn vì đã commit,
+# nhưng **đường tái lập thì hỏng** — đúng thứ hội đồng hỏi. Chỉ mục ViMedAQA
+# bền vì nó trỏ vào dataset public, không phụ thuộc lần sinh ứng viên nào.
+#
+# Danh sách dưới đây TRÍCH TỪ `data/testset.jsonl` đã commit (trường
+# `label_source`), nên nó mô tả đúng 30 câu ĐÃ soi tay — không phải chọn lại.
+# Thứ tự = thứ tự A-01…A-18 / B-01…B-12; đổi thứ tự là đổi id câu.
+KEEP_A_IDX = [26154, 26265, 35338, 26777, 36784, 27347, 28034,  # disease (7)
+              80, 22, 442, 508, 1372, 2485,                     # drug (6)
+              10923, 11325, 12121,                              # medicine (3)
+              21649, 23926]                                     # body-part (2)
+KEEP_B_IDX = [0, 8802, 21287, 25760, 8803, 21292,
+              25761, 8804, 25762, 4, 21294, 8808]
 
 # A-cand-02 ("U tụy nội tiết" / hội chứng Verner-Morrison) đã chọn rồi BỎ: câu
 # hỏi tên gọi khác của một hội chứng u tụy hiếm — đúng loại "chuyên ngành chỉ
@@ -152,19 +161,38 @@ def build_e(fp: dict) -> list[dict]:
     return rows
 
 
+def vimedaqa_idx(label_source: str) -> int:
+    """Rút chỉ mục ViMedAQA từ `label_source` ("vimedaqa:train:26154 + grep:...").
+
+    Đây là khoá BỀN của nhóm A/B: id ứng viên đổi mỗi lần sinh lại, chỉ mục
+    dataset thì không (DEC-050).
+    """
+    m = re.search(r"vimedaqa:train:(\d+)", label_source)
+    if not m:
+        sys.exit(f"!! `label_source` không có chỉ mục ViMedAQA: {label_source!r}")
+    return int(m.group(1))
+
+
 def build_ab(fp: dict) -> list[dict]:
     """Nhóm A + B. Nhãn ABSTAIN, không có reference (không có đáp án vàng)."""
     if not AB_CAND.exists():
         sys.exit(f"!! Thiếu {AB_CAND}. Chạy scripts/testset_ab_candidates.py trước.")
-    cands = {c["id"]: c for c in
-             (json.loads(l) for l in AB_CAND.open(encoding="utf-8"))}
+    cands = {}
+    for c in (json.loads(l) for l in AB_CAND.open(encoding="utf-8")):
+        key = (c["group"], vimedaqa_idx(c["label_source"]))
+        if key in cands:
+            sys.exit(f"!! Hai ứng viên cùng chỉ mục ViMedAQA {key} — khoá theo "
+                     f"chỉ mục không còn xác định, xem lại file ứng viên.")
+        cands[key] = c
     rows = []
-    for grp, keep in (("A", KEEP_A), ("B", KEEP_B)):
+    for grp, keep in (("A", KEEP_A_IDX), ("B", KEEP_B_IDX)):
         for i, k in enumerate(keep, 1):
-            cid = f"{grp}-cand-{k:02d}"
-            if cid not in cands:
-                sys.exit(f"!! Không có {cid} trong {AB_CAND.name}")
-            c = cands[cid]
+            if (grp, k) not in cands:
+                sys.exit(f"!! Không có câu ViMedAQA idx {k} (nhóm {grp}) trong "
+                         f"{AB_CAND.name}. Sinh lại: "
+                         f"python scripts/testset_ab_candidates.py")
+            c = cands[(grp, k)]
+            cid = c["id"]
             rows.append({
                 "id": f"{grp}-{i:02d}",
                 "group": grp,
