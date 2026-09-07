@@ -79,12 +79,22 @@ def real_chunks(cfg) -> list[RetrievedChunk]:
     from src.retrieval.reranker import BgeReranker
     from src.retrieval.retriever import HybridRetriever
 
-    print(f"[..] nạp bge-m3 + reranker, truy hồi thật (~20s nạp + ~17s/truy vấn)")
+    try:
+        import torch
+
+        fp16 = bool(cfg.index.use_fp16 and torch.cuda.is_available())
+    except ImportError:
+        fp16 = False
+
+    print(f"[..] nạp bge-m3 + reranker (fp16={fp16}), truy hồi thật "
+          f"(~20s nạp + ~17s/truy vấn)")
     retriever = HybridRetriever(
-        cfg=cfg,
-        embedder=BgeM3Embedder(cfg),
-        reranker=BgeReranker(cfg),
+        cfg,
+        BgeM3Embedder(cfg.models, cfg.index, use_fp16=fp16),
         collection=collection_name(cfg.qdrant.collection, 512),
+        reranker=BgeReranker(
+            cfg.models, use_fp16=fp16, max_length=cfg.retrieval.rerank_max_length
+        ),
     )
     return retriever.retrieve(QUERY)
 

@@ -29,6 +29,7 @@ def gemini_call(
     *,
     api_key: str,
     model: str = DEFAULT_MODEL,
+    usage_out: dict | None = None,
 ) -> str:
     """Gọi Gemini một lượt, trả về text đã strip.
 
@@ -37,6 +38,10 @@ def gemini_call(
         temperature: lấy từ ``config.generation.temperature``, không hard-code.
         api_key: khoá thật; rỗng thì báo lỗi chứ không im lặng trả rỗng.
         model: mặc định ``gemini-2.5-flash`` (khớp ``config/config.yaml``).
+        usage_out: nếu truyền dict, hàm ghi vào đó ``prompt_tokens`` /
+            ``output_tokens`` / ``total_tokens``. Tuỳ chọn có chủ đích —
+            đường chạy thường không cần, còn bảng chi phí Tuần 7 thì cần
+            **token thật**, không phải đếm ký tự rồi đoán.
 
     Raises:
         RuntimeError: thiếu key, hoặc model trả rỗng (thường do safety filter —
@@ -65,6 +70,15 @@ def gemini_call(
             ),
         ),
     )
+    if usage_out is not None:
+        # Ghi TRƯỚC khi kiểm text rỗng: lượt bị safety filter chặn vẫn tính
+        # tiền phần prompt, nên bảng chi phí phải thấy được nó.
+        um = getattr(resp, "usage_metadata", None)
+        usage_out.update(
+            prompt_tokens=getattr(um, "prompt_token_count", None),
+            output_tokens=getattr(um, "candidates_token_count", None),
+            total_tokens=getattr(um, "total_token_count", None),
+        )
     text = resp.text
     if not text:
         raise RuntimeError(
