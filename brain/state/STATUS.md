@@ -3,7 +3,7 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-07 (Session 10 — **T3.1/T3.2/T3.4/T3.6 ĐÓNG + chốt chi phí Tuần 7. Hai claim bị dữ liệu bác bỏ, xem ⛔**)
+**Cập nhật lần cuối:** 2026-09-07 (Session 10 — **TUẦN 3 ĐÓNG. Nhóm E 12→21, test set 59 câu. Hai claim bị dữ liệu bác bỏ, xem ⛔**)
 
 ## Đang làm
 
@@ -45,9 +45,14 @@
   Chạy: `streamlit run app/streamlit_app.py` (streamlit đã cài, 1.63.0).
 - **✅ CHỐT CẤU HÌNH CHI PHÍ TUẦN 7 — DEC-042.** `top_k_dense` 20 → **10**, thêm
   `retrieval.rerank_max_length` = **512**. **75,0s → 17,2s mỗi truy vấn.**
-- **🖐️ Nhóm E: ứng viên đã sinh, chờ soi tay** — DEC-041, xem "3 việc kế tiếp" mục 2.
-- **✅ SAFETY SUBSET ĐÓNG — `data/testset.jsonl` = 50/50 câu** (`A18/B12/D8/E12`,
-  DEC-014). **24/24 tiêu chí dựng PASS** + **6/6 tiêu chí policy PASS**.
+- **✅ NHÓM E ĐÃ MỞ: 12 → 21 câu. Test set = 59 câu (A18/B12/D8/E21)** — DEC-043.
+  Soi tay 106 ứng viên: loại 79, còn 27; bỏ tiếp 6 câu va bẫy (3 câu sản khoa "THA thai
+  kỳ/tiền sản giật", 2 câu "đái tháo nhạt", 1 câu trùng nội dung atorvastatin) → 21.
+  **Không đạt mục tiêu 35–40 của DEC-041 và đã chấp nhận dừng ở đây.** Lý do bỏ ghi
+  thẳng trong `scripts/build_testset.py` để phiên sau đừng nhặt lại.
+  Mọi tiêu chí nghiệm thu PASS · `check_policy_coverage.py` vẫn PASS.
+- **✅ SAFETY SUBSET ĐÓNG** — A/B/D chốt từ Session 9 theo DEC-014 (`A18/B12/D8`),
+  nhóm E mở lên 21 ở DEC-043. Tổng **59 câu**. Tiêu chí dựng + policy PASS toàn bộ.
   Tái lập: `python scripts/build_testset.py` · `python scripts/check_policy_coverage.py`.
 - **Đổi thứ tự có chủ đích:** làm safety subset **TRƯỚC** Tuần 3. Lý do: nhóm E (12 câu
   answerable) là tập con của test set v1 — thứ đang chặn đo retrieval — nên làm trước
@@ -82,22 +87,10 @@
 
 ## 3 việc kế tiếp
 
-1. **`git push origin main`** — **7 commit đang treo**, `origin/main` còn ở `57c2caa`.
-2. **🖐️ SOI TAY 94 ỨNG VIÊN NHÓM E — việc của Đạt, máy không làm thay được.**
-   Ứng viên **đã sinh xong**: `data/processed/testset_e_candidates.md` — **106 ứng viên
-   trên 82 bài**, trong đó **12 câu cũ đánh dấu ✅ (bỏ qua)** và **94 câu mới cần soi**.
-   Cần chọn thêm **~23–28 câu** cho đủ 35–40. DEC-025d bắt buộc người soi 100%: máy chỉ
-   trả lời được "đáp án có giống bài nào không", không trả lời được "đáp án có THẬT SỰ
-   nằm trong đoạn này không".
-   ⚠️ **RẢI ĐỀU theo dải `max_sim`, đừng lấy từ trên xuống** (DEC-041b) — 12/12 câu hiện
-   tại đã nằm ở nửa trên phân bố, lấy tiếp top-down là làm nhóm E toàn câu dễ.
-   Xong thì thêm **chỉ mục ViMedAQA** (không phải số ứng viên) vào `KEEP_E_IDX` trong
-   `scripts/build_testset.py`, chạy lại `build_testset.py` + `check_policy_coverage.py`,
-   rồi `python scripts/eval_retrieval.py` để đo lại — cache logit giữ nguyên nên chỉ
-   tốn thêm phần câu mới.
-   **Hai claim (DEC-038, DEC-039) mắc ở đây, không mắc ở code.**
-3. **TUẦN 4 — Generation (Gemini + citation).** Đường găng kỹ thuật của Tuần 3 đã
-   thông: truy hồi + rerank chạy thật, chi phí đã chốt, UI đã hiện được chunk.
+1. **`git push origin main`** — `origin/main` còn ở `57c2caa`, đang treo rất nhiều commit.
+2. **TUẦN 4 — Generation (Gemini + citation).** Tuần 3 đã đóng; đây là việc chính
+   tiếp theo. Xem mục 3 bên dưới để biết cạm bẫy.
+3. **Cạm bẫy khi làm Tuần 4.** Đường găng kỹ thuật của Tuần 3 đã thông: truy hồi + rerank chạy thật, chi phí đã chốt, UI đã hiện được chunk.
    `RetrievedChunk` đã mang sẵn `title`/`source` cho citation `[1][2]` (DEC-035).
    ⚠️ Nhớ cắt **byline** trước khi đưa vào prompt — 12,4% bài mở đầu bằng "Bài viết
    được tư vấn chuyên môn bởi BS…", để nguyên là hệ thống trích dẫn thành "BS X khẳng
@@ -182,6 +175,17 @@
   Có **khoảng trống sạch** từ logit +2,27 trở lên. **Vẫn KHÔNG đổi số trong
   `config.yaml`** (DEC-039): ngưỡng đó chọn trên chính 42 câu dùng để đánh giá, không
   có tập giữ lại → lạc quan. Chốt ở Tuần 6, bắt buộc tách tập.
+- **✅ ĐO LẠI TRÊN 21 CÂU (DEC-043) — độ phân giải có tác dụng, nhưng không cứu claim.**
+  `recall@10` trên 12 câu bằng nhau **tuyệt đối 0,750** ở cả 6 cấu hình; trên 21 câu đã
+  tách ra: **dense/512 0,714** đứng đầu · hybrid/512 0,667 · sparse/256 0,571.
+  → Con số 0,750 phẳng lì là **ảo ảnh của 12 câu**. Nhưng cấu hình tốt nhất là **dense**,
+  hybrid xếp sau — DEC-038 vẫn đứng, hướng còn **ngược** claim. Bước nhảy giảm 8,3 → 4,8
+  điểm/câu. Recall tổng thể tụt 0,750 → 0,667–0,714 vì 9 câu mới khó hơn (đúng ý muốn).
+- **✅ TÁCH NHÓM E/AB SỐNG SÓT QUA TEST SET KHÓ HƠN.** Dải an toàn ở cấu hình triển khai:
+  **(+2,15, +2,71]**, điểm giữa **+2,43 = sigmoid 0,919** → **17/21 câu E trả lời (81%)**
+  và **0/30 câu A/B lọt lưới**. Dải hẹp lại từ 0,97 → 0,55 logit, nhưng đó là **ước
+  lượng cũ quá rộng do lấy mẫu thưa** (9 câu mới lấp vào khoảng 2,71–3,14 sát biên),
+  không phải chất lượng giảm — coverage còn **tăng** 75% → 81%.
 - **⛔ "HYBRID > DENSE" KHÔNG CHỨNG MINH ĐƯỢC** (DEC-038). `recall@20` **bằng nhau
   tuyệt đối — 0,750 ở cả 6 cấu hình** (3 mode × 2 collection). Khác biệt không tồn tại
   **ngay từ tầng ứng viên**, không phải chỉ bị rerank xoá ở top-5 như dự đoán ban đầu.
