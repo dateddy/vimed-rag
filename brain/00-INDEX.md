@@ -14,11 +14,8 @@ Bản đồ lớp context. Tách theo **tốc độ thay đổi**, không theo c
 | `state/STATUS.md` | Trạng thái hiện tại + 3 mục "đã biết, đừng làm lại" + backlog | Đầu/cuối mỗi session | Đạt | Ghi đè mỗi session |
 | `../notebooks/kaggle_build_index.ipynb` | **Dây nối chạy embed+index trên Kaggle T4** — bản đã chạy thật, đã ra 2 collection | Khi chạy lại index | Đạt | Sống tới hết Tuần 3 |
 | `../notebooks/colab_build_index.ipynb` | Bản Colab dự phòng — **CHƯA CHẠY THỬ BAO GIỜ**, phải soi lại trước khi tin | Chỉ khi Kaggle hết quota GPU | Đạt | Sống tới hết Tuần 3 |
-| `handoff/2026-08-23-session09.md` | Handoff Session 9 (**safety subset đóng 50/50 · policy gate vào contract · việc 1.4 đóng**) | **Đầu phiên sau, cần biết dừng ở đâu** | Đạt | Archive sau 2 tuần |
-| `handoff/2026-08-18-session08.md` | Handoff Session 8 (Tuần 2 đóng · 2 collection đã index + verify PASS) | Chỉ khi cần lịch sử DEC-021 | Đạt | Archive sau 2 tuần |
-| `handoff/2026-08-13-session07.md` | Handoff Session 7 (soi chunk xong · chunking chốt 512/50) | Chỉ khi cần lịch sử DEC-020 | Đạt | Archive sau 2 tuần |
-| `handoff/2026-08-12-session06.md` | Handoff Session 6 (DoD Tuần 1 đóng · Qdrant Cloud · GVHD duyệt) | Chỉ khi cần lịch sử DEC-018/019 | Đạt | Archive sau 2 tuần |
-| `handoff/archive/` | Session 02–05 (COMPRESS gốc · Gate 0 GO · solo + chính sách gán khoa · loader thật) | Chỉ khi cần lịch sử DEC-016/017 | Đạt | Lưu trữ, đông cứng |
+| `handoff/2026-09-07-session10.md` | Handoff Session 10 (**TUẦN 3 ĐÓNG · nhóm E 12→21 · 2 claim bị dữ liệu bác bỏ**) | **Đầu phiên sau, cần biết dừng ở đâu** | Đạt | Archive sau 2 tuần |
+| `handoff/archive/` | Session 02–09 (COMPRESS gốc · Gate 0 · solo · loader · Tuần 1 · chunking 512/50 · Tuần 2 index · safety subset) | Chỉ khi cần lịch sử DEC-016…021, 022…031 | Đạt | Lưu trữ, đông cứng |
 
 > **Dự án 1 người từ 2026-08-08** (DEC-013). `state/STATUS-B.md` đã xoá,
 > `state/STATUS-A.md` → `state/STATUS.md`. Handoff cũ hơn ngày này còn nhắc "Member B" —
