@@ -12,7 +12,7 @@ chỉ còn ghép prompt, gọi model, và hậu xử lý.
 
 from __future__ import annotations
 
-from typing import Callable, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from src.config import GenerationConfig, load_prompt
 from src.generation.context import (
@@ -21,6 +21,7 @@ from src.generation.context import (
     invalid_citations,
     strip_invalid_citations,
 )
+from src.llm import DEFAULT_MODEL, Transport, gemini_call
 from src.schemas import RetrievedChunk
 
 
@@ -71,8 +72,8 @@ class GeminiGenerator:
         self,
         cfg: GenerationConfig,
         api_key: str,
-        model: str = "gemini-2.5-flash",
-        transport: Callable[[str, float], str] | None = None,
+        model: str = DEFAULT_MODEL,
+        transport: Transport | None = None,
     ) -> None:
         # KHÔNG khởi tạo client ở đây: dựng pipeline phải rẻ và không cần mạng.
         self._cfg = cfg
@@ -116,44 +117,15 @@ class GeminiGenerator:
     # Phần chạm mạng — nạp lười
     # ------------------------------------------------------------------ #
     def _default_transport(self, prompt: str, temperature: float) -> str:
-        """Gọi Gemini thật. Import SDK BÊN TRONG hàm (ràng buộc #2).
+        """Gọi Gemini thật qua ``src/llm.py`` — một chỗ duy nhất cho cả 2 lượt gọi.
 
-        Dùng ``google-genai`` (2.x) chứ không phải ``google-generativeai``
-        (đóng băng ở 0.8.6) — DEC-045.
+        Generation và rewrite phải chạy cùng cấu hình model; tách bản riêng ở
+        đây là mở đường cho hai lượt gọi trong CÙNG một câu trả lời lệch nhau
+        (DEC-046).
         """
-        # Kiểm key TRƯỚC khi import SDK: lỗi cấu hình phải báo được trên máy
-        # chưa cài `google-genai` (test chạy sạch trên clone mới, y như
-        # FlagEmbedding ở embedder.py).
-        if not self._api_key:
-            raise RuntimeError(
-                "Thiếu GEMINI_API_KEY. `setx` KHÔNG áp cho terminal đang mở — "
-                "mở terminal mới sau khi đặt biến."
-            )
-        from google import genai  # noqa: PLC0415 — cố ý: import lười
-        from google.genai import types  # noqa: PLC0415
-
-        client = genai.Client(api_key=self._api_key)
-        resp = client.models.generate_content(
-            model=self._model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=temperature,
-                # Không khai báo tool nào -> tắt hẳn function calling. Không tắt
-                # thì SDK in cảnh báo AFC mỗi lượt gọi, làm bẩn log demo Tuần 7.
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                    disable=True
-                ),
-            ),
+        return gemini_call(
+            prompt, temperature, api_key=self._api_key, model=self._model
         )
-        text = resp.text
-        if not text:
-            # Trả rỗng thường là do safety filter chặn, không phải lỗi mạng —
-            # nuốt im lặng thì Tuần 6 đếm nhầm thành "câu trả lời rỗng".
-            raise RuntimeError(
-                f"Gemini trả về rỗng (có thể bị chặn). "
-                f"prompt_feedback={getattr(resp, 'prompt_feedback', None)}"
-            )
-        return text.strip()
 
     def generate(
         self,
