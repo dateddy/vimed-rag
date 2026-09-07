@@ -3,7 +3,7 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **TUẦN 4 ĐÓNG. Cả đường ống chạy thật end-to-end. 174 test PASS. Một lỗi rewriter đã bắt và vá — xem ⛔**)
+**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **TUẦN 4 ĐÓNG + nợ Tầng 1 dọn xong. Cả đường ống chạy thật end-to-end. 177 test PASS. Một lỗi rewriter đã bắt và vá — xem ⛔**)
 
 ## Đang làm
 
@@ -86,8 +86,8 @@
     ⚠️ **Đừng gộp lại**: `abstain.txt` nói "chưa tìm được trong cơ sở dữ liệu" — với
     nhóm D đó là **nói dối**, corpus CÓ bài metformin. Backlog "3 biến thể abstain"
     của Tuần 4 coi như xong luôn ở đây.
-  - policy-ABSTAIN trả `chunks=[]`. Nhánh **retrieval**-ABSTAIN vẫn mang chunk —
-    cố ý chưa đụng, xem "Việc treo ngoài code".
+  - policy-ABSTAIN trả `chunks=[]`. Nhánh **retrieval**-ABSTAIN nay cũng sạch —
+    đã đóng ở DEC-049 (`chunks=[]` + `retrieved=ctx` giữ cho eval).
 - **✅ T3.4 ĐÓNG — có số đo thật.** `src/eval/retrieval_metrics.py` +
   `scripts/eval_retrieval.py` (chạy theo giai đoạn, **cache logit trên đĩa**, lưu sau
   mỗi lô nên đứt giữa chừng không mất công). Báo cáo: `docs/retrieval-eval.md` + `.csv`.
@@ -454,25 +454,32 @@
 
 ## Việc treo ngoài code
 
-- **2 COMMIT CHƯA PUSH** (handoff Session 10 + T4.1). `origin/main` ở `36b5389`.
-- **`KEEP_A`/`KEEP_B` khoá theo id ứng viên → KHÔNG rebuild được từ clone sạch.**
-  `data/processed/*` gitignore và id đổi mỗi lần sinh lại. `testset.jsonl` đã commit nên
-  deliverable an toàn; chỉ đường tái lập hỏng. ~20 phút để chuyển sang khoá theo chỉ mục
-  ViMedAQA như `KEEP_E_IDX` đang làm. Cần trước khi bảo vệ nếu hội đồng hỏi tái lập.
-- **ABSTAIN-do-retrieval vẫn mang theo chunk** (`pipeline.py` truyền `ctx` vào `chunks`
-  ở nhánh cuối `_route`). Nếu UI Tuần 7 hiển thị chúng thì "tôi không đủ căn cứ" lại kèm
-  5 nguồn trông thuyết phục → người dùng hiểu ngược. **Policy-ABSTAIN đã sạch từ T4.1**
-  (`chunks=[]`, DEC-044); còn đúng nhánh retrieval. Cố ý tách khỏi commit T4.1 để diff
-  không lẫn hai chuyện. ⚠️ **2026-09-07: đã THẤY TẬN MẮT trong smoke end-to-end** —
-  ca ngoài miền ra `ABSTAIN` mà vẫn kèm **5 chunk**. Không còn là rủi ro lý thuyết.
+- **CHƯA PUSH — cả Tuần 4 + Tầng 1 đang CHỈ nằm trên ổ cứng này.** `origin/main` còn ở
+  `07421fa`. Đây là việc treo **rủi ro nhất** hiện nay: mất máy = mất cả hai tuần việc.
+- ~~`KEEP_A`/`KEEP_B` khoá theo id ứng viên~~ — **✅ ĐÓNG 2026-09-07 (DEC-050).**
+  Giờ khoá theo `KEEP_A_IDX`/`KEEP_B_IDX` = chỉ mục ViMedAQA, cùng khuôn nhóm E.
+  Kiểm bằng build lại → `testset.jsonl` **byte-identical**.
+- ~~ABSTAIN-do-retrieval vẫn mang theo chunk~~ — **✅ ĐÓNG 2026-09-07 (DEC-049).**
+  `PipelineResult` tách hai trường: `chunks` (UI được hiện, rỗng khi ABSTAIN) và
+  `retrieved` (nguyên văn retriever trả về, giữ cho eval Tuần 6).
+  ⚠️ **Tuần 6 phải đọc `retrieved`, KHÔNG đọc `chunks`** khi chấm retrieval nhóm A/B —
+  đọc nhầm trường thì 30/59 câu ra 0 chunk và bảng vẫn chạy ra số.
+- ~~Thống kê theo khoa chưa có artifact~~ — **✅ ĐÓNG: `docs/corpus-stats.md`**
+  (`python scripts/corpus_stats.py`, đọc corpus local, không cần `HF_TOKEN`).
+  Mọi con số khớp STATUS: 1.410 bài · byline 175 = 12,4% · 727/698 · title-hit 42%/80%.
 - **Phương án B (đo lệch văn phong) đã cân nhắc và HOÃN — DEC-029, đừng nghĩ lại từ đầu.**
   Viết lại 12 câu nhóm E sang giọng bệnh nhân, giữ nguyên nhãn, đo cùng câu ở HAI văn phong.
   **Điều kiện làm:** chỉ khi 50 câu đã đóng (đã đóng) và còn thời gian — và phải xếp TRÊN
   E2 trong thứ tự cắt DEC-015, tức chấp nhận E2 chết trước.
 - ~~Rotate API key Qdrant~~ — **BỎ (DEC-032).** Đừng mở lại. Rủi ro tồn dư + điều kiện
   phải đảo quyết định (trước khi deploy HF Spaces Tuần 7) ghi trong chính DEC-032.
-- **Chưa mở lại Streamlit bằng mắt** sau khi thêm khối `data` vào config (treo từ Session 5).
-- **Thống kê theo khoa chưa có artifact trong repo** (~10 phút → `docs/corpus-stats.md`).
+- **Chưa mở lại Streamlit BẰNG MẮT** (treo từ Session 5). 2026-09-07 đã xác nhận phần
+  máy kiểm được: `python -m streamlit run app/streamlit_app.py` → **trang chính HTTP 200
+  + `/healthz` HTTP 200**. Nhưng Streamlit render phía client nên HTTP 200 **không**
+  chứng minh giao diện hiện đúng — phần còn lại phải mở trình duyệt xem tận mắt.
+  Cần soi: tab 1 hiện chunk + điểm rerank; tab 2 bảng `trace` có bước **POLICY** ở đầu
+  (mới từ T4.1) và câu nhóm D ra ABSTAIN ngay, không kèm nguồn.
+  ⚠️ Lưu ý: `streamlit` không có trong PATH, phải gọi `python -m streamlit`.
 - **Rủi ro tiến độ vẫn là số 1:** năng lực 1/2 nhưng scope giữ nguyên (DEC-015). Thứ tự cắt:
   E2 evidence-highlighting → ablation reranker on/off → ablation chunk 256 vs 512.
   Giữ risk–coverage + Static-vs-Corrective bằng mọi giá.
