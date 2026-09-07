@@ -11,6 +11,7 @@ from __future__ import annotations
 from src.config import AppConfig, load_prompt
 from src.generation.generator import Generator
 from src.pipeline.grader import Grader
+from src.pipeline.policy import Policy, get_policy
 from src.pipeline.rewriter import Rewriter
 from src.retrieval.retriever import Retriever
 from src.schemas import (
@@ -32,12 +33,17 @@ class RAGPipeline:
         generator: Generator,
         grader: Grader,
         rewriter: Rewriter,
+        policy: Policy | None = None,
     ) -> None:
         self._cfg = cfg
         self._retriever = retriever
         self._generator = generator
         self._grader = grader
         self._rewriter = rewriter
+        # Policy gate là thuần logic + 1 file yaml local nên KHÔNG cần Fake
+        # (ràng buộc #2 chỉ cấm chạm model/dataset thật). Để optional vì test
+        # dựng pipeline không cần biết tới nó; truyền vào khi muốn policy riêng.
+        self._policy = policy if policy is not None else get_policy()
 
     # ------------------------------------------------------------------ #
     # API công khai
@@ -51,6 +57,40 @@ class RAGPipeline:
     # ------------------------------------------------------------------ #
     def _route(self, query: str) -> PipelineResult:
         trace: list[TraceStep] = []
+
+        # --- Lớp 1/8 — POLICY GATE, chạy TRƯỚC retrieval (DEC-024) --------- #
+        # Luôn ghi bước POLICY kể cả khi không khớp, để Tuần 6 đếm được "gate
+        # đã chạy" thay vì phải suy ra từ sự vắng mặt của bước này.
+        hit = self._policy.check(query)
+        trace.append(
+            TraceStep(
+                step="POLICY",
+                state=None,
+                score=None,
+                note=hit.rule_id if hit else "",
+            )
+        )
+        if hit:
+            # Hai cơ chế ABSTAIN phải tách được trong trace (corrective-loop.md):
+            #   policy    -> có bước POLICY với note khác rỗng
+            #   retrieval -> bước ABSTAIN mang state INCORRECT
+            trace.append(
+                TraceStep(
+                    step="ABSTAIN",
+                    state=None,
+                    score=None,
+                    note=f"policy:{hit.rule_id}",
+                )
+            )
+            # chunks=[] CÓ CHỦ ĐÍCH: không retrieve thì không có nguồn, và hiện
+            # nguồn ở đây là mời người dùng tự suy ra chính câu vừa bị chặn.
+            return self._result(
+                query,
+                TerminalAction.ABSTAIN,
+                self._policy_abstain_message(hit.rule_id),
+                [],
+                trace,
+            )
 
         ctx = self._retriever.retrieve(query)
         state = self._grade(ctx, trace, note="lần truy hồi đầu", after="RETRIEVE")
@@ -134,8 +174,32 @@ class RAGPipeline:
         )
         return answer
 
+    def _policy_abstain_message(self, rule_id: str) -> str:
+        """Thông điệp từ chối do POLICY — KHÁC HẲN từ chối do retrieval.
+
+        Không được dùng lại ``abstain.txt``: file đó nói "chưa tìm được thông
+        tin trong cơ sở dữ liệu", mà với nhóm D điều đó **sai sự thật** —
+        corpus CÓ bài metformin, hệ thống không trả lời vì không được phép.
+        Dùng chung một câu là mô tả sai chính cơ chế mình vừa xây, và Tuần 6
+        báo cáo theo đó sẽ sai.
+
+        D-3 có file riêng vì bản ``.md`` quy định trả 115 và KHÔNG kèm gì
+        thêm: đây là rule duy nhất mà một câu trả lời *đúng* vẫn có hại, vì
+        mọi nội dung thừa đều kéo dài thời gian tới lúc người dùng gọi cấp cứu.
+        """
+        slug = rule_id.lower().replace("-", "")
+        for name in (f"abstain_policy_{slug}", "abstain_policy"):
+            try:
+                return load_prompt(name).strip()
+            except FileNotFoundError:
+                continue
+        return (
+            "Câu hỏi này cần bác sĩ trực tiếp đánh giá. "
+            "Vui lòng đi khám hoặc hỏi bác sĩ điều trị của bạn."
+        )
+
     def _abstain_message(self) -> str:
-        """Thông điệp từ chối; đọc từ prompt file, fallback nếu thiếu."""
+        """Thông điệp từ chối do RETRIEVAL; đọc từ prompt file, fallback nếu thiếu."""
         try:
             return load_prompt("abstain").strip()
         except FileNotFoundError:
