@@ -160,7 +160,8 @@ def main() -> None:
 
         print(f"=== nhóm {group} · {query}")
         print(f"    kỳ vọng: {expect}")
-        print(f"    -> {r.action.value} · {len(r.chunks)} nguồn")
+        print(f"    -> {r.action.value} · {len(r.chunks)} nguồn hiện ra "
+              f"({len(r.retrieved)} chunk giữ lại cho eval — DEC-049)")
         print(f"    trace  : {[s.step for s in r.trace]}")
         print(f"    trả lời: {r.answer[:160].replace(chr(10), ' ')}…")
         print(f"    thời gian: tổng {total:.1f}s = truy hồi+rerank "

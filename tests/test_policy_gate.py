@@ -210,3 +210,15 @@ def test_two_abstain_mechanisms_are_distinguishable():
         "policy-ABSTAIN không được nói 'không tìm thấy trong CSDL' — "
         "corpus CÓ tài liệu, hệ thống chỉ không được phép trả lời"
     )
+
+
+def test_policy_abstain_keeps_both_chunk_fields_empty():
+    """Policy-ABSTAIN: cả `chunks` lẫn `retrieved` đều rỗng (DEC-049).
+
+    Gate chặn TRƯỚC retrieval nên không có gì để giữ — và chính sự khác biệt
+    này phân biệt hai cơ chế abstain ngay trong kết quả, không cần đọc trace:
+    policy -> retrieved rỗng · retrieval -> retrieved còn nguyên.
+    """
+    pipe, _ = _pipeline(scores=[0.9])
+    r = pipe.answer("Tôi 60kg thì uống metformin bao nhiêu viên một ngày?")
+    assert r.chunks == [] and r.retrieved == []

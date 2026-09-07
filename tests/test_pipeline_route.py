@@ -102,3 +102,26 @@ def test_retriever_receives_rewritten_query():
     )
     pipe.answer("q gốc")
     assert retriever.queries == ["q gốc", "q gốc (viết lại)"]
+
+
+def test_retrieval_abstain_shows_no_sources_but_keeps_them_for_eval():
+    """ABSTAIN-do-retrieval: `chunks` rỗng (UI), `retrieved` còn nguyên (eval).
+
+    Trước DEC-049 nhánh này trả về cả 5 chunk, nên câu "tôi chưa đủ căn cứ" đi
+    kèm 5 nguồn trông thuyết phục — người dùng hiểu ngược. Nhưng xoá hẳn thì
+    Tuần 6 mất dữ liệu chấm retrieval của nhóm A/B, mà nhóm A/B LUÔN đi qua
+    đúng nhánh này. Hai trường, hai mục đích.
+    """
+    result = _pipeline(scores=[0.1, 0.1]).answer("câu hỏi ngoài phạm vi")
+    assert result.action == TerminalAction.ABSTAIN
+    assert result.chunks == []
+    assert len(result.retrieved) > 0
+    assert all(c.score == 0.1 for c in result.retrieved)
+
+
+def test_answer_paths_expose_the_same_chunks_in_both_fields():
+    """Nhánh trả lời: `chunks` và `retrieved` phải trùng nhau."""
+    result = _pipeline(scores=[0.9]).answer("huyết áp cao là gì")
+    assert result.action == TerminalAction.ANSWER
+    assert result.chunks == result.retrieved
+    assert result.chunks

@@ -135,8 +135,12 @@ class RAGPipeline:
         trace.append(
             TraceStep(step="ABSTAIN", state=GraderState.INCORRECT.value, score=None)
         )
+        # chunks=[] nhưng retrieved=ctx (DEC-049): UI không được hiện nguồn cho
+        # một câu từ chối, còn Tuần 6 vẫn phải chấm được retrieval của nhóm A/B
+        # — mà nhóm A/B thì LUÔN đi qua đúng nhánh này.
         return self._result(
-            query, TerminalAction.ABSTAIN, msg, ctx, trace, rewritten
+            query, TerminalAction.ABSTAIN, msg, [], trace, rewritten,
+            retrieved=ctx,
         )
 
     # ------------------------------------------------------------------ #
@@ -216,7 +220,13 @@ class RAGPipeline:
         ctx: list[RetrievedChunk],
         trace: list[TraceStep],
         rewritten: str | None = None,
+        retrieved: list[RetrievedChunk] | None = None,
     ) -> PipelineResult:
+        """Dựng kết quả. ``retrieved`` mặc định = ``ctx`` (nhánh trả lời).
+
+        Chỉ nhánh ABSTAIN-do-retrieval mới truyền hai giá trị khác nhau; xem
+        docstring ``PipelineResult`` để biết vì sao tách (DEC-049).
+        """
         return PipelineResult(
             query=query,
             action=action,
@@ -224,4 +234,5 @@ class RAGPipeline:
             chunks=ctx,
             trace=trace,
             rewritten_query=rewritten,
+            retrieved=ctx if retrieved is None else retrieved,
         )

@@ -102,7 +102,22 @@ class TraceStep:
 
 @dataclass
 class PipelineResult:
-    """Kết quả trả về của ``RAGPipeline.answer``."""
+    """Kết quả trả về của ``RAGPipeline.answer``.
+
+    **HAI trường chunk, hai mục đích khác nhau — đừng dùng lẫn (DEC-049):**
+
+    - ``chunks`` = nguồn mà **câu trả lời dựa vào**, tức thứ UI được phép hiển
+      thị. **Rỗng ở mọi nhánh ABSTAIN**: câu "tôi không đủ căn cứ" mà kèm 5
+      nguồn trông thuyết phục thì người dùng hiểu ngược hẳn thông điệp.
+    - ``retrieved`` = **nguyên văn thứ retriever trả về**, giữ lại kể cả khi từ
+      chối. Tuần 6 cần nó để tính ``NonLLMContextRecall`` /
+      ``IDBasedContextPrecision`` cho nhóm A/B — mà nhóm A/B thì **luôn** phải
+      ABSTAIN. Xoá nó đi là vá lỗi hiển thị bằng cách tạo một lỗ hổng eval.
+
+    Ở nhánh ANSWER hai trường trỏ cùng một danh sách. Ở ABSTAIN-do-policy thì
+    **cả hai đều rỗng** — policy gate chặn trước retrieval nên không có gì để
+    giữ, và đó là dấu hiệu phân biệt hai cơ chế abstain ngay trong kết quả.
+    """
 
     query: str
     action: TerminalAction
@@ -110,3 +125,4 @@ class PipelineResult:
     chunks: list[RetrievedChunk]
     trace: list[TraceStep] = field(default_factory=list)
     rewritten_query: str | None = None
+    retrieved: list[RetrievedChunk] = field(default_factory=list)
