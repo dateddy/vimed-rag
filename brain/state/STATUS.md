@@ -3,10 +3,24 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **TUẦN 4 MỞ. T4.1 policy gate đã nối vào đường thật, 134 test PASS**)
+**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **T4.1 policy gate + T4.2 generation đã chạy thật. 149 test PASS**)
 
 ## Đang làm
 
+- **✅ T4.2 ĐÓNG — `GeminiGenerator` GỌI ĐƯỢC GEMINI THẬT** (DEC-045).
+  SDK **`google-genai` 2.22.0**, KHÔNG phải `google-generativeai` (đóng băng ở 0.8.6).
+  `transport` tiêm được → **149/149 test PASS mà không test nào chạm mạng hay cần key**.
+  Tái lập: `python scripts/smoke_generation.py` (2 lượt API, ngữ cảnh giả, ~5s) ·
+  thêm `--real-retrieval` để đi qua Qdrant + rerank thật (~17s/truy vấn, DEC-042).
+  - Smoke trên API thật **9/9 PASS**: có `[n]`, 0 trích dẫn bịa, byline đã cắt,
+    có câu miễn trừ, bản caution mở đầu đúng "[Lưu ý: độ chắc chắn thấp]".
+  - **`gen.last_invalid_citations`** = các `[n]` bịa đã bị xoá → **chỉ báo
+    hallucination rẻ, không cần LLM judge**. Tuần 6 dùng được ngay, đừng bỏ quên.
+  - Byline giờ cắt bằng `src/data/cleaner.strip_byline` (dùng chung với
+    `build_testset.py`). ⚠️ **Corpus đang index VẪN còn byline** — DEC-020 không
+    chạy lại ingestion; đây là phép cắt ở tầng đọc ra, đừng tưởng data đã sạch.
+  - ⚠️ **CHƯA XONG TUẦN 4:** `LLMRewriter` vẫn GATED → vòng corrective chạy thật
+    vẫn viết lại bằng hậu tố giả `"(viết lại)"`. Và grader vẫn **KHÔNG** được nối.
 - **✅ T4.1 ĐÓNG — POLICY GATE ĐÃ NẰM TRONG `_route()`** (DEC-044, implement DEC-024).
   `src/pipeline/policy.py` (`Policy`/`PolicyHit`/`load_policy`/`get_policy`) là bản
   **có thẩm quyền**; `scripts/check_policy_coverage.py` xoá bản regex riêng và import
@@ -107,16 +121,18 @@
 
 1. **`git push origin main`** — `origin/main` ở `36b5389`, treo **2 commit** (handoff
    Session 10 + T4.1). Con số "21 commit" ở bản trước đã lỗi thời, phần lớn đã push.
-2. **T4.2 — `GeminiGenerator` thật.** [generator.py](src/generation/generator.py) còn là
-   scaffold GATED. Nạp prompt từ `config/prompts/generation.txt` +
-   `generation_caution.txt`, ép bám context + citation `[1][2]` + disclaimer.
+2. **T4.3 — `LLMRewriter` thật.** [rewriter.py](src/pipeline/rewriter.py) còn GATED,
+   prompt `config/prompts/query_rewrite.txt` đã sẵn. Đi lại đúng khuôn `transport`
+   tiêm được của `GeminiGenerator` (DEC-045) để test không chạm mạng. Nhớ: rewrite
+   tính là **+1 LLM call** mỗi truy vấn INCORRECT — vào bảng chi phí Tuần 7.
    Sau đó **T4.4 baseline LLM-only** (không retrieval) cho bảng so sánh Tuần 6.
-3. **Cạm bẫy khi làm tiếp Tuần 4.** Đường găng kỹ thuật của Tuần 3 đã thông: truy hồi + rerank chạy thật, chi phí đã chốt, UI đã hiện được chunk.
-   `RetrievedChunk` đã mang sẵn `title`/`source` cho citation `[1][2]` (DEC-035).
-   ⚠️ Nhớ cắt **byline** trước khi đưa vào prompt — 12,4% bài mở đầu bằng "Bài viết
-   được tư vấn chuyên môn bởi BS…", để nguyên là hệ thống trích dẫn thành "BS X khẳng
-   định…". Regex chuẩn đã có trong `scripts/build_testset.py`.
+3. **Cạm bẫy còn lại của Tuần 4.**
    ⚠️ Vẫn **KHÔNG** nối grader vào đường thật cho tới khi có ngưỡng hiệu chỉnh.
+   ⚠️ ~~Nhớ cắt byline~~ — **đã xong ở T4.2**, dùng `src/data/cleaner.strip_byline`.
+   Nhưng corpus trong Qdrant vẫn còn byline: mọi đường mới đọc chunk ra đều phải
+   tự cắt, không có tầng nào cắt hộ.
+   ⚠️ Chưa đo **chi phí + độ trễ Gemini** trên 59 câu test set — Tuần 7 cần con số
+   này cạnh 17,2s rerank, hiện mới chỉ có 2 lượt gọi smoke.
 
 ## Đã biết về test set — đừng dựng lại
 
