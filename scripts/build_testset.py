@@ -1,10 +1,11 @@
 """
-Dựng `data/testset.jsonl` — safety subset A/B/D/E (DEC-014: A18 / B12 / D8 / E12).
-=================================================================================
+Dựng `data/testset.jsonl` — safety subset A/B/D/E (A18 / B12 / D8 / E21).
+=========================================================================
 Script TÁI LẬP ĐƯỢC: danh sách câu giữ lại nằm ngay trong file này, không nằm
 trong đầu ai cả. Chạy lại cho ra đúng file cũ.
 
-Đủ cả 4 nhóm A/B/D/E = 50 câu.
+Đủ cả 4 nhóm A/B/D/E = 59 câu. Nhóm E mở từ 12 -> 21 ở đợt soi 2026-09-07
+(DEC-041); ba nhóm còn lại giữ nguyên theo DEC-014.
 
 NGUỒN NHÃN (DEC-014 — mọi nhãn phải truy được về nguồn kiểm chứng):
   A -> grep corpus (script)          | B -> metadata specialty
@@ -50,9 +51,31 @@ OUT = ROOT / "data" / "testset.jsonl"
 # Số thứ tự ứng viên ĐỔI mỗi lần sinh lại (đã đổi 2 lần: khi thêm ràng buộc
 # ≤2 câu/bài, và khi thêm bộ lọc thực thể của DEC-027). Khoá theo số thứ tự thì
 # chạy lại script sẽ lặng lẽ lấy nhầm câu. Chỉ mục ViMedAQA thì bất biến.
-KEEP_E_IDX = [37429, 37851, 27829, 36709, 39871, 23610,
-              28187, 22024, 31625, 28332, 33233,
-              26171]  # 26171 = "Hở van tim", thay cho Aspirin STELLA (DEC-027)
+KEEP_E_R1 = [37429, 37851, 27829, 36709, 39871, 23610,
+             28187, 22024, 31625, 28332, 33233,
+             26171]  # 26171 = "Hở van tim", thay cho Aspirin STELLA (DEC-027)
+
+# Đợt 2 — soi 2026-09-07 trên pool 106 ứng viên (DEC-041). Nhóm E: 12 -> 21 câu.
+# Bước nhảy recall@k giảm từ 8,3 xuống 4,8 điểm mỗi câu.
+KEEP_E_R2 = [29037, 30483, 3012, 25464, 37176, 36964, 31732, 39454, 34989]
+
+# 6 câu đã CHỌN RỒI BỎ ở đợt 2 — ghi lại để phiên sau đừng "phát hiện" lại:
+#   33711 · 27889 · 30551  "tăng huyết áp thai kỳ / tiền sản giật" -> SẢN KHOA,
+#       gán tim_mach chỉ vì chữ "huyết áp". Cùng lý do DEC-025 đã loại E-cand-03
+#       vòng trước và DEC-011 đã loại đột quỵ. Đây là vật liệu nhóm B, không phải E.
+#   28610 · 33569  "đái tháo nhạt vs đái tháo đường" -> đái tháo nhạt là bệnh
+#       TUYẾN YÊN, chính là ca DEC-010 đã bỏ keyword `đái tháo` để tránh.
+#   4827  trùng nội dung với 3012 (cùng hỏi atorvastatin chỉ định bệnh gì); giữ
+#       3012 vì sim cao hơn và có tên biệt dược. Hai câu gần trùng trong test set
+#       21 câu sẽ thổi phồng bất cứ chỉ số nào chúng chạm tới.
+
+KEEP_E_IDX = KEEP_E_R1 + KEEP_E_R2
+
+# Ngày soi tay từng câu — nhãn phải tự mang bằng chứng nguồn (DEC-014).
+_EYEBALLED_ON = {
+    **{i: "2026-08-19" for i in KEEP_E_R1},
+    **{i: "2026-09-07" for i in KEEP_E_R2},
+}
 
 # Aspirin STELLA (idx 21) ĐÃ RỜI nhóm E sang nhóm A: thực thể 0 hit trong corpus
 # nên nó là vật liệu ABSTAIN, không phải ANSWER. Xem DEC-027.
@@ -123,7 +146,7 @@ def build_e(fp: dict) -> list[dict]:
             "specialty": c["specialty"],
             "label_source": c["label_source"],
             "label_evidence": {**c["label_evidence"], "eyeballed": True,
-                               "eyeballed_on": "2026-08-19",
+                               "eyeballed_on": _EYEBALLED_ON[k],
                                "specialty_verified": True, **fp},
             "reference": c["reference"],
             "reference_contexts": ctxs,
@@ -233,9 +256,12 @@ def check(rows: list[dict]) -> bool:
     ab = a + b
 
     print("  -- nhóm E --")
-    say("đủ 12 câu", len(e) == 12, f"({len(e)})")
+    say(f"đủ {len(KEEP_E_IDX)} câu", len(e) == len(KEEP_E_IDX), f"({len(e)})")
     spec = collections.Counter(r["specialty"] for r in e)
-    say("cân 2 khoa 6/6", set(spec.values()) == {6}, dict(spec))
+    # Không còn ép 6/6: đợt 2 chọn theo chất lượng nhãn, không theo hạn ngạch khoa.
+    # Chỉ đòi không khoa nào bị bỏ rơi và không khoa nào chiếm quá 2/3.
+    say("không khoa nào chiếm > 2/3", len(spec) == 2 and max(spec.values()) <= 2 * len(e) // 3,
+        dict(spec))
     docs = {d for r in e for d in r["reference_context_ids"]}
     say("≥10 bài phân biệt", len(docs) >= 10, f"({len(docs)})")
     say("đủ reference/contexts/ids",
@@ -296,7 +322,9 @@ def check(rows: list[dict]) -> bool:
     ent_ab = {r["label_evidence"].get("entity") for r in ab}
     clash = [r["id"] for r in e if r["label_evidence"].get("entity") in ent_ab]
     say("không thực thể nhóm E nào trùng nhóm A/B", not clash, clash)
-    say("TỔNG 50 câu = A18/B12/D8/E12 (DEC-014)", len(rows) == 50, f"({len(rows)})")
+    n_e = len(KEEP_E_IDX)
+    say(f"TỔNG {38 + n_e} câu = A18/B12/D8/E{n_e} (DEC-014 + DEC-041)",
+        len(rows) == 38 + n_e, f"({len(rows)})")
     return ok
 
 
@@ -315,7 +343,7 @@ def main() -> None:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     print(f"\n[out] {OUT.relative_to(ROOT)} — {len(rows)} dòng"
-          f"  (mục tiêu cuối: 50 = A18/B12/D8/E12)")
+          f"  (A18/B12/D8/E{len(KEEP_E_IDX)})")
     if not ok:
         sys.exit("!! Có mục FAIL — sửa trước khi commit.")
 
