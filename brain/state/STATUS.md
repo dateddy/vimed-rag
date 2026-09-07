@@ -3,10 +3,42 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **T4.1+T4.2+T4.3 chạy thật. Vòng corrective hết Fake. 165 test PASS**)
+**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **TUẦN 4 ĐÓNG. Cả đường ống chạy thật end-to-end. 174 test PASS. Một lỗi rewriter đã bắt và vá — xem ⛔**)
 
 ## Đang làm
 
+- **⛔ LỖI ĐÃ BẮT VÀ VÁ — vòng corrective từng CHẾ RA sự liên quan** (DEC-048).
+  *"Cách trồng lúa nước ở đồng bằng sông Cửu Long?"* bị rewriter biến thành câu
+  hỏi về *"tiêu thụ gạo trắng và nguy cơ đái tháo đường"*, rồi hệ thống
+  `ANSWER_WITH_CAUTION` cho câu **người dùng không hề hỏi** — đi thẳng ngược claim
+  của đề tài. Nguyên nhân: prompt viết lại **giả định truy vấn đã là câu hỏi y tế**.
+  Vá bằng 1 dòng cấm trong `query_rewrite.txt`, khoá bằng test. Sau vá: ngoài miền
+  → trả nguyên văn → `last_fallback=True` → **ABSTAIN**. Ca dùng chính không hỏng.
+  ⚠️ Đây là **bịt một lỗ đã thấy**, KHÔNG phải tầng lọc phạm vi. Câu ngoài miền nào
+  tình cờ khớp từ vựng corpus vẫn lọt. Tầng lọc phạm vi là quyết định riêng.
+- **✅ SMOKE END-TO-END ĐÓNG — cả 4 thành phần thật chạy cùng nhau** (DEC-048).
+  Tái lập: `python scripts/smoke_pipeline.py` (~3 phút, ~4 lượt API).
+  ⚠️ **TRÌNH DIỄN, KHÔNG PHẢI PHÉP ĐO** — ngưỡng vẫn 0.6, đừng lấy `action` vào
+  báo cáo. Số **thời gian** và **token** thì dùng được.
+
+  | ca | action | tổng | truy hồi | LLM | lượt gọi |
+  |---|---|---|---|---|---|
+  | D (policy) | ABSTAIN | **0,0s** | 0 | 0 | **0** |
+  | E | ANSWER | 37–39s | 27s | 10–12s | 1 |
+  | ngoài miền | ABSTAIN | 57s | 53s (2 lượt) | 3,6s | 1 |
+  | (trước vá) sau rewrite | ANSWER | 73,6s | — | 29s | **2** |
+
+  Nạp model + nối Qdrant **~54s một lần**. Mỗi lượt gọi Gemini **~9–14s**,
+  ~2.600 token vào cho câu có ngữ cảnh.
+  ⚠️ **Truy hồi đo được 27s, KHÔNG phải 17,2s như DEC-042 dự tính.** Nằm trong dải
+  biến thiên theo tải máy đã cảnh báo, nhưng **Tuần 7 phải dùng số đo, không dùng
+  số dự tính**: HF Spaces CPU free là **37–74s/câu**, xấu hơn ước lượng đáng kể.
+- **✅ T4.4 ĐÓNG — baseline LLM-only** (DEC-047). `BaselineGenerator` +
+  `config/prompts/baseline_llm_only.txt`. **CỐ Ý không hợp `Generator` Protocol**
+  để không cắm nhầm vào `RAGPipeline` (sẽ ra hệ thống trông như RAG trong `trace`
+  mà generator vứt hết ngữ cảnh). Prompt giữ **đối thủ công bằng** — vẫn được nói
+  "không chắc chắn"; làm baseline yếu đi là tự thổi phồng "% giảm hallucination".
+  Cả hai ràng buộc **khoá bằng test**. Chưa chạy trên 59 câu (việc Tuần 6).
 - **✅ T4.3 ĐÓNG — `LLMRewriter` CHẠY THẬT. Vòng corrective không còn mắt Fake nào**
   (DEC-046). Gọi Gemini qua `src/llm.py` — **một chỗ duy nhất** cho cả 2 lượt gọi
   LLM (generation + rewrite); tách bản riêng là mở đường cho hai lượt trong CÙNG
@@ -138,22 +170,17 @@
 
 1. **`git push origin main`** — `origin/main` ở `36b5389`, treo **2 commit** (handoff
    Session 10 + T4.1). Con số "21 commit" ở bản trước đã lỗi thời, phần lớn đã push.
-2. **T4.4 — baseline LLM-only** (Gemini trả lời KHÔNG có retrieval). Đây là cột so
-   sánh của bảng "% giảm hallucination" ở Tuần 6; thiếu nó thì claim không có mốc.
-   Rẻ: dùng lại `src/llm.py`, chỉ cần 1 prompt mới không có `{context}`.
-3. **Chưa có smoke END-TO-END.** Ba tầng T4.1/T4.2/T4.3 đều đã chạy thật **riêng
-   lẻ**; chưa lần nào chạy `RAGPipeline` với đủ 4 thành phần thật (policy →
-   retriever+rerank → grader → generator/rewriter). Cạm bẫy: ở
-   `correct_threshold=0.6` gần như mọi câu ra CORRECT (DEC-039), nên bản chạy đó là
-   **trình diễn, không phải phép đo** — đừng lấy số từ nó.
-4. **Cạm bẫy còn lại của Tuần 4.**
-   ⚠️ Vẫn **KHÔNG** nối grader vào đường thật cho tới khi có ngưỡng hiệu chỉnh.
-   ⚠️ ~~Nhớ cắt byline~~ — **đã xong ở T4.2**, dùng `src/data/cleaner.strip_byline`.
-   Nhưng corpus trong Qdrant vẫn còn byline: mọi đường mới đọc chunk ra đều phải
-   tự cắt, không có tầng nào cắt hộ.
-   ⚠️ Chưa đo **chi phí + độ trễ Gemini** trên 59 câu test set — Tuần 7 cần con số
-   này cạnh 17,2s rerank, hiện mới có 7 lượt gọi smoke rời rạc. Nhớ tính **2 lượt
-   gọi** cho câu INCORRECT (rewrite + generate), không phải 1.
+2. **TUẦN 5 — hoàn thiện abstention + `trace` cho eval.** Tuần 4 đã đóng toàn bộ
+   (T4.1…T4.4 + smoke end-to-end). Việc còn thiếu để Tuần 6 chạy được: xuất
+   `trace` ra dạng máy đọc được (JSONL) cho 59 câu, và **tách tập giữ lại** —
+   điều kiện bắt buộc của DEC-039 trước khi chốt ngưỡng.
+3. **Cạm bẫy còn lại.**
+   ⚠️ Vẫn **KHÔNG** chốt ngưỡng grader cho tới khi có tập giữ lại (DEC-039).
+   ⚠️ Corpus trong Qdrant **vẫn còn byline**: mọi đường mới đọc chunk ra đều phải
+   tự gọi `strip_byline`, không có tầng nào cắt hộ.
+   ⚠️ **Chi phí Tuần 7 phải dùng số ĐO (27s truy hồi), không dùng 17,2s dự tính**
+   của DEC-042. Và nhớ câu ANSWER-sau-rewrite tốn **2 lượt gọi LLM**, không phải 1.
+   ⚠️ Baseline LLM-only chưa chạy trên 59 câu — 59 lượt API, việc của Tuần 6.
 
 ## Đã biết về test set — đừng dựng lại
 
@@ -436,7 +463,8 @@
   ở nhánh cuối `_route`). Nếu UI Tuần 7 hiển thị chúng thì "tôi không đủ căn cứ" lại kèm
   5 nguồn trông thuyết phục → người dùng hiểu ngược. **Policy-ABSTAIN đã sạch từ T4.1**
   (`chunks=[]`, DEC-044); còn đúng nhánh retrieval. Cố ý tách khỏi commit T4.1 để diff
-  không lẫn hai chuyện.
+  không lẫn hai chuyện. ⚠️ **2026-09-07: đã THẤY TẬN MẮT trong smoke end-to-end** —
+  ca ngoài miền ra `ABSTAIN` mà vẫn kèm **5 chunk**. Không còn là rủi ro lý thuyết.
 - **Phương án B (đo lệch văn phong) đã cân nhắc và HOÃN — DEC-029, đừng nghĩ lại từ đầu.**
   Viết lại 12 câu nhóm E sang giọng bệnh nhân, giữ nguyên nhãn, đo cùng câu ở HAI văn phong.
   **Điều kiện làm:** chỉ khi 50 câu đã đóng (đã đóng) và còn thời gian — và phải xếp TRÊN
