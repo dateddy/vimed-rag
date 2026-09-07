@@ -3,10 +3,27 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **T4.1 policy gate + T4.2 generation đã chạy thật. 149 test PASS**)
+**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **T4.1+T4.2+T4.3 chạy thật. Vòng corrective hết Fake. 165 test PASS**)
 
 ## Đang làm
 
+- **✅ T4.3 ĐÓNG — `LLMRewriter` CHẠY THẬT. Vòng corrective không còn mắt Fake nào**
+  (DEC-046). Gọi Gemini qua `src/llm.py` — **một chỗ duy nhất** cho cả 2 lượt gọi
+  LLM (generation + rewrite); tách bản riêng là mở đường cho hai lượt trong CÙNG
+  một câu trả lời chạy lệch cấu hình. Đây là **lần thứ 3** cùng nước cờ chống trôi
+  (DEC-044 regex policy · DEC-045 regex byline · DEC-046 client LLM).
+  Tái lập: `python scripts/smoke_rewrite.py` (3 lượt API, ~5s).
+  - Smoke thật **9/9 PASS**, và **0/3 lượt cần gạn hậu xử lý** —
+    `gemini-2.5-flash` ở `temperature=0.2` tuân prompt sạch, không thêm nhãn hay
+    giải thích. **Vẫn giữ `clean_rewritten`**: `max_iter=1` nên MỘT lần hỏng là
+    không cứu được, bảo hiểm rẻ cho sự kiện hiếm-nhưng-không-hồi-phục là đáng.
+  - Viết lại đúng chỗ đau của DEC-029: *"tiểu đường ăn gì"* → *"Thực phẩm nên ăn
+    và kiêng cho người **đái tháo đường**"*. Nó lấp khoảng trống từ vựng đời
+    thường ↔ corpus — nhưng **chưa đo** được điều đó cải thiện recall bao nhiêu.
+  - ⚠️ **`chunks` CỐ Ý không vào prompt viết lại** (có test khoá). Đưa ngữ cảnh vừa
+    truy hồi hỏng vào là mời model viết lại theo từ vựng của bài KHÔNG liên quan.
+  - **CHI PHÍ: +1 LLM call mỗi truy vấn INCORRECT.** Bảng Tuần 7 tính riêng.
+    `last_fallback` cho biết rewrite có thực sự ra câu dùng được không.
 - **✅ T4.2 ĐÓNG — `GeminiGenerator` GỌI ĐƯỢC GEMINI THẬT** (DEC-045).
   SDK **`google-genai` 2.22.0**, KHÔNG phải `google-generativeai` (đóng băng ở 0.8.6).
   `transport` tiêm được → **149/149 test PASS mà không test nào chạm mạng hay cần key**.
@@ -121,18 +138,22 @@
 
 1. **`git push origin main`** — `origin/main` ở `36b5389`, treo **2 commit** (handoff
    Session 10 + T4.1). Con số "21 commit" ở bản trước đã lỗi thời, phần lớn đã push.
-2. **T4.3 — `LLMRewriter` thật.** [rewriter.py](src/pipeline/rewriter.py) còn GATED,
-   prompt `config/prompts/query_rewrite.txt` đã sẵn. Đi lại đúng khuôn `transport`
-   tiêm được của `GeminiGenerator` (DEC-045) để test không chạm mạng. Nhớ: rewrite
-   tính là **+1 LLM call** mỗi truy vấn INCORRECT — vào bảng chi phí Tuần 7.
-   Sau đó **T4.4 baseline LLM-only** (không retrieval) cho bảng so sánh Tuần 6.
-3. **Cạm bẫy còn lại của Tuần 4.**
+2. **T4.4 — baseline LLM-only** (Gemini trả lời KHÔNG có retrieval). Đây là cột so
+   sánh của bảng "% giảm hallucination" ở Tuần 6; thiếu nó thì claim không có mốc.
+   Rẻ: dùng lại `src/llm.py`, chỉ cần 1 prompt mới không có `{context}`.
+3. **Chưa có smoke END-TO-END.** Ba tầng T4.1/T4.2/T4.3 đều đã chạy thật **riêng
+   lẻ**; chưa lần nào chạy `RAGPipeline` với đủ 4 thành phần thật (policy →
+   retriever+rerank → grader → generator/rewriter). Cạm bẫy: ở
+   `correct_threshold=0.6` gần như mọi câu ra CORRECT (DEC-039), nên bản chạy đó là
+   **trình diễn, không phải phép đo** — đừng lấy số từ nó.
+4. **Cạm bẫy còn lại của Tuần 4.**
    ⚠️ Vẫn **KHÔNG** nối grader vào đường thật cho tới khi có ngưỡng hiệu chỉnh.
    ⚠️ ~~Nhớ cắt byline~~ — **đã xong ở T4.2**, dùng `src/data/cleaner.strip_byline`.
    Nhưng corpus trong Qdrant vẫn còn byline: mọi đường mới đọc chunk ra đều phải
    tự cắt, không có tầng nào cắt hộ.
    ⚠️ Chưa đo **chi phí + độ trễ Gemini** trên 59 câu test set — Tuần 7 cần con số
-   này cạnh 17,2s rerank, hiện mới chỉ có 2 lượt gọi smoke.
+   này cạnh 17,2s rerank, hiện mới có 7 lượt gọi smoke rời rạc. Nhớ tính **2 lượt
+   gọi** cho câu INCORRECT (rewrite + generate), không phải 1.
 
 ## Đã biết về test set — đừng dựng lại
 
