@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.config import GenerationConfig
+from src.config import GenerationConfig, load_prompt
 from src.pipeline.rewriter import (
     MAX_REWRITE_CHARS,
     FakeRewriter,
@@ -137,6 +137,20 @@ def test_no_network_without_transport():
     assert rw._transport is None
     with pytest.raises(RuntimeError, match="GEMINI_API_KEY"):
         rw._default_transport("prompt", 0.2)
+
+
+def test_prompt_guards_against_medicalising_offtopic_queries():
+    """Prompt PHẢI cấm diễn giải truy vấn ngoài miền sang chủ đề y tế.
+
+    Quan sát thật (smoke_pipeline, 2026-09-07): "Cách trồng lúa nước ở đồng
+    bằng sông Cửu Long?" bị viết lại thành câu hỏi về "tiêu thụ gạo trắng và
+    nguy cơ đái tháo đường", rồi hệ thống ANSWER_WITH_CAUTION cho câu người
+    dùng KHÔNG hỏi. Vòng corrective khi đó **chế ra sự liên quan** thay vì từ
+    chối — đi thẳng ngược claim của đề tài. Bỏ dòng cấm này là mở lại lỗ đó.
+    """
+    tpl = load_prompt("query_rewrite")
+    assert "KHÔNG phải câu hỏi y tế" in tpl
+    assert "NGUYÊN VĂN" in tpl
 
 
 def test_rewriter_protocol_still_satisfied():

@@ -2,6 +2,7 @@ Truy vấn gốc dưới đây truy hồi được ngữ cảnh KHÔNG liên qua
 
 Yêu cầu:
 - Giữ đúng ý định y tế ban đầu.
+- Nếu truy vấn gốc KHÔNG phải câu hỏi y tế, hãy trả lại NGUYÊN VĂN truy vấn gốc. TUYỆT ĐỐI không diễn giải nó sang một chủ đề y tế.
 - Bổ sung thuật ngữ y khoa/đồng nghĩa tiếng Việt liên quan (VD: "đái tháo đường" cho "tiểu đường").
 - Làm rõ, cụ thể hơn; KHÔNG thêm thông tin bịa đặt.
 - CHỈ trả về truy vấn đã viết lại, không giải thích.
