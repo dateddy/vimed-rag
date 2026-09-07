@@ -3,10 +3,28 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-07 (Session 10 — **TUẦN 3 ĐÓNG. Nhóm E 12→21, test set 59 câu. Hai claim bị dữ liệu bác bỏ, xem ⛔**)
+**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **TUẦN 4 MỞ. T4.1 policy gate đã nối vào đường thật, 134 test PASS**)
 
 ## Đang làm
 
+- **✅ T4.1 ĐÓNG — POLICY GATE ĐÃ NẰM TRONG `_route()`** (DEC-044, implement DEC-024).
+  `src/pipeline/policy.py` (`Policy`/`PolicyHit`/`load_policy`/`get_policy`) là bản
+  **có thẩm quyền**; `scripts/check_policy_coverage.py` xoá bản regex riêng và import
+  lại từ `src` → 4 mục PASS của script giờ là bằng chứng cho **đường chạy thật**.
+  **134/134 test PASS** (123 cũ + 11 mới), script PASS **8/8 nhóm D**, 0 tràn E/A/B.
+  Tái lập: `python -m pytest -q` · `python scripts/check_policy_coverage.py`.
+  - **QUY TẮC TÁCH HAI CƠ CHẾ ABSTAIN — Tuần 6 đọc đúng dòng này:**
+    policy-ABSTAIN ⇔ trace có bước `POLICY` với `note` **khác rỗng** (= `rule_id`);
+    retrieval-ABSTAIN ⇔ bước `ABSTAIN` mang `state="INCORRECT"`.
+    Bước `POLICY` được ghi **kể cả khi không khớp** (note rỗng) — đếm được "gate đã
+    chạy" thay vì phải suy ra từ sự vắng mặt của bước.
+  - 3 file prompt tách theo cơ chế: `abstain.txt` (retrieval) · `abstain_policy.txt`
+    (D-1/D-2/D-4) · `abstain_policy_d3.txt` (cấp cứu, 1 câu, gọi 115).
+    ⚠️ **Đừng gộp lại**: `abstain.txt` nói "chưa tìm được trong cơ sở dữ liệu" — với
+    nhóm D đó là **nói dối**, corpus CÓ bài metformin. Backlog "3 biến thể abstain"
+    của Tuần 4 coi như xong luôn ở đây.
+  - policy-ABSTAIN trả `chunks=[]`. Nhánh **retrieval**-ABSTAIN vẫn mang chunk —
+    cố ý chưa đụng, xem "Việc treo ngoài code".
 - **✅ T3.4 ĐÓNG — có số đo thật.** `src/eval/retrieval_metrics.py` +
   `scripts/eval_retrieval.py` (chạy theo giai đoạn, **cache logit trên đĩa**, lưu sau
   mỗi lô nên đứt giữa chừng không mất công). Báo cáo: `docs/retrieval-eval.md` + `.csv`.
@@ -87,10 +105,13 @@
 
 ## 3 việc kế tiếp
 
-1. **`git push origin main`** — `origin/main` còn ở `57c2caa`, đang treo rất nhiều commit.
-2. **TUẦN 4 — Generation (Gemini + citation).** Tuần 3 đã đóng; đây là việc chính
-   tiếp theo. Xem mục 3 bên dưới để biết cạm bẫy.
-3. **Cạm bẫy khi làm Tuần 4.** Đường găng kỹ thuật của Tuần 3 đã thông: truy hồi + rerank chạy thật, chi phí đã chốt, UI đã hiện được chunk.
+1. **`git push origin main`** — `origin/main` ở `36b5389`, treo **2 commit** (handoff
+   Session 10 + T4.1). Con số "21 commit" ở bản trước đã lỗi thời, phần lớn đã push.
+2. **T4.2 — `GeminiGenerator` thật.** [generator.py](src/generation/generator.py) còn là
+   scaffold GATED. Nạp prompt từ `config/prompts/generation.txt` +
+   `generation_caution.txt`, ép bám context + citation `[1][2]` + disclaimer.
+   Sau đó **T4.4 baseline LLM-only** (không retrieval) cho bảng so sánh Tuần 6.
+3. **Cạm bẫy khi làm tiếp Tuần 4.** Đường găng kỹ thuật của Tuần 3 đã thông: truy hồi + rerank chạy thật, chi phí đã chốt, UI đã hiện được chunk.
    `RetrievedChunk` đã mang sẵn `title`/`source` cho citation `[1][2]` (DEC-035).
    ⚠️ Nhớ cắt **byline** trước khi đưa vào prompt — 12,4% bài mở đầu bằng "Bài viết
    được tư vấn chuyên môn bởi BS…", để nguyên là hệ thống trích dẫn thành "BS X khẳng
@@ -116,6 +137,14 @@
   thống trả lời. Chưa cân thì **36/36 ứng viên đều là `drug`** — chỉ đo đầu dễ của phổ.
 - **Viết câu nhóm D có HAI bờ vực.** Quá gần policy = tautology; quá xa = gate không bắt
   nổi (D-03 lọt lưới ở lần chạy đầu). Chỉ mechanize mới đo được cả hai phía.
+- **Pattern `xin_phep` chỉ cho 15 KÝ TỰ giữa `có nên` và `không`** (đo khi làm T4.1,
+  DEC-044). Nên *"em có nên **giảm liều thuốc huyết áp cho bố** không"* **KHÔNG** khớp
+  D-4 — chỉ hụt vài ký tự. Muốn siết D-4 thì nới `.{0,15}` là chỗ sửa, nhưng nới xong
+  **phải chạy lại `check_policy_coverage.py`**: mục [4] `khong_trigger` có sẵn 8 ca sát
+  ranh giới chờ bắt lỗi rule quá rộng.
+- **Trong 8 câu nhóm D KHÔNG câu nào khớp đồng thời D-3 với rule khác**, nên ưu tiên
+  tuyệt đối của D-3 **không kiểm được bằng dữ liệu thật** — `test_policy_gate.py` phải
+  dùng câu mồi tổng hợp, đã khoá bằng assert `all_rules == ("D-3","D-4")`.
 - **⚠️ NHÓM E HIỆN TẠI THIÊN VỀ CÂU DỄ — đo được** (DEC-041b). Cả **12/12** câu nằm ở
   **nửa TRÊN** phân bố `max_sim` của pool ứng viên (min 0,650 · trung vị 0,684, so với
   trung vị pool 0,627). Vì đáp án chồng lấn từ vựng gần như nguyên văn với corpus, chỉ
@@ -351,7 +380,8 @@
 - **Test set v1 mở rộng** — nhóm E (12 câu, có `reference_context_ids`) đã dùng được ngay
   cho Tuần 3. Mở rộng lên ~35–40 câu khi cần độ phân giải cao hơn.
 - **Generation Tuần 4**: Gemini Flash, prompt bám context + citation [1][2] + disclaimer,
-  baseline LLM-only. **Thêm:** implement `check_policy()` + 3 biến thể `abstain.txt`.
+  baseline LLM-only. ~~implement `check_policy()` + 3 biến thể `abstain.txt`~~ —
+  **✅ XONG ở T4.1 (DEC-044).**
 - **Eval Tuần 6**: RAGAS 4 metric, abstention P/R **theo nhóm A/B/D/E** (không theo khoa),
   % giảm hallucination. Judge Faithfulness = OpenAI frontier, `temperature=0` (DEC-023);
   3/4 metric còn lại chạy **không cần LLM** nhờ `reference_contexts` (DEC-022).
@@ -360,15 +390,16 @@
 
 ## Việc treo ngoài code
 
-- **7 COMMIT CHƯA PUSH** + toàn bộ T3.1 (`retriever.py`, `schemas.py`, `requirements.txt`,
-  `tests/test_retriever.py`, `scripts/smoke_retrieval.py`, DEC-033…036) **chưa commit**.
+- **2 COMMIT CHƯA PUSH** (handoff Session 10 + T4.1). `origin/main` ở `36b5389`.
 - **`KEEP_A`/`KEEP_B` khoá theo id ứng viên → KHÔNG rebuild được từ clone sạch.**
   `data/processed/*` gitignore và id đổi mỗi lần sinh lại. `testset.jsonl` đã commit nên
   deliverable an toàn; chỉ đường tái lập hỏng. ~20 phút để chuyển sang khoá theo chỉ mục
   ViMedAQA như `KEEP_E_IDX` đang làm. Cần trước khi bảo vệ nếu hội đồng hỏi tái lập.
-- **ABSTAIN-do-retrieval vẫn mang theo chunk** (`pipeline.py:99` truyền `ctx` vào `chunks`).
-  Nếu UI Tuần 7 hiển thị chúng thì "tôi không đủ căn cứ" lại kèm 5 nguồn trông thuyết phục
-  → người dùng hiểu ngược. Policy-ABSTAIN không dính (chunks rỗng).
+- **ABSTAIN-do-retrieval vẫn mang theo chunk** (`pipeline.py` truyền `ctx` vào `chunks`
+  ở nhánh cuối `_route`). Nếu UI Tuần 7 hiển thị chúng thì "tôi không đủ căn cứ" lại kèm
+  5 nguồn trông thuyết phục → người dùng hiểu ngược. **Policy-ABSTAIN đã sạch từ T4.1**
+  (`chunks=[]`, DEC-044); còn đúng nhánh retrieval. Cố ý tách khỏi commit T4.1 để diff
+  không lẫn hai chuyện.
 - **Phương án B (đo lệch văn phong) đã cân nhắc và HOÃN — DEC-029, đừng nghĩ lại từ đầu.**
   Viết lại 12 câu nhóm E sang giọng bệnh nhân, giữ nguyên nhãn, đo cùng câu ở HAI văn phong.
   **Điều kiện làm:** chỉ khi 50 câu đã đóng (đã đóng) và còn thời gian — và phải xếp TRÊN
