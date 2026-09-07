@@ -38,6 +38,10 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.data.cleaner import BYLINE, strip_byline  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS = ROOT / "data" / "processed" / "corpus.jsonl"
 E_CAND = ROOT / "data" / "processed" / "testset_e_candidates.jsonl"
@@ -98,17 +102,9 @@ KEEP_B = [1, 2, 3, 4, 6, 7, 8, 10, 12, 13, 15, 18]
 # Phân bố chốt: disease 7 · drug 6 · medicine 3 · body-part 2 = 18.
 # Trần 1/3 chỉ áp cho `drug` (DEC-030), không áp cho `disease`.
 
-# Byline "Bài viết được tư vấn chuyên môn bởi ... Vinmec <Nơi>" — 12,4% bài
-# (175/1410, đo 2026-08-19). Phải cắt khỏi `reference_contexts` vì nó mang TÊN
-# BÁC SĨ + TÊN BỆNH VIỆN: để lại thì Tuần 4 có thể trích dẫn thành "BS X khẳng
-# định...". Bản v1 (kết thúc bằng dấu chấm) chỉ bắt 138/175 — `cleaner.py` gộp
-# khoảng trắng nên 37 byline chạy thẳng vào thân bài KHÔNG có dấu chấm. Bản
-# dưới bắt 175/175.
-# Đánh đổi đã biết: `{0,3}` có thể ăn thêm 1 từ đầu thân bài nếu từ đó viết hoa.
-BYLINE = re.compile(
-    r"Bài viết được tư vấn chuyên môn bởi.{0,250}?Vinmec(?:\s+[A-ZĐÀ-Ỹ][a-zà-ỹ]+){0,3}\.?\s*",
-    re.S,
-)
+# Byline: regex + phép cắt sống ở `src/data/cleaner.py` (DEC-045). Ở đây từng có
+# bản riêng; giữ hai bản song song thì test set và prompt cắt khác nhau và không
+# gì bắt được chênh lệch đó. Số đo cũ vẫn đúng: bắt 175/175 bài có byline (12,4%).
 
 
 def corpus_fingerprint() -> dict:
@@ -134,7 +130,7 @@ def build_e(fp: dict) -> list[dict]:
         c = by_idx[k]
         ctxs = []
         for t in c["reference_contexts"]:
-            t2 = BYLINE.sub("", t).strip()
+            t2 = strip_byline(t)
             if t2 != t:
                 stripped += 1
             ctxs.append(t2)

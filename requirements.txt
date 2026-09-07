@@ -36,11 +36,23 @@ qdrant-client>=1.9
 # theo sẵn embedder) và tự áp sigmoid trong repo.
 #   FlagEmbedding  -> CHỈ còn dùng cho bge-m3 (nhánh sparse).
 
+# --- Tuần 4: generation (DEC-045) ---
+# `google-genai` (SDK hiện hành, 2.x), KHÔNG phải `google-generativeai` —
+# gói đó đóng băng ở 0.8.6 và là SDK legacy. Kiểm 2026-09-07:
+#   google-genai 2.22.0 (phát hành liên tục) · google-generativeai 0.8.6 (dừng)
+#
+# Nhẹ: `pip install --dry-run google-genai` chỉ thêm 5 gói (google-auth, distro,
+# pyasn1, pyasn1_modules) — httpx/pydantic đã theo qdrant-client. KHÔNG kéo torch.
+#
+# ⚠️ TEST KHÔNG CẦN GÓI NÀY. `src/generation/generator.py` import SDK bên trong
+# hàm và nhận `transport` tiêm được, nên 149/149 test chạy sạch trên clone chưa
+# cài nó. Gói ở đây là để CHẠY app + deploy HF Spaces Tuần 7.
+google-genai>=2.0
+
 # --- GATED: chỉ dùng sau khi Gate 0 GO (Tuần 3+) ---
 # Bỏ comment khi thực sự cần, để scaffold cài nhẹ và test nhanh.
 # sentence-transformers>=3.0     # LOẠI ở Tuần 3 — DEC-033 + DEC-037. Đừng mở lại:
                                # reranker đi thẳng transformers, xem khối Tuần 2 trên.
-# google-generativeai>=0.7      # gemini-2.5-flash
 # datasets>=2.19               # tải HF dataset (loader)
 # ragas==0.4.3                  # đánh giá (Tuần 6). PIN CỨNG, KHÔNG dùng `>=`.
 #

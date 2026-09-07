@@ -1,13 +1,26 @@
-"""Interface sinh câu trả lời + FakeGenerator.
+"""Interface sinh câu trả lời + FakeGenerator + GeminiGenerator (Tuần 4).
 
-Real impl (gemini-2.5-flash) bị GATED — không gọi API khi import/test.
+``GeminiGenerator`` mở khoá ở Tuần 4 nhưng **không** chạm mạng lúc
+``__init__``: SDK ``google.genai`` chỉ import **bên trong** hàm và client dựng
+lười, y như ``indexer.py``/``retriever.py``. Import module này không gọi API,
+không cần key (ràng buộc #2).
+
+Phần thuần (dựng ngữ cảnh, kiểm trích dẫn, chốt disclaimer) nằm ở
+``src/generation/context.py`` để test được mà không tốn một lượt API nào; ở đây
+chỉ còn ghép prompt, gọi model, và hậu xử lý.
 """
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Callable, Protocol, runtime_checkable
 
-from src.config import GenerationConfig
+from src.config import GenerationConfig, load_prompt
+from src.generation.context import (
+    ensure_disclaimer,
+    format_context,
+    invalid_citations,
+    strip_invalid_citations,
+)
 from src.schemas import RetrievedChunk
 
 
@@ -40,17 +53,107 @@ class FakeGenerator:
 
 
 class GeminiGenerator:
-    """Generator thật dùng gemini-2.5-flash.
+    """Generator thật dùng ``gemini-2.5-flash`` (SDK ``google-genai``).
 
-    # GATED — không implement cho tới khi Gate 0 GO (Tuần 4).
-    Sẽ: nạp prompt từ config/prompts, ép bám context + citation [n] + disclaimer,
-    dùng bản caution khi ``caution=True``, nhiệt độ lấy từ config.
+    Đường đi: nạp prompt từ ``config/prompts`` → ghép ngữ cảnh đánh số ``[n]``
+    (byline đã cắt) → gọi model ở ``temperature`` lấy từ config → hậu xử lý
+    thuần (xoá trích dẫn bịa, chốt disclaimer).
+
+    ``transport`` là chỗ tiêm: một callable ``(prompt, temperature) -> str``.
+    Để ``None`` thì lần ``generate()`` đầu tiên mới dựng client thật. Test
+    truyền transport giả nên **không test nào chạm mạng hay cần API key**.
+
+    ``last_invalid_citations`` giữ các ``[n]`` bịa của lần sinh gần nhất — Tuần 6
+    dùng làm chỉ báo hallucination rẻ, không cần LLM judge.
     """
 
-    def __init__(self, cfg: GenerationConfig, api_key: str) -> None:
-        # GATED — không khởi tạo client Gemini trong scaffold.
+    def __init__(
+        self,
+        cfg: GenerationConfig,
+        api_key: str,
+        model: str = "gemini-2.5-flash",
+        transport: Callable[[str, float], str] | None = None,
+    ) -> None:
+        # KHÔNG khởi tạo client ở đây: dựng pipeline phải rẻ và không cần mạng.
         self._cfg = cfg
         self._api_key = api_key
+        self._model = model
+        self._transport = transport
+        self.last_invalid_citations: list[int] = []
+
+    # ------------------------------------------------------------------ #
+    # Phần thuần — test được, không tốn API
+    # ------------------------------------------------------------------ #
+    def build_prompt(
+        self,
+        query: str,
+        chunks: list[RetrievedChunk],
+        caution: bool = False,
+    ) -> str:
+        """Ghép prompt từ file + ngữ cảnh đánh số.
+
+        Bản ``caution`` dùng khi grader trả AMBIGUOUS — nó KHÁC bản thường ở
+        chỗ buộc model mở đầu bằng "[Lưu ý: độ chắc chắn thấp]", tức người đọc
+        thấy được mức tin cậy chứ không chỉ hệ thống biết.
+        """
+        name = "generation_caution" if caution else "generation"
+        tpl = load_prompt(name)
+        for slot in ("{context}", "{query}"):
+            if slot not in tpl:
+                raise ValueError(f"Prompt `{name}.txt` thiếu chỗ trống {slot}")
+        # `.replace` chứ không `.format`: prompt là văn bản người viết, thêm một
+        # dấu `{` vào đó không được phép làm nổ đường sinh câu trả lời.
+        return tpl.replace("{context}", format_context(chunks)).replace(
+            "{query}", query
+        )
+
+    def _postprocess(self, answer: str, n_chunks: int) -> str:
+        """Xoá trích dẫn bịa rồi chốt disclaimer. Ghi lại số đã xoá."""
+        self.last_invalid_citations = invalid_citations(answer, n_chunks)
+        return ensure_disclaimer(strip_invalid_citations(answer, n_chunks))
+
+    # ------------------------------------------------------------------ #
+    # Phần chạm mạng — nạp lười
+    # ------------------------------------------------------------------ #
+    def _default_transport(self, prompt: str, temperature: float) -> str:
+        """Gọi Gemini thật. Import SDK BÊN TRONG hàm (ràng buộc #2).
+
+        Dùng ``google-genai`` (2.x) chứ không phải ``google-generativeai``
+        (đóng băng ở 0.8.6) — DEC-045.
+        """
+        # Kiểm key TRƯỚC khi import SDK: lỗi cấu hình phải báo được trên máy
+        # chưa cài `google-genai` (test chạy sạch trên clone mới, y như
+        # FlagEmbedding ở embedder.py).
+        if not self._api_key:
+            raise RuntimeError(
+                "Thiếu GEMINI_API_KEY. `setx` KHÔNG áp cho terminal đang mở — "
+                "mở terminal mới sau khi đặt biến."
+            )
+        from google import genai  # noqa: PLC0415 — cố ý: import lười
+        from google.genai import types  # noqa: PLC0415
+
+        client = genai.Client(api_key=self._api_key)
+        resp = client.models.generate_content(
+            model=self._model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=temperature,
+                # Không khai báo tool nào -> tắt hẳn function calling. Không tắt
+                # thì SDK in cảnh báo AFC mỗi lượt gọi, làm bẩn log demo Tuần 7.
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                    disable=True
+                ),
+            ),
+        )
+        text = resp.text
+        if not text:
+            # Trả rỗng thường là do safety filter chặn, không phải lỗi mạng —
+            # nuốt im lặng thì Tuần 6 đếm nhầm thành "câu trả lời rỗng".
+            raise RuntimeError(
+                f"Gemini trả về rỗng (có thể bị chặn). "
+                f"prompt_feedback={getattr(resp, 'prompt_feedback', None)}"
+            )
+        return text.strip()
 
     def generate(
         self,
@@ -58,4 +161,8 @@ class GeminiGenerator:
         chunks: list[RetrievedChunk],
         caution: bool = False,
     ) -> str:
-        raise NotImplementedError("GATED: Tuần 4 — gọi Gemini thật")
+        transport = self._transport or self._default_transport
+        raw = transport(
+            self.build_prompt(query, chunks, caution), self._cfg.temperature
+        )
+        return self._postprocess(raw, len(chunks))
