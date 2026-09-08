@@ -3,10 +3,40 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-07 (Session 11 — **TUẦN 4 ĐÓNG + nợ Tầng 1 dọn xong. Cả đường ống chạy thật end-to-end. 177 test PASS. Một lỗi rewriter đã bắt và vá — xem ⛔**)
+**Cập nhật lần cuối:** 2026-09-08 (Session 11 — **TUẦN 4 ĐÓNG · nợ Tầng 1 dọn xong · ngưỡng đã hiệu chỉnh bằng LOOCV. 177 test PASS. Hai giả định bị số đo bác bỏ — xem ⛔**)
 
 ## Đang làm
 
+- **✅ NGƯỠNG ĐÃ HIỆU CHỈNH BẰNG LOOCV — điều kiện DEC-039 coi như đã thoả**
+  (DEC-051, supersedes phần "phải có tập giữ lại"). Holdout bị loại **bằng số**:
+  cắt 40% kéo mẫu số leakage 30→12, mà "0 lọt lưới" trên n câu chỉ chứng minh
+  leakage < 3/n → claim an toàn tụt từ **<10%** xuống **<25%**. LOOCV giữ mẫu số
+  21/30 mà vẫn không thiên lệch. Chi phí tính toán **bằng 0** (logit đã có cache).
+  Tái lập: `python scripts/calibrate_threshold.py` · báo cáo
+  `docs/threshold-calibration.md`.
+
+  | | ngưỡng | coverage E | leakage A/B |
+  |---|---|---|---|
+  | khớp toàn bộ 51 câu (lạc quan) | **+2,430** = sigmoid **0,919** | 17/21 | 0/30 |
+  | **LOOCV** (con số bảo vệ) | đổi theo fold | **81%** (CI 60–92%) | **0%** (CI 0–11%) |
+
+  ⚠️ **`leakage 0/30` ở dòng đầu ĐÚNG THEO ĐỊNH NGHĨA, không phải phát hiện** —
+  quy trình đặt ngưỡng ngay TRÊN điểm A/B cao nhất. Trích nó như kết quả thực
+  nghiệm là sai. Chỉ dòng LOOCV có nội dung.
+- **⛔ HAI GIẢ ĐỊNH BỊ CHÍNH PHÉP ĐO NÀY BÁC BỎ** (DEC-051):
+  1. **Ngưỡng KHÔNG mong manh.** Biên độ qua 51 fold chỉ **0,306 logit**, 3 giá
+     trị phân biệt. Bỏ A-01 (A/B cao nhất) ra thì ngưỡng tụt 2,430→2,329 mà A-01
+     **vẫn bị từ chối**, dư biên 0,176. Lý do là dải an toàn rộng, không phải
+     hiệu chỉnh khéo.
+  2. **"Trần coverage 81%" là trần của THANG ĐIỂM, không phải của truy hồi.**
+     4 câu không ngưỡng nào cứu được: E-09 (−0,348, **bài vàng hạng 2**) ·
+     E-05 (−0,356, **hạng 2**) · E-12 (−1,295, **hạng 1**) · E-19 (−2,825,
+     không vào pool). **3/4 đã truy hồi ĐÚNG bài vàng rồi bị reranker chấm âm.**
+     → **Tăng recall KHÔNG cứu được chúng.** Coverage đã chạm trần (17/17 câu
+     tới được), nên tinh chỉnh ngưỡng thêm là vô ích; muốn cao hơn phải **đổi
+     tín hiệu tin cậy**. Đây là dạng gây hại nhất của DEC-039: hệ thống từ chối
+     đúng những câu nó CÓ tài liệu để trả lời. **Phải vào Limitations.**
+     Phân bố nhóm E **lưỡng cực**, vực giữa hai cụm **3,06 logit**.
 - **⛔ LỖI ĐÃ BẮT VÀ VÁ — vòng corrective từng CHẾ RA sự liên quan** (DEC-048).
   *"Cách trồng lúa nước ở đồng bằng sông Cửu Long?"* bị rewriter biến thành câu
   hỏi về *"tiêu thụ gạo trắng và nguy cơ đái tháo đường"*, rồi hệ thống
@@ -175,7 +205,9 @@
    `trace` ra dạng máy đọc được (JSONL) cho 59 câu, và **tách tập giữ lại** —
    điều kiện bắt buộc của DEC-039 trước khi chốt ngưỡng.
 3. **Cạm bẫy còn lại.**
-   ⚠️ Vẫn **KHÔNG** chốt ngưỡng grader cho tới khi có tập giữ lại (DEC-039).
+   ⚠️ Ngưỡng **đã hiệu chỉnh** bằng LOOCV (DEC-051) nhưng **CHƯA đổi số trong
+   `config.yaml`** — `correct_threshold` vẫn 0.6. Đổi sang **0.919** là việc
+   riêng, phải đo lại smoke end-to-end vì mọi ca sẽ đổi nhánh.
    ⚠️ Corpus trong Qdrant **vẫn còn byline**: mọi đường mới đọc chunk ra đều phải
    tự gọi `strip_byline`, không có tầng nào cắt hộ.
    ⚠️ **Chi phí Tuần 7 phải dùng số ĐO (27s truy hồi), không dùng 17,2s dự tính**
