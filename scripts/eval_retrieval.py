@@ -44,7 +44,7 @@ import json
 import statistics
 import sys
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -61,6 +61,8 @@ from src.retrieval.retriever import RETRIEVAL_MODES, HybridRetriever  # noqa: E4
 ROOT = Path(__file__).resolve().parent.parent
 TESTSET = ROOT / "data" / "testset.jsonl"
 CACHE_PATH = ROOT / "data" / "processed" / "rerank_cache.json"
+# Đầu vào của scripts/calibrate_threshold.py (DEC-051).
+SCORES_PATH = ROOT / "data" / "processed" / "calibration_scores.json"
 OUT_MD = ROOT / "docs" / "retrieval-eval.md"
 OUT_CSV = ROOT / "docs" / "retrieval-eval.csv"
 
@@ -296,6 +298,70 @@ def per_question_ranks(pools, questions_e, sizes, modes):
     return {"cols": cols, "qids": [q["id"] for q in questions_e], "ranks": ranks}
 
 
+def per_doc_best(pools, cache, sizes, modes, max_length):
+    """``{qid: {doc_id: logit cao nhất trong các chunk của bài đó}}``.
+
+    Gộp theo **bài** chứ không theo chunk vì cả hạng bài vàng lẫn ``max_logit``
+    đều tính ở cấp bài. Tách ra thành hàm riêng để `calibration()` và
+    `dump_scores()` dùng CHUNG một phép tính — hai bản song song thì bảng trong
+    báo cáo và file hiệu chỉnh nói hai chuyện khác nhau (bài học DEC-044/045/046).
+    """
+    size, mode = sizes[0], modes[0]
+    out: dict[str, dict[str, float]] = {}
+    for qid, chunks in pools[(size, mode)].items():
+        best: dict[str, float] = {}
+        for c in chunks:
+            v = cache.data.get(cache.key(size, max_length, qid, c.doc_id, c.chunk_idx))
+            if v is not None:
+                best[c.doc_id] = max(best.get(c.doc_id, -99.0), v)
+        if best:
+            out[qid] = best
+    return out
+
+
+def dump_scores(pools, cache, questions, sizes, modes, max_length, top_k, path):
+    """Ghi ``max_logit`` từng câu ra JSON để hiệu chỉnh ngưỡng ngoại tuyến.
+
+    Đây là đầu vào của `scripts/calibrate_threshold.py` (LOOCV — DEC-051).
+    Tách làm hai bước có chủ đích: bước NÀY cần Qdrant + embedder để biết pool
+    ứng viên, còn bước hiệu chỉnh thì **thuần số** và chạy trong mili-giây, nên
+    chia lại fold bao nhiêu lần cũng không tốn gì.
+
+    ⚠️ Ghi kèm `top_k_dense`/`max_length`/`size`/`mode`: ``max_logit`` phụ thuộc
+    pool ứng viên, nên một file dump chỉ có nghĩa với ĐÚNG cấu hình sinh ra nó.
+    """
+    gold = {q["id"]: set(q.get("reference_context_ids") or []) for q in questions}
+    group_of = {q["id"]: q["group"] for q in questions}
+    per_doc = per_doc_best(pools, cache, sizes, modes, max_length)
+
+    rows = []
+    for qid in sorted(per_doc):
+        d = per_doc[qid]
+        order = sorted(d.items(), key=lambda t: -t[1])
+        rank = next((i for i, (dd, _) in enumerate(order, 1) if dd in gold[qid]), None)
+        rows.append({
+            "qid": qid,
+            "group": group_of[qid],
+            "max_logit": max(d.values()),
+            "gold_rank": rank,
+            "n_docs": len(d),
+        })
+    payload = {
+        "config": {
+            "size": sizes[0], "mode": modes[0], "max_length": max_length,
+            "top_k_dense": top_k,
+        },
+        "n_questions": len(rows),
+        "scores": rows,
+    }
+    Path(path).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    by_g = Counter(r["group"] for r in rows)
+    print(f"\n[dump] {path} — {len(rows)} câu {dict(by_g)}")
+    return payload
+
+
 def calibration(pools, cache, questions, sizes, modes, max_length):
     """Bảng hiệu chỉnh: score có bám ĐỘ ĐÚNG không, hay chỉ bám ĐỘ CÙNG CHỦ ĐỀ?
 
@@ -310,15 +376,7 @@ def calibration(pools, cache, questions, sizes, modes, max_length):
     gold = {q["id"]: set(q.get("reference_context_ids") or []) for q in questions}
     group_of = {q["id"]: q["group"] for q in questions}
 
-    per_doc: dict[str, dict[str, float]] = {}
-    for qid, chunks in pools[(size, mode)].items():
-        best: dict[str, float] = {}
-        for c in chunks:
-            v = cache.data.get(cache.key(size, max_length, qid, c.doc_id, c.chunk_idx))
-            if v is not None:
-                best[c.doc_id] = max(best.get(c.doc_id, -99.0), v)
-        if best:
-            per_doc[qid] = best
+    per_doc = per_doc_best(pools, cache, sizes, modes, max_length)
 
     rows = []
     for qid in sorted(q for q in per_doc if group_of[q] == "E"):
@@ -544,6 +602,11 @@ def parse_args() -> argparse.Namespace:
     )
     ap.add_argument("--limit", type=int, default=None, help="giới hạn số câu (thử)")
     ap.add_argument(
+        "--dump-scores", nargs="?", const=str(SCORES_PATH), default=None,
+        help="ghi max_logit từng câu ra JSON cho scripts/calibrate_threshold.py "
+             f"(mặc định: {SCORES_PATH.relative_to(ROOT)})",
+    )
+    ap.add_argument(
         "--out",
         default=None,
         help="đường dẫn báo cáo KHÔNG kèm đuôi (mặc định docs/retrieval-eval). "
@@ -609,6 +672,9 @@ def main() -> int:
         sweep = threshold_sweep(
             cal_rows, ab_scores, [4.0, 3.0, 2.5, 2.27, 2.0, 1.0, 0.405, -1.0]
         )
+        if args.dump_scores:
+            dump_scores(pools, cache, questions, sizes, modes,
+                        args.max_length, top_k, args.dump_scores)
     per_q = per_question_ranks(pools, questions_e, sizes, modes)
     write_report(
         rows, timings, dist, args, len(questions_e), rerank_cost, top_k, per_q,
