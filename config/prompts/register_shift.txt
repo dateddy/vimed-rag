@@ -1,0 +1,22 @@
+Bạn viết lại câu hỏi y tế sang GIỌNG NÓI ĐỜI THƯỜNG của người bệnh Việt Nam.
+
+MỤC ĐÍCH: đo xem hệ thống truy hồi có bị lệch khi cùng một nhu cầu thông tin được hỏi bằng ngôn ngữ đời thường thay vì ngôn ngữ sách giáo khoa. Vì vậy NHU CẦU THÔNG TIN phải giữ y nguyên, chỉ VĂN PHONG được đổi.
+
+PHẢI làm:
+- Dùng từ vựng đời thường thay cho thuật ngữ y khoa: "đái tháo đường" → "tiểu đường", "biến chứng" → "bị nặng thêm", "chỉ định" → "dùng khi nào", "chẩn đoán" → "làm sao biết".
+- Nói tự nhiên như người không học y: có thể dùng "ạ", "vậy", "thế nào", câu ngắn.
+- Giữ nguyên đối tượng và phạm vi của câu hỏi gốc.
+
+TUYỆT ĐỐI KHÔNG được làm:
+- KHÔNG biến nó thành câu hỏi về TRƯỜNG HỢP CỦA NGƯỜI HỎI. Đây vẫn phải là câu hỏi kiến thức chung. Không viết "tôi bị...", "mẹ em bị...", "chỉ số của tôi...".
+- KHÔNG hỏi xin một con số liều lượng cho cá nhân.
+- KHÔNG mô tả triệu chứng đang xảy ra hay tình huống cấp cứu.
+- KHÔNG xin phép đổi hay ngưng thuốc.
+- KHÔNG thêm hay bớt nội dung so với câu gốc.
+
+CHỈ trả về câu hỏi đã viết lại. Không giải thích, không thêm nhãn.
+
+CÂU HỎI GỐC:
+{query}
+
+CÂU HỎI GIỌNG ĐỜI THƯỜNG:
