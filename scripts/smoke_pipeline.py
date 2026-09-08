@@ -4,12 +4,11 @@ Smoke END-TO-END — `RAGPipeline` với ĐỦ 4 thành phần THẬT.
 Lần đầu tiên policy gate + truy hồi/rerank + generation + rewrite chạy CÙNG
 NHAU. Trước script này, cả ba tầng chỉ được chứng minh riêng lẻ.
 
-⚠️⚠️ **ĐÂY LÀ TRÌNH DIỄN, KHÔNG PHẢI PHÉP ĐO. ĐỪNG LẤY SỐ TỪ ĐÂY VÀO BÁO CÁO.**
-`correct_threshold` trong `config.yaml` vẫn là **0.6**, và DEC-039 đã đo được
-rằng ở ngưỡng đó **10/30 câu nhóm A/B vẫn được TRẢ LỜI**. Nghĩa là câu nhóm A
-dưới đây gần như chắc chắn ra ANSWER thay vì ABSTAIN — **đó là hành vi đã biết
-và đã ghi**, không phải lỗi mới. Ngưỡng thật chốt ở Tuần 6 từ đường cong
-risk–coverage, bắt buộc có tập giữ lại.
+⚠️ **KHÔNG PHẢI PHÉP ĐO — 4 câu không phải một mẫu.** Ngưỡng đã hiệu chỉnh
+bằng LOOCV (DEC-051) nên `action` dưới đây ĐÚNG như hiệu chỉnh dự đoán, khác
+hẳn trước 2026-09-08 khi nhóm A còn ra ANSWER ở ngưỡng 0.6. Nhưng con số
+abstention CHÍNH THỨC lấy từ `scripts/calibrate_threshold.py` trên **51 câu**,
+không lấy từ đây.
 
 Cái script này ĐO ĐƯỢC thật sự (và Tuần 7 cần):
   - độ trễ **từng tầng**: truy hồi+rerank so với LLM;
@@ -67,12 +66,11 @@ CASES = [
           "những biến chứng nguy hiểm nào?",
      "corpus CÓ tài liệu -> ANSWER kèm [n]"),
     ("A", "Thuốc Aspirin STELLA có những chỉ định điều trị nào?",
-     "corpus KHÔNG có thực thể này -> ĐÁNG LẼ abstain; ở ngưỡng 0.6 "
-     "nhiều khả năng vẫn ANSWER (DEC-039)"),
-    # Ngoài miền hoàn toàn — ca DUY NHẤT ép được nhánh INCORRECT ở ngưỡng 0.6,
-    # tức chỗ duy nhất đo được chi phí thật của REWRITE (+1 lượt gọi LLM).
+     "corpus KHÔNG có thực thể này (điểm 0.896 < ngưỡng 0.919) -> ABSTAIN. "
+     "Trước khi hiệu chỉnh DEC-051 câu này ra ANSWER."),
+    # Ngoài miền hoàn toàn: rewriter phải trả NGUYÊN VĂN (DEC-048) rồi ABSTAIN.
     ("ngoài miền", "Cách trồng lúa nước ở đồng bằng sông Cửu Long?",
-     "score rerank phải tụt hẳn -> INCORRECT -> REWRITE -> 2 lượt gọi LLM"),
+     "score tụt hẳn -> INCORRECT -> REWRITE trả nguyên văn -> ABSTAIN"),
 ]
 
 
@@ -113,7 +111,10 @@ def main() -> None:
     if not api_key:
         sys.exit("!! Thiếu GEMINI_API_KEY (xem .env).")
 
-    print("⚠️  TRÌNH DIỄN, KHÔNG PHẢI PHÉP ĐO — ngưỡng grader vẫn 0.6 (DEC-039).")
+    print("⚠️  4 câu không phải phép đo. Ngưỡng ĐÃ hiệu chỉnh bằng LOOCV "
+          "(DEC-051);")
+    print("    con số abstention chính thức: "
+          "scripts/calibrate_threshold.py trên 51 câu.")
     print(f"    correct={cfg.grader.correct_threshold} · "
           f"incorrect={cfg.grader.incorrect_threshold} · "
           f"top_k_dense={cfg.retrieval.top_k_dense} · "
@@ -183,8 +184,12 @@ def main() -> None:
     if llm_rows:
         print(f"\nTrung bình mỗi lượt gọi LLM: "
               f"{sum(r[4] for r in llm_rows) / sum(r[5] for r in llm_rows):.1f}s")
-    print("\n⚠️  Nhắc lại: action ở trên là TRÌNH DIỄN ở ngưỡng 0.6, không phải "
-          "kết quả abstention. Số THỜI GIAN và TOKEN thì dùng được.")
+    print("\n⚠️  Nhắc lại: 4 câu KHÔNG phải phép đo abstention — con số chính "
+          "thức ở scripts/calibrate_threshold.py (51 câu).")
+    print("    Số THỜI GIAN và TOKEN thì dùng được. Lưu ý cho Tuần 7: nhánh TỪ "
+          "CHỐI ĐẮT HƠN nhánh trả lời")
+    print("    (60,0s so với 36,6s) vì nó tốn HAI lượt truy hồi — an toàn là "
+          "đường đi tốn kém nhất.")
 
 
 if __name__ == "__main__":
