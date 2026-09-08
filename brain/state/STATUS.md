@@ -3,10 +3,125 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-08 (Session 11 — **TUẦN 4 ĐÓNG · nợ Tầng 1 dọn xong · ngưỡng đã hiệu chỉnh bằng LOOCV. 177 test PASS. Hai giả định bị số đo bác bỏ — xem ⛔**)
+**Cập nhật lần cuối:** 2026-09-08 (Session 12 — **Leakage SAU REWRITE đã đo: 2/30, không phải 0/30. Vòng corrective cứu 0 câu, làm lọt 2. 246 test PASS**)
 
 ## Đang làm
 
+- **⛔⛔ LEAKAGE SAU REWRITE = 2/30 (7%), KHÔNG PHẢI 0/30** (DEC-056). Cái lỗ mà
+  DEC-052 tự ghi ra rồi để ngỏ, nay đã đo end-to-end trên đủ 59 câu.
+
+  | mốc | leakage A/B | |
+  |---|---|---|
+  | lượt 1 | **0/30** | tái lập chính xác LOOCV của DEC-051 |
+  | **lượt 2** | **2/30 = 7%** (CI 2–21%) | **chưa từng đo trước hôm nay** |
+  | **cuối** | **2/30 = 7%** | **con số đem đi báo cáo** |
+
+  Cả **30/30** câu A/B bị chặn đúng ở lượt đầu — hiệu chỉnh làm đúng việc của
+  nó. Rồi rewrite kéo **`A-01`** (+2,153 → +4,003) và **`A-08`** (−0,884 →
+  +2,520) qua ngưỡng. Biên câu A/B cao nhất lật **+0,275 → −1,575**.
+  - **CƠ CHẾ ĐO ĐƯỢC:** rewrite đẩy điểm nhóm A/B lên một cách **hệ thống** —
+    Δlogit trung vị **+0,876**, kiểm định dấu **23 tăng · 7 tụt · p = 0,0052**.
+    Đây là DEC-039 tái xuất ở tầng thứ ba: viết lại làm câu hỏi trùng từ vựng
+    corpus hơn → điểm lên, mà tài liệu vẫn không chứa đáp án.
+  - ⚠️ **Nhánh `ANSWER_WITH_CAUTION` LẦN ĐẦU chạy trên dữ liệu thật — và chạy
+    trên một câu lọt lưới.** Dải `[0.919, 0.933)` rỗng ở phân bố **lượt 1**;
+    điểm **lượt 2** lấp vào (A-08 = sigmoid 0,9255). Đừng chép lại câu "dải này
+    rỗng" từ bản STATUS trước.
+  - ✅ **Lớp phòng thủ cuối bắt được cái grader bỏ sót:** A-01 ra `ANSWER` nhưng
+    generator tự viết *"Ngữ cảnh không chứa thông tin…"*. Leakage theo **hành
+    động** 2/30, theo **nội dung tới tay người dùng** 1/30. **KHÔNG được dùng
+    điều này để xoá cái leak** — A-08 sinh ra danh sách tương tác thuốc thật cho
+    Co-Diovan, thuốc corpus KHÔNG có.
+  - ⚠️ **KHÔNG vá bằng cách hạ ngưỡng** — ngưỡng hiệu chỉnh trên lượt 1, đụng vào
+    là phá luôn con số DEC-051. Sửa đúng = **đổi thứ được chấm ở lượt 2**, và đó
+    là một DEC mới.
+  Tái lập: `python scripts/export_runs.py` (~45 phút) ·
+  `python scripts/analyze_leakage.py` · `docs/leakage-after-rewrite.md`
+- **⚖️ CÁN CÂN VÒNG CORRECTIVE: cứu 0/4 câu E, làm lọt 2/30 câu A/B** (DEC-057).
+  Tác dụng đo được **duy nhất** của vòng corrective trên test set này là **tạo ra
+  leakage**. 4 câu E đi tới lượt hai (E-05, E-09, E-12, E-19) — đúng 4 câu "không
+  ngưỡng nào cứu được" của DEC-051 — và **không câu nào được cứu**.
+  - **ĐƯỜNG ĐO THỨ BA CÙNG MỘT HƯỚNG:** DEC-051 (trần là trần THANG ĐIỂM) ·
+    DEC-055 (đổi văn phong, rewrite cứu 2/7) · DEC-057 (cứu 0, lọt 2). Ba phép đo
+    từ ba đường khác hẳn nhau, trùng khớp → không còn là nhiễu một lần chạy.
+  - **HỆ QUẢ:** claim *"vòng corrective làm hệ thống tốt lên"* — **trục đóng góp
+    của đề tài** — không chống đỡ được bằng dữ liệu hiện có. Phải vào **Chương
+    kết quả**, không phải giấu ở Limitations.
+  - ⚠️ Nói cho đúng phạm vi: đây là phát biểu về **test set + ngưỡng hiện tại**,
+    KHÔNG phải "rewrite vô dụng". DEC-046 vẫn có bằng chứng **định tính**. Cái bị
+    bác là claim **định lượng**.
+- **✅ NỀN DỮ LIỆU TUẦN 6 ĐÃ CÓ — `data/processed/runs.jsonl`** (DEC-057).
+  118 bản ghi = 59 câu × 2 hệ (corrective + baseline LLM-only), 2,3 MB, gitignore,
+  dựng lại được. Mỗi bản ghi mang điểm **cả hai** lượt truy hồi, hạng bài vàng
+  từng lượt, cơ chế abstain, `retrieved` (không phải `chunks`), trích dẫn bịa,
+  và chi phí giây/lượt/token. **RAGAS + risk–coverage + Static-vs-Corrective đều
+  ăn từ file này** — không phải chạy lại pipeline lần nào nữa.
+  - **Baseline LLM-only đã chạy đủ 59 câu** (T4.4 dựng từ DEC-047, tới nay mới
+    chạy lần đầu). Sẵn cho "% giảm hallucination".
+  - ⚠️ Lô này chạy **CÓ CACHE** → cột thời gian/token **không dùng cho Tuần 7**.
+    Muốn số sạch: `python scripts/export_runs.py --no-cache`. Số quan sát được:
+    **~45s/câu nhánh từ chối · ~27s nhánh trả lời** (nhánh từ chối vẫn đắt hơn).
+- **⛔⛔ PHƯƠNG ÁN B ĐÃ ĐO — KẾT QUẢ THỰC NGHIỆM MẠNH NHẤT CỦA ĐỀ TÀI** (DEC-055).
+  Cùng 21 câu nhóm E, cùng nhãn, cùng bài vàng, **chỉ khác cách nói**:
+
+  | | sách giáo khoa | giọng bệnh nhân |
+  |---|---|---|
+  | Coverage ở ngưỡng 0,919 | **17/21 (81%)** | **10/21 (48%)** |
+
+  **7 câu mất, 0 câu được thêm.** Δlogit trung vị **−1,648**.
+  Kiểm định dấu: **18 tụt · 3 tăng · p = 0,0015** (dùng kiểm định dấu chứ không
+  t-test vì phân bố nhóm E lưỡng cực — giả định chuẩn sai từ đầu).
+  - **⛔ 5/7 CÂU MẤT LÀ LỖI THANG ĐIỂM, KHÔNG PHẢI LỖI TRUY HỒI:**
+    `E-04` (bài vàng **hạng 1 ở CẢ HAI** văn phong, +3,58 → +1,59) ·
+    `E-06` (**hạng 1 ở cả hai**, +3,34 → +1,78) · `E-17` (1→2) ·
+    `E-20` (1→3, +3,14 → **−2,25**) · `E-21` (2→4).
+    Truy hồi **vẫn lấy đúng tài liệu**, chỉ điểm tin cậy sụp.
+    Chỉ 2/7 hỏng truy hồi thật (`E-02`, `E-16`).
+  - **Đây là bằng chứng TRỰC TIẾP, có đối chứng cặp, cho cơ chế mà DEC-051 chỉ
+    suy ra gián tiếp.** Hai phát hiện đến từ hai đường khác hẳn nhau và trùng khớp.
+  - **HỆ QUẢ CHO BÁO CÁO — không né được:** claim *"hệ thống biết khi nào không
+    đủ căn cứ"* phải kèm điều kiện **"khi câu hỏi ở văn phong sách giáo khoa"**.
+    Với giọng bệnh nhân thật, hệ thống **từ chối gần một nửa** số câu nó CÓ tài
+    liệu để trả lời. Hướng cải tiến là **đổi tín hiệu tin cậy**, không phải tăng
+    recall; query rewrite (DEC-046) chỉ cứu được **2/7**.
+  - ✅ **HẾT SƠ BỘ — Đạt đã soi tay đủ 21 biến thể, `eyeballed: true` cả 21**
+    (2026-09-08, DEC-058). **0 câu bị loại, 0 câu bị sửa văn bản** → số đo trên
+    vẫn nguyên hiệu lực, và đã chạy lại `eval_register_shift.py` để xác nhận:
+    ra **đúng từng con số** (17/21 → 10/21 · Δ trung vị −1,648 · p = 0,0015 ·
+    cùng 7 câu mất · 5/7 lỗi thang điểm). **Trích vào báo cáo được.**
+    ⚠️ Giọng bệnh nhân vẫn do **LLM mô phỏng**, không phải câu người bệnh thật →
+    hiệu ứng đo được là **cận dưới** của độ lệch thật. Phải vào Limitations.
+  - Giá đã trả: **E2 evidence-highlighting chết trước** (thứ tự cắt DEC-015).
+  Tái lập: `python scripts/eval_register_shift.py` · `docs/register-shift.md`
+- **✅ ĐỔI CỔNG LLM SANG OPENROUTER — model vẫn `gemini-2.5-flash`** (DEC-054).
+  Bị ép bởi hạn mức **20 lượt/NGÀY** của free tier Google (DEC-053).
+  **Không đổi tech stack**, chỉ đổi đường đi. `models.llm_provider: openrouter`,
+  `models.llm: google/gemini-2.5-flash`. Dùng `httpx` thẳng → **thêm 0 dependency**.
+  Nhánh Google giữ nguyên để đảo lại được.
+  ⚠️ **Tên model KHÁC nhau giữa hai cổng** — đổi provider mà quên đổi tên là 404.
+  Dùng `transport_from_config(cfg, key)` thay vì tự ghép 4 tham số.
+  Đo: 1 lượt gọi **2,9s**; `requests_per_minute` 5 → **60**; 21 lượt của phương
+  án B chạy trong **~20 giây** (so với "quá một ngày" trên free tier Google).
+- **✅ NGƯỠNG ĐÃ ĐỔI TRONG `config.yaml` — nhóm A giờ TỪ CHỐI thật** (DEC-052).
+  `correct_threshold: 0.933` · `incorrect_threshold: 0.919`. Đo lại end-to-end:
+  *"Thuốc Aspirin STELLA có những chỉ định điều trị nào?"* đổi từ `ANSWER` →
+  **`ABSTAIN`**. Kiểm trên cả 51 câu: **30/30 A/B → INCORRECT**, 17/21 E → CORRECT.
+  - ⚠️⚠️ **BẪY ĐÃ SUÝT MẮC — dải AMBIGUOUS phải nằm TRÊN ranh giới, không phải
+    dưới.** LOOCV giả định quyết định **nhị phân**, nhưng grader có **BA** trạng
+    thái và AMBIGUOUS **vẫn trả lời** (`ANSWER_WITH_CAUTION`). Giữ
+    `incorrect_threshold: 0.3` như cũ thì A-01 (sigmoid **0,8960**) rơi vào
+    `[0.3, 0.919)` → AMBIGUOUS → trả lời, và "leakage 0/30" bốc hơi.
+    → `incorrect_threshold` = **đúng** ranh giới hiệu chỉnh;
+    `correct_threshold` = sigmoid ngưỡng CAO NHẤT mà một fold LOOCV sinh ra.
+  - ⚠️ **Dải AMBIGUOUS `[0.919, 0.933)` hiện RỖNG** (câu E thấp nhất được trả lời
+    là E-21 = 0,9375). Rỗng là **kết quả**, không phải lỗi — phân bố E lưỡng cực.
+    Nhưng nghĩa là nhánh `ANSWER_WITH_CAUTION` **chưa từng chạy trên dữ liệu thật**.
+  - ⚠️ **LỖ CHƯA ĐO: leakage SAU REWRITE.** LOOCV chấm trên điểm lượt truy hồi
+    **đầu**. Vòng corrective cho mỗi câu A/B **một lần thử thứ hai**, lượt đó chưa
+    hiệu chỉnh. **Tuần 6 phải đo, đừng cho rằng 0/30 tự động còn đúng.**
+  - 💰 **Chi phí đảo chiều: nhánh TỪ CHỐI đắt hơn nhánh trả lời** — 60,0s so với
+    36,6s, vì từ chối tốn **hai** lượt truy hồi. An toàn là đường đi tốn kém nhất;
+    Tuần 7 phải tính theo đó.
 - **✅ NGƯỠNG ĐÃ HIỆU CHỈNH BẰNG LOOCV — điều kiện DEC-039 coi như đã thoả**
   (DEC-051, supersedes phần "phải có tập giữ lại"). Holdout bị loại **bằng số**:
   cắt 40% kéo mẫu số leakage 30→12, mà "0 lọt lưới" trên n câu chỉ chứng minh
@@ -48,18 +163,22 @@
   tình cờ khớp từ vựng corpus vẫn lọt. Tầng lọc phạm vi là quyết định riêng.
 - **✅ SMOKE END-TO-END ĐÓNG — cả 4 thành phần thật chạy cùng nhau** (DEC-048).
   Tái lập: `python scripts/smoke_pipeline.py` (~3 phút, ~4 lượt API).
-  ⚠️ **TRÌNH DIỄN, KHÔNG PHẢI PHÉP ĐO** — ngưỡng vẫn 0.6, đừng lấy `action` vào
-  báo cáo. Số **thời gian** và **token** thì dùng được.
+  ⚠️ **4 câu KHÔNG phải phép đo abstention** — con số chính thức lấy từ
+  `calibrate_threshold.py` trên 51 câu. Số **thời gian**/**token** thì dùng được.
+  Bảng dưới đo **SAU** khi đổi ngưỡng (DEC-052):
 
-  | ca | action | tổng | truy hồi | LLM | lượt gọi |
-  |---|---|---|---|---|---|
-  | D (policy) | ABSTAIN | **0,0s** | 0 | 0 | **0** |
-  | E | ANSWER | 37–39s | 27s | 10–12s | 1 |
-  | ngoài miền | ABSTAIN | 57s | 53s (2 lượt) | 3,6s | 1 |
-  | (trước vá) sau rewrite | ANSWER | 73,6s | — | 29s | **2** |
+  | ca | action | tổng | truy hồi | LLM | lượt gọi | token vào |
+  |---|---|---|---|---|---|---|
+  | D (policy) | ABSTAIN | **0,0s** | 0 | 0 | **0** | 0 |
+  | E | ANSWER | 36,6s | 24,9s | 11,8s | 1 | 2.632 |
+  | **A** | **ABSTAIN** ← trước là ANSWER | **60,0s** | 47,6s (2 lượt) | 12,5s | 1 | 196 |
+  | ngoài miền | ABSTAIN | 48,0s | 44,5s (2 lượt) | 3,5s | 1 | 196 |
 
-  Nạp model + nối Qdrant **~54s một lần**. Mỗi lượt gọi Gemini **~9–14s**,
-  ~2.600 token vào cho câu có ngữ cảnh.
+  Nạp model + nối Qdrant **~53s một lần**. Mỗi lượt gọi Gemini **~9–14s**.
+  💰 **Nhánh TỪ CHỐI đắt hơn nhánh trả lời** (60,0s so với 36,6s) vì tốn 2 lượt
+  truy hồi — an toàn là đường đi tốn kém nhất, Tuần 7 phải tính theo đó.
+  ⚠️ Gemini có lúc trả **503 UNAVAILABLE** (quá tải phía Google, 2026-09-08).
+  Chạy lại là được; đừng đi debug key hay SDK.
   ⚠️ **Truy hồi đo được 27s, KHÔNG phải 17,2s như DEC-042 dự tính.** Nằm trong dải
   biến thiên theo tải máy đã cảnh báo, nhưng **Tuần 7 phải dùng số đo, không dùng
   số dự tính**: HF Spaces CPU free là **37–74s/câu**, xấu hơn ước lượng đáng kể.
@@ -182,6 +301,30 @@
 
 ## Blocker
 
+- **✅ ĐÃ GỠ: hạn mức 20 lượt/NGÀY** — chuyển sang **OpenRouter** (DEC-054).
+  Giữ lại mô tả bên dưới vì nó là lý do tồn tại của `LlmCache` và của van
+  giãn nhịp, và vì nhánh Google vẫn dùng lại được.
+- **(đã gỡ) HẠN MỨC GEMINI FREE TIER = 20 LƯỢT/NGÀY**
+  (DEC-053, đo 2026-09-08). Hai hạn mức: **5 lượt/phút** *và* **20 lượt/NGÀY**
+  cho `gemini-2.5-flash`. Van giãn nhịp trong `src/llm.py` chữa được hạn mức
+  phút; **hạn mức ngày thì KHÔNG code nào lách được.**
+
+  | việc | số lượt cần | trên free tier |
+  |---|---|---|
+  | Phương án B (21 biến thể) | 21 | **quá 1 ngày** |
+  | Tuần 6 (59 câu × ~1,5) | ~90 | **~5 NGÀY** |
+  | Tuần 7 demo trước hội đồng | ? | **20 câu là hết** |
+
+  ⚠️ Rủi ro này **chưa từng có trong bất kỳ ước lượng nào trước đây**, vì trước
+  2026-09-08 dự án chưa gọi LLM thật bao giờ. Ngang hạng với rủi ro năng lực
+  1/2 của DEC-015.
+  ~~PHẢI QUYẾT: bật thanh toán hay rải nhiều ngày~~ — **đã quyết: OpenRouter**
+  (DEC-054). ⚠️ Vẫn phải theo dõi **credit OpenRouter** trước buổi bảo vệ:
+  hết tiền là 402, cùng hậu quả với 429.
+  **Giảm nhẹ đã làm:** `LlmCache` trên đĩa (`data/processed/llm_cache.json`,
+  gitignore) — chạy lại script lúc phát triển không còn tốn lượt nào. Cache
+  **tắt mặc định**, chỉ bật ở script chạy lô; bật ở chỗ đo chi phí là làm hỏng
+  bảng thời gian/token.
 - **Không còn blocker chặn build.**
 - **⚠️ Cluster Qdrant Cloud free tier NGỦ khi không dùng.** 2026-09-06 gặp lần đầu:
   DNS resolve OK, **TCP 443 mở**, nhưng TLS bị reset (`schannel: failed to receive
@@ -198,21 +341,27 @@
 
 ## 3 việc kế tiếp
 
-1. **`git push origin main`** — `origin/main` ở `36b5389`, treo **2 commit** (handoff
-   Session 10 + T4.1). Con số "21 commit" ở bản trước đã lỗi thời, phần lớn đã push.
-2. **TUẦN 5 — hoàn thiện abstention + `trace` cho eval.** Tuần 4 đã đóng toàn bộ
-   (T4.1…T4.4 + smoke end-to-end). Việc còn thiếu để Tuần 6 chạy được: xuất
-   `trace` ra dạng máy đọc được (JSONL) cho 59 câu, và **tách tập giữ lại** —
-   điều kiện bắt buộc của DEC-039 trước khi chốt ngưỡng.
+1. **`git push origin main`** — `origin/main` còn ở `0f00902`, treo **5 commit +
+   cả Session 11 lẫn Session 12 chưa commit**. Vẫn là việc **rủi ro nhất**: mất
+   máy = mất hai phiên việc, trong đó có ba kết quả đổi trục đề tài (DEC-055/056/057).
+2. **TUẦN 6 — bắt đầu được ngay, nền dữ liệu đã có.** `runs.jsonl` xong nên
+   không phải chạy lại pipeline. Thứ tự giữ bằng mọi giá (DEC-015):
+   (1) bảng **Static vs Corrective** — ⚠️ giờ phải báo cáo cả kết quả **âm** của
+   DEC-057, đừng dựng bảng rồi mới phát hiện cột corrective không thắng;
+   (2) **risk–coverage** — `src/eval/risk_coverage.py` vẫn là stub `NotImplementedError`;
+   (3) **RAGAS** — `src/eval/run_ragas.py` cũng stub, và `ragas==0.4.3` vẫn đang
+   **comment** trong `requirements.txt`, phải quyết cài trước.
 3. **Cạm bẫy còn lại.**
-   ⚠️ Ngưỡng **đã hiệu chỉnh** bằng LOOCV (DEC-051) nhưng **CHƯA đổi số trong
-   `config.yaml`** — `correct_threshold` vẫn 0.6. Đổi sang **0.919** là việc
-   riêng, phải đo lại smoke end-to-end vì mọi ca sẽ đổi nhánh.
+   ⚠️ ~~Leakage sau rewrite chưa đo~~ — **✅ ĐÃ ĐO (DEC-056): 2/30, không phải 0/30.**
+   Con số abstention đem đi báo cáo là **7%**. Đừng trích lại "0/30" từ DEC-051.
+   ⚠️ ~~Dải AMBIGUOUS rỗng, nhánh caution chưa chạy~~ — **đã chạy** (A-08, DEC-056).
+   ⚠️ **Coverage tính theo `action` ĐẾM DƯ 1** so với nội dung: E-21 ra `ANSWER`
+   nhưng generator tự nói không có thông tin. Tuần 6 chấm RAGAS sẽ lộ ra chỗ này.
    ⚠️ Corpus trong Qdrant **vẫn còn byline**: mọi đường mới đọc chunk ra đều phải
    tự gọi `strip_byline`, không có tầng nào cắt hộ.
-   ⚠️ **Chi phí Tuần 7 phải dùng số ĐO (27s truy hồi), không dùng 17,2s dự tính**
-   của DEC-042. Và nhớ câu ANSWER-sau-rewrite tốn **2 lượt gọi LLM**, không phải 1.
-   ⚠️ Baseline LLM-only chưa chạy trên 59 câu — 59 lượt API, việc của Tuần 6.
+   ⚠️ **Chi phí Tuần 7 phải dùng số ĐO, không dùng 17,2s dự tính** của DEC-042.
+   Số mới nhất: **~45s/câu nhánh từ chối · ~27s nhánh trả lời**. Và phải chạy
+   `export_runs.py --no-cache` mới có bảng token sạch.
 
 ## Đã biết về test set — đừng dựng lại
 
@@ -486,8 +635,21 @@
 
 ## Việc treo ngoài code
 
-- **CHƯA PUSH — cả Tuần 4 + Tầng 1 đang CHỈ nằm trên ổ cứng này.** `origin/main` còn ở
-  `07421fa`. Đây là việc treo **rủi ro nhất** hiện nay: mất máy = mất cả hai tuần việc.
+- **CHƯA PUSH — Session 11 + 12 đang CHỈ nằm trên ổ cứng này.** `origin/main` còn ở
+  `0f00902`. Việc treo **rủi ro nhất** hiện nay: mất máy = mất hai phiên việc.
+- **⛔ MÓN NỢ MỚI — hai bản sao hàm thống kê.** `src/eval/stats.py` là bản có thẩm
+  quyền (`wilson`, `rule_of_three`, `sign_test`), nhưng
+  `scripts/calibrate_threshold.py` và `scripts/eval_register_shift.py` **vẫn giữ
+  bản riêng** (viết trước module này). Ba bản hiện giống hệt nhau. Việc dọn: trỏ
+  hai script về `src/eval/stats.py` rồi xoá bản sao. **Vì sao không làm luôn:**
+  lúc viết, hai file đó đang nằm trong lô commit dở. Lệch bản = hai bảng trong
+  CÙNG một báo cáo dùng hai định nghĩa khoảng tin cậy khác nhau — đúng loại trôi
+  đã phải vá ba lần (DEC-044/045/046).
+- **⚠️ LỖI HIỂN THỊ CHƯA VÁ: câu ANSWER hiện 5 nguồn cạnh một câu nói "không có
+  thông tin".** A-01 và E-21 đều vậy (DEC-056). Grader cho qua, generator từ chối,
+  nhưng `PipelineResult.chunks` vẫn đầy vì nhánh ANSWER luôn gắn nguồn. Người dùng
+  đọc thành "có 5 nguồn hậu thuẫn cho câu này". Chưa quyết cách vá — vá ở tầng nào
+  cũng là một quyết định (bắt generator trả tín hiệu, hay hậu kiểm văn bản).
 - ~~`KEEP_A`/`KEEP_B` khoá theo id ứng viên~~ — **✅ ĐÓNG 2026-09-07 (DEC-050).**
   Giờ khoá theo `KEEP_A_IDX`/`KEEP_B_IDX` = chỉ mục ViMedAQA, cùng khuôn nhóm E.
   Kiểm bằng build lại → `testset.jsonl` **byte-identical**.
@@ -499,13 +661,23 @@
 - ~~Thống kê theo khoa chưa có artifact~~ — **✅ ĐÓNG: `docs/corpus-stats.md`**
   (`python scripts/corpus_stats.py`, đọc corpus local, không cần `HF_TOKEN`).
   Mọi con số khớp STATUS: 1.410 bài · byline 175 = 12,4% · 727/698 · title-hit 42%/80%.
-- **Phương án B (đo lệch văn phong) đã cân nhắc và HOÃN — DEC-029, đừng nghĩ lại từ đầu.**
-  Viết lại 12 câu nhóm E sang giọng bệnh nhân, giữ nguyên nhãn, đo cùng câu ở HAI văn phong.
-  **Điều kiện làm:** chỉ khi 50 câu đã đóng (đã đóng) và còn thời gian — và phải xếp TRÊN
-  E2 trong thứ tự cắt DEC-015, tức chấp nhận E2 chết trước.
+- ~~Phương án B dở dang vì hết quota~~ — **✅ ĐÓNG HẲN 2026-09-08.** Đã sinh 21
+  biến thể (DEC-054 gỡ hạn mức), đã đo (DEC-055), và **đã soi tay đủ 21 câu**
+  (DEC-058) — `eyeballed: true` cả 21, **0 câu bị loại, 0 câu bị sửa**. Chạy lại
+  `eval_register_shift.py` sau khi soi ra **đúng từng con số**. Hết sơ bộ.
+  ⚠️ Giá đã trả: E2 evidence-highlighting chết trước (DEC-015).
+  ⚠️ Giọng bệnh nhân do **LLM mô phỏng**, không phải câu người bệnh thật →
+  hiệu ứng đo được là **cận dưới** của độ lệch thật. Phải vào Limitations.
+- **⚠️ `data/testset_e_patient.jsonl` PHẢI giữ đúng khuôn JSONL — mỗi bản ghi MỘT
+  dòng.** 2026-09-08 sửa tay lúc soi làm mỗi bản ghi trải ra nhiều dòng; JSON vẫn
+  hợp lệ nhưng `eval_register_shift.py:89` đọc `json.loads(l)` **từng dòng** nên
+  sẽ crash. Đã phục hồi đúng khuôn `build_testset_e_patient.py` ghi ra (sinh lại
+  = byte-identical). Muốn đọc cho dễ thì dùng bản `.md` ứng viên, đừng bẻ dòng
+  file `.jsonl`.
 - ~~Rotate API key Qdrant~~ — **BỎ (DEC-032).** Đừng mở lại. Rủi ro tồn dư + điều kiện
   phải đảo quyết định (trước khi deploy HF Spaces Tuần 7) ghi trong chính DEC-032.
-- **Chưa mở lại Streamlit BẰNG MẮT** (treo từ Session 5). 2026-09-07 đã xác nhận phần
+- ~~Chưa mở lại Streamlit bằng mắt~~ — **✅ ĐÓNG 2026-09-08, Đạt đã xem tận mắt.**
+  Phần máy kiểm được (giữ lại để tái lập): 2026-09-07 đã xác nhận phần
   máy kiểm được: `python -m streamlit run app/streamlit_app.py` → **trang chính HTTP 200
   + `/healthz` HTTP 200**. Nhưng Streamlit render phía client nên HTTP 200 **không**
   chứng minh giao diện hiện đúng — phần còn lại phải mở trình duyệt xem tận mắt.

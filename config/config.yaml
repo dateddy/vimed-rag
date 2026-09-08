@@ -83,15 +83,21 @@ grader:
   # dùng thì trả lời nhưng một số fold khác đã từ chối => trả lời KÈM CẢNH BÁO.
   # Đó là cách dùng có căn cứ cho nhánh AMBIGUOUS, thay vì một số tuỳ ý.
   #
-  # ⚠️ Trên test set hiện tại dải này RỖNG (câu E thấp nhất được trả lời là
-  # E-21 = 0.9375, ngay trên 0.933). Rỗng là KẾT QUẢ, không phải lỗi: phân bố
-  # nhóm E lưỡng cực với vực 3.06 logit (DEC-051) nên không có ca sát biên.
-  # Nhánh ANSWER_WITH_CAUTION vì thế CHƯA được đo trên dữ liệu thật.
+  # ⚠️ Dải này RỖNG ở phân bố LƯỢT TRUY HỒI ĐẦU (câu E thấp nhất được trả lời là
+  # E-21 = 0.9375, ngay trên 0.933) — phân bố nhóm E lưỡng cực với vực 3.06
+  # logit (DEC-051) nên không có ca sát biên.
+  # NHƯNG điểm LƯỢT HAI thì lấp vào: A-08 sau rewrite ra sigmoid 0.9255, rơi
+  # đúng vào dải. Nhánh ANSWER_WITH_CAUTION vì thế ĐÃ chạy trên dữ liệu thật —
+  # và lần chạy đầu tiên của nó là trên một câu LỌT LƯỚI (DEC-056).
   #
-  # ⚠️ CÒN MỘT LỖ CHƯA ĐO: LOOCV chấm trên điểm của LƯỢT TRUY HỒI ĐẦU. Vòng
-  # corrective cho mỗi câu A/B **một lần thử thứ hai** sau rewrite, và lượt đó
-  # chưa được hiệu chỉnh. Tuần 6 phải đo leakage sau rewrite, đừng cho rằng
-  # 0/30 tự động còn đúng.
+  # ⛔ LỖ ĐÃ ĐO XONG, KẾT QUẢ XẤU: LOOCV chấm trên điểm của LƯỢT TRUY HỒI ĐẦU;
+  # vòng corrective cho mỗi câu A/B một lần thử thứ hai chưa hiệu chỉnh.
+  # Đo end-to-end 59 câu (DEC-056): lượt 1 leakage 0/30, nhưng LƯỢT 2 làm lọt
+  # `A-01` và `A-08` -> leakage THẬT của hệ thống = **2/30 = 7%**, không phải 0%.
+  # Rewrite đẩy điểm nhóm A/B lên hệ thống (Δlogit trung vị +0.876, p = 0.0052).
+  # ⚠️ ĐỪNG vá bằng cách sửa hai số dưới đây: chúng hiệu chỉnh trên lượt 1, hạ
+  # xuống là phá luôn con số DEC-051. Sửa đúng = đổi thứ được chấm ở LƯỢT 2.
+  # Báo cáo: docs/leakage-after-rewrite.md
   correct_threshold: 0.933     # >= 0.933          -> CORRECT   -> ANSWER
   incorrect_threshold: 0.919   # <  0.919          -> INCORRECT -> rewrite/ABSTAIN
                                # [0.919, 0.933)    -> AMBIGUOUS -> ANSWER_WITH_CAUTION

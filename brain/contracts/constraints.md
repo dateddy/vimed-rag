@@ -22,6 +22,10 @@ tin cậy → dựng **đường cong risk–coverage** → chọn ngưỡng tr�
 
 ### Claim ĐƯỢC phép
 - [ ] "Hệ thống biết khi nào KHÔNG đủ căn cứ để trả lời" — đo được: **1 biểu đồ + 1 bảng**.
+      ⚠️ **PHẢI KÈM ĐIỀU KIỆN: "khi câu hỏi ở văn phong sách giáo khoa"** (DEC-055,
+      đo 2026-09-08). Cùng 21 câu, cùng bài vàng, chỉ đổi sang giọng bệnh nhân thì
+      coverage tụt **17/21 → 10/21** (p = 0,0015). Phát biểu claim không kèm điều
+      kiện này là phát biểu sai một nửa.
 
 ### Claim BỊ CẤM
 - [ ] KHÔNG claim "an toàn lâm sàng".
@@ -37,7 +41,16 @@ tin cậy → dựng **đường cong risk–coverage** → chọn ngưỡng tr�
       Chỉ nhóm D nói giọng bệnh nhân — **8/50 = 16%**.
       → Số đo retrieval có thể **lạc quan hơn thực tế** (câu sách giáo khoa chồng lấn từ
       vựng với corpus nên sparse khớp gần nguyên văn), và ngưỡng chọn từ risk–coverage
-      có thể **quá dễ dãi** với truy vấn đời thường. **Độ lệch này CHƯA được đo.**
+      có thể **quá dễ dãi** với truy vấn đời thường.
+      ✅ **ĐỘ LỆCH NÀY ĐÃ ĐO — DEC-055, 2026-09-08** (trước đó ghi "CHƯA được đo").
+      Đối chứng cặp trên 21 câu nhóm E, cùng nhãn cùng bài vàng, chỉ đổi văn phong:
+      coverage **17/21 (81%) → 10/21 (48%)**, 7 câu mất 0 câu được thêm, Δlogit
+      trung vị **−1,648**, kiểm định dấu **p = 0,0015**.
+      ⛔ **5/7 câu mất là lỗi THANG ĐIỂM, không phải lỗi truy hồi**: bài vàng vẫn
+      nằm top-5 (E-04 và E-06 vẫn **hạng 1 ở cả hai** văn phong) mà điểm tin cậy
+      sụp. Query rewrite chỉ cứu được 2/7.
+      ⚠️ Giọng bệnh nhân do **LLM mô phỏng** → hiệu ứng đo được là **cận dưới**
+      của độ lệch thật. Báo cáo: `docs/register-shift.md`.
 - [ ] **Hệ thống trả lời MỘT lượt, không dẫn dắt người dùng** (DEC-029). Không có hội thoại
       nhiều lượt, không hỏi lại để làm rõ, không đưa người bệnh đi từ lối sống → tiền sử →
       điều trị. Mỗi câu hỏi là một lượt độc lập.
@@ -53,9 +66,35 @@ tin cậy → dựng **đường cong risk–coverage** → chọn ngưỡng tr�
       ở tầng grader. Hệ quả: nhóm A/B đo được **năng lực thật** (thực thể vắng mặt khỏi
       corpus → score tụt hẳn, 0/30 lọt lưới ở ngưỡng ≥ 0,906), nhưng **không được suy ra**
       rằng hệ thống biết từ chối khi corpus có bài cùng chủ đề mà không chứa đáp án.
-- [ ] **Ngưỡng grader chọn trên chính tập dùng để đánh giá** (DEC-039). Chưa có tập giữ
-      lại; 12 câu E khiến mỗi câu bằng **8,3 điểm** coverage. Mọi con số ngưỡng báo cáo
-      phải kèm cảnh báo này, hoặc phải chờ nhóm E mở rộng lên 35–40 câu.
+- [ ] ~~**Ngưỡng grader chọn trên chính tập dùng để đánh giá**~~ (DEC-039) — **ĐÃ XỬ LÝ
+      bằng LOOCV, DEC-051.** Holdout bị loại bằng số: cắt 40% kéo mẫu số leakage
+      30 → 12, mà "0 lọt lưới" trên n câu chỉ chứng minh leakage < 3/n → claim an
+      toàn tụt từ **<10%** xuống **<25%**. LOOCV giữ mẫu số 21/30 mà vẫn không
+      thiên lệch. Con số bảo vệ: coverage **81% (CI 60–92%)** · leakage **0%
+      (CI 0–11%)**.
+      ⛔⛔ **CON SỐ LEAKAGE 0% CHỈ ĐÚNG CHO LƯỢT TRUY HỒI ĐẦU — ĐỪNG TRÍCH NÓ NHƯ
+      CON SỐ CỦA HỆ THỐNG** (DEC-056, đo 2026-09-08). Đo end-to-end cả 59 câu:
+      lượt 1 đúng là **0/30**, nhưng vòng corrective cho mỗi câu một lượt thứ hai
+      **chưa hiệu chỉnh**, và lượt đó làm lọt `A-01` + `A-08` →
+      **leakage THẬT = 2/30 = 7% (CI 2–21%)**. Số được phép đưa vào báo cáo cho
+      abstention của hệ thống là **7%**, không phải 0%.
+      ⚠️ **Vẫn phải ghi 3 điều:** (a) LOOCV ước lượng *quy trình chọn ngưỡng*, không
+      ước lượng con số đóng vào `config.yaml`; (b) mỗi câu E vẫn nặng **4,8 điểm**
+      coverage — CV không làm test set lớn lên; (c) `leakage 0/30` ở bản khớp toàn
+      bộ là **đúng theo định nghĩa**, không phải phát hiện thực nghiệm.
+- [ ] **⚖️ CLAIM "VÒNG CORRECTIVE LÀM HỆ THỐNG TỐT LÊN" HIỆN KHÔNG CHỐNG ĐỠ ĐƯỢC**
+      (DEC-057). Trên test set này rewrite **cứu 0/4** câu E bị từ chối oan và
+      **làm lọt 2/30** câu A/B — tác dụng đo được duy nhất là tạo ra leakage.
+      Đây là **trục đóng góp** của đề tài, nên kết quả âm này thuộc **Chương kết
+      quả**, không được giấu ở Limitations.
+      ⚠️ Nói cho đúng phạm vi: đây là phát biểu về **test set + ngưỡng hiện tại**,
+      KHÔNG phải "rewrite vô dụng" — DEC-046 vẫn có bằng chứng **định tính**. Cái
+      bị bác là claim **định lượng**.
+      Ba đường đo độc lập cùng chỉ một hướng: DEC-051 · DEC-055 · DEC-057.
+- [ ] **Trần coverage là trần của THANG ĐIỂM, không phải của truy hồi** (DEC-051,
+      xác nhận độc lập bởi DEC-055). 4 câu E không ngưỡng nào cứu được, **3/4 đã
+      truy hồi ĐÚNG bài vàng** (hạng 1–2) rồi bị reranker chấm âm. → Tăng recall
+      không cứu được; hướng cải tiến là **đổi tín hiệu tin cậy**.
 - [ ] **Không chứng minh được Hybrid > Dense** (DEC-038). `recall@20` bằng nhau tuyệt đối
       (0,750) trên cả 6 cấu hình 3 mode × 2 collection. Báo cáo trình bày hybrid như một
       **lựa chọn thiết kế có căn cứ** (top-5 dense ∩ sparse chỉ giao 1/5 bài → hai nhánh
