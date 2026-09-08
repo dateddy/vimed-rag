@@ -1,7 +1,17 @@
 models:
   embedder: BAAI/bge-m3
   reranker: BAAI/bge-reranker-v2-m3
-  llm: gemini-2.5-flash
+
+  # LLM vẫn là **gemini-2.5-flash** (tech stack CHỐT, không đổi) — chỉ đổi
+  # ĐƯỜNG ĐI tới nó, từ Google AI Studio sang OpenRouter (DEC-054).
+  # Lý do: free tier Google chỉ 20 lượt/NGÀY (DEC-053), không đủ cho Tuần 6
+  # (~90 lượt) lẫn demo Tuần 7.
+  #
+  # ⚠️ TÊN MODEL KHÁC NHAU giữa hai cổng — đổi provider mà quên đổi tên là 404:
+  #     openrouter -> google/gemini-2.5-flash
+  #     google     -> gemini-2.5-flash
+  llm: google/gemini-2.5-flash
+  llm_provider: openrouter        # openrouter | google
 
 data:
   # Corpus GATED trên HuggingFace -> cần HF_TOKEN trong env mới tải được.
@@ -50,31 +60,59 @@ chunking:
   overlap: 50
 
 grader:
-  # 2 ngưỡng trên rerank score.
+  # 2 ngưỡng trên rerank score (đã qua sigmoid — DEC-033).
   #
-  # ⛔ ĐÃ ĐO 2026-09-06 VÀ BỊ BÁC BỎ — DEC-039. GIỮ NGUYÊN SỐ, ĐỪNG NỐI VÀO
-  # PIPELINE. Ở correct_threshold=0.6, **10/30 câu nhóm A/B vẫn được TRẢ LỜI**
-  # (33% câu corpus không có tài liệu) — đi thẳng ngược claim của đề tài.
-  # Quét ngưỡng ở ĐÚNG cấu hình triển khai (top_k_dense=10, rerank_max_length=512
-  # — DEC-042) cho một **DẢI AN TOÀN** chứ không chỉ một điểm:
-  #   A/B cao nhất  +2.15  |  E thứ 9  +3.12  ->  dải (+2.15, +3.12] rộng 0.97 logit
-  #   điểm giữa dải: +2.63 logit = **sigmoid 0.933**
-  # Trong cả dải đó: 9/12 câu E được trả lời, **0/30 câu A/B lọt lưới**.
-  # (Cấu hình cũ max_length=1024 chỉ cho dải rộng 0.58 -> cắt cửa sổ subword
-  #  làm ngưỡng DỄ đặt hơn, không chỉ rẻ hơn.) Bảng: docs/retrieval-eval-deploy.md
+  # ✅ ĐÃ HIỆU CHỈNH BẰNG LOOCV 2026-09-08 — DEC-051, supersedes điều kiện
+  # "phải có tập giữ lại" của DEC-039. Báo cáo: docs/threshold-calibration.md
+  # Tái lập: python scripts/calibrate_threshold.py
   #
-  # KHÔNG đổi thành 0.9 ngay: ngưỡng đó chọn trên chính 42 câu dùng để đánh
-  # giá, không có tập giữ lại. Ngưỡng thật vẫn chốt ở Tuần 6 từ đường cong
-  # risk–coverage, BẮT BUỘC có tập giữ lại. Bảng quét: docs/retrieval-eval.md
-  correct_threshold: 0.6     # score >= correct_threshold      -> CORRECT
-  incorrect_threshold: 0.3   # score <  incorrect_threshold     -> INCORRECT
-                             # ở giữa 2 ngưỡng                  -> AMBIGUOUS
+  #   ranh giới TRẢ LỜI/TỪ CHỐI = +2.430 logit = sigmoid 0.919
+  #   LOOCV: coverage 17/21 = 81% (CI 60-92%) · leakage 0/30 = 0% (CI 0-11%)
+  #
+  # ⚠️⚠️ DẢI AMBIGUOUS PHẢI NẰM **TRÊN** RANH GIỚI, KHÔNG PHẢI DƯỚI.
+  # Đây là cái bẫy đã suýt mắc khi đổi số: LOOCV giả định quyết định NHỊ PHÂN
+  # (trả lời iff score >= 0.919), nhưng grader có BA trạng thái và AMBIGUOUS
+  # vẫn TRẢ LỜI (ANSWER_WITH_CAUTION). Nếu để incorrect_threshold=0.3 như cũ
+  # thì A-01 (sigmoid **0.8960**) rơi vào [0.3, 0.919) -> AMBIGUOUS -> trả lời,
+  # và toàn bộ nhóm A/B cũng vậy. "Leakage 0/30" bốc hơi ngay.
+  # => incorrect_threshold = ĐÚNG ranh giới hiệu chỉnh. Mọi thứ dưới nó phải
+  #    INCORRECT -> rewrite -> ABSTAIN.
+  #
+  # correct_threshold = sigmoid(+2.635) = 0.933 — ngưỡng CAO NHẤT mà bất kỳ
+  # fold LOOCV nào sinh ra. Câu rơi vào [0.919, 0.933) là câu mà ngưỡng đang
+  # dùng thì trả lời nhưng một số fold khác đã từ chối => trả lời KÈM CẢNH BÁO.
+  # Đó là cách dùng có căn cứ cho nhánh AMBIGUOUS, thay vì một số tuỳ ý.
+  #
+  # ⚠️ Trên test set hiện tại dải này RỖNG (câu E thấp nhất được trả lời là
+  # E-21 = 0.9375, ngay trên 0.933). Rỗng là KẾT QUẢ, không phải lỗi: phân bố
+  # nhóm E lưỡng cực với vực 3.06 logit (DEC-051) nên không có ca sát biên.
+  # Nhánh ANSWER_WITH_CAUTION vì thế CHƯA được đo trên dữ liệu thật.
+  #
+  # ⚠️ CÒN MỘT LỖ CHƯA ĐO: LOOCV chấm trên điểm của LƯỢT TRUY HỒI ĐẦU. Vòng
+  # corrective cho mỗi câu A/B **một lần thử thứ hai** sau rewrite, và lượt đó
+  # chưa được hiệu chỉnh. Tuần 6 phải đo leakage sau rewrite, đừng cho rằng
+  # 0/30 tự động còn đúng.
+  correct_threshold: 0.933     # >= 0.933          -> CORRECT   -> ANSWER
+  incorrect_threshold: 0.919   # <  0.919          -> INCORRECT -> rewrite/ABSTAIN
+                               # [0.919, 0.933)    -> AMBIGUOUS -> ANSWER_WITH_CAUTION
 
 corrective:
   max_iter: 1           # số lần rewrite tối đa khi INCORRECT (đúng 1 lần)
 
 generation:
   temperature: 0.2
+
+  # Hạn mức gọi API. `src/llm.py` tự giãn nhịp + thử lại khi 429/5xx.
+  #
+  # LỊCH SỬ SỐ NÀY — đừng hạ lại mà không biết vì sao:
+  #   Google AI Studio free (DEC-053): **5 lượt/phút VÀ 20 lượt/NGÀY**. Hạn mức
+  #   ngày là thứ đã chặn phương án B và sẽ chặn cả Tuần 6 (~90 lượt) lẫn demo
+  #   Tuần 7 — không code nào lách được.
+  #   OpenRouter (DEC-054, đang dùng): hạn mức theo credit, rộng hơn nhiều.
+  #
+  # 60 = 1 lượt/giây. Cố ý đặt THẤP hơn mức OpenRouter cho phép: một lô 59 câu
+  # chạy trong ~1 phút vẫn thừa nhanh, mà không có nguy cơ bị chặn giữa chừng.
+  requests_per_minute: 60
 
 qdrant:
   # DEC-018 — chạy trên Qdrant Cloud (free 1GB), KHÔNG dựng Docker local.

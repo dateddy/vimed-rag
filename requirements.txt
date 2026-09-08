@@ -36,7 +36,13 @@ qdrant-client>=1.9
 # theo sẵn embedder) và tự áp sigmoid trong repo.
 #   FlagEmbedding  -> CHỈ còn dùng cho bge-m3 (nhánh sparse).
 
-# --- Tuần 4: generation (DEC-045) ---
+# --- Tuần 4: generation (DEC-045, DEC-054) ---
+# OpenRouter là API kiểu OpenAI -> chỉ cần một lời POST JSON, dùng httpx thẳng
+# thay vì SDK `openai`. httpx vốn đã theo qdrant-client, nhưng KHAI BÁO RÕ ở đây:
+# dựa vào dependency bắc cầu là mời một bản nâng cấp qdrant-client làm gãy
+# đường sinh câu trả lời.
+httpx>=0.27
+
 # `google-genai` (SDK hiện hành, 2.x), KHÔNG phải `google-generativeai` —
 # gói đó đóng băng ở 0.8.6 và là SDK legacy. Kiểm 2026-09-07:
 #   google-genai 2.22.0 (phát hành liên tục) · google-generativeai 0.8.6 (dừng)
@@ -47,6 +53,9 @@ qdrant-client>=1.9
 # ⚠️ TEST KHÔNG CẦN GÓI NÀY. `src/generation/generator.py` import SDK bên trong
 # hàm và nhận `transport` tiêm được, nên 149/149 test chạy sạch trên clone chưa
 # cài nó. Gói ở đây là để CHẠY app + deploy HF Spaces Tuần 7.
+# CHỈ cần khi `models.llm_provider: google` (đường dự phòng, DEC-054).
+# Đang dùng OpenRouter nên gói này KHÔNG bắt buộc; giữ để đảo quyết định
+# mà không phải viết lại code.
 google-genai>=2.0
 
 # --- GATED: chỉ dùng sau khi Gate 0 GO (Tuần 3+) ---

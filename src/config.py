@@ -28,6 +28,11 @@ class ModelsConfig:
     embedder: str
     reranker: str
     llm: str
+    # Cổng gọi LLM: "openrouter" (API kiểu OpenAI) hoặc "google" (SDK
+    # google-genai). MODEL vẫn là gemini-2.5-flash ở cả hai — đây là đổi
+    # **đường đi**, không đổi tech stack (DEC-054). Có default để mọi chỗ dựng
+    # bằng tham số vị trí (`ModelsConfig("e", "r", "l")`) không phải sửa.
+    llm_provider: str = "openrouter"
 
 
 @dataclass(frozen=True)
@@ -79,6 +84,9 @@ class CorrectiveConfig:
 @dataclass(frozen=True)
 class GenerationConfig:
     temperature: float
+    # Hạn mức gọi API. Free tier Gemini = 5 (đo 2026-09-08, DEC-053). Có default
+    # để mọi chỗ dựng bằng tham số vị trí (`GenerationConfig(0.2)`) không phải sửa.
+    requests_per_minute: int = 5
 
 
 @dataclass(frozen=True)
