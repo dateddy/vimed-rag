@@ -14,7 +14,10 @@ Bản đồ lớp context. Tách theo **tốc độ thay đổi**, không theo c
 | `state/STATUS.md` | Trạng thái hiện tại + 3 mục "đã biết, đừng làm lại" + backlog | Đầu/cuối mỗi session | Đạt | Ghi đè mỗi session |
 | `../notebooks/kaggle_build_index.ipynb` | **Dây nối chạy embed+index trên Kaggle T4** — bản đã chạy thật, đã ra 2 collection | Khi chạy lại index | Đạt | Sống tới hết Tuần 3 |
 | `../notebooks/colab_build_index.ipynb` | Bản Colab dự phòng — **CHƯA CHẠY THỬ BAO GIỜ**, phải soi lại trước khi tin | Chỉ khi Kaggle hết quota GPU | Đạt | Sống tới hết Tuần 3 |
-| `handoff/2026-09-07-session10.md` | Handoff Session 10 (**TUẦN 3 ĐÓNG · nhóm E 12→21 · 2 claim bị dữ liệu bác bỏ**) | **Đầu phiên sau, cần biết dừng ở đâu** | Đạt | Archive sau 2 tuần |
+| `handoff/2026-09-10-session13.md` | Handoff Session 13 (**TUẦN 6 việc (1) ĐÓNG · guard lượt 2 đưa leakage 7%→0 · soi tay 30 câu A/B**) | **Đầu phiên sau, cần biết dừng ở đâu** | Đạt | Archive sau 2 tuần |
+| `handoff/2026-09-08-session12.md` | Handoff Session 12 (Tuần 5 đóng · leakage sau rewrite 2/30 · vòng corrective cứu 0 lọt 2) | Cần lịch sử DEC-056…058 | Đạt | Archive sau 2 tuần |
+| `handoff/2026-09-08-session11.md` | Handoff Session 11 (Tuần 4 đóng · OpenRouter · phương án B đo xong) | Cần lịch sử DEC-044…055 | Đạt | Archive sau 2 tuần |
+| `handoff/2026-09-07-session10.md` | Handoff Session 10 (**TUẦN 3 ĐÓNG · nhóm E 12→21 · 2 claim bị dữ liệu bác bỏ**) | Cần lịch sử DEC-033…043 | Đạt | Archive sau 2 tuần |
 | `handoff/archive/` | Session 02–09 (COMPRESS gốc · Gate 0 · solo · loader · Tuần 1 · chunking 512/50 · Tuần 2 index · safety subset) | Chỉ khi cần lịch sử DEC-016…021, 022…031 | Đạt | Lưu trữ, đông cứng |
 
 > **Dự án 1 người từ 2026-08-08** (DEC-013). `state/STATUS-B.md` đã xoá,
