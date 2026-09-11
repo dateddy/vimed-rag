@@ -300,3 +300,95 @@ def build_baseline_record(
         "reference_context_ids": q.get("reference_context_ids") or [],
         "cost": cost or {},
     }
+
+
+def chunk_from_json(d: dict) -> RetrievedChunk:
+    """Nghịch đảo của :func:`chunk_json` — dựng lại chunk từ dòng JSONL.
+
+    Tồn tại để nhánh **Static RAG** sinh câu trả lời từ ngữ cảnh **đã lưu**
+    trong ``runs.jsonl`` thay vì truy hồi lại: cùng câu hỏi, cùng đúng ngữ
+    cảnh lượt 1 mà hệ corrective đã thấy, nên chênh lệch giữa hai nhánh là
+    chênh lệch của **cơ chế quyết định**, không lẫn nhiễu truy hồi. Truy hồi
+    lại còn tốn Qdrant + nạp model (~53s) cho một con số đáng lẽ đã có.
+
+    ⚠️ ``specialties`` (tuple) KHÔNG có trong ``chunk_json`` nên về mặc định
+    ``()``. Không sao cho việc sinh câu trả lời — ``format_context`` không đọc
+    trường đó, và lọc theo khoa thì đang tắt (DEC-036). Nhưng **đừng** dùng hàm
+    này để dựng lại dữ liệu cho đường nào có đọc ``specialties``.
+
+    ``logit`` bị bỏ đi chứ không nạp lại: nó là hàm thuần của ``score``
+    (:func:`logit`), giữ hai bản là mở đường cho chúng lệch nhau.
+    """
+    return RetrievedChunk(
+        doc_id=d["doc_id"],
+        text=d.get("text") or "",
+        specialty=d.get("specialty"),
+        score=d["score"],
+        chunk_idx=d.get("chunk_idx"),
+        n_chunks=d.get("n_chunks"),
+        title=d.get("title"),
+        source=d.get("source"),
+    )
+
+
+def build_static_record(
+    q: dict,
+    answer: str,
+    context: list[dict],
+    *,
+    invalid_citations: list[str] | None = None,
+    gold_rank_turn1: int | None = None,
+    cost: dict | None = None,
+) -> dict:
+    """Một dòng JSONL cho nhánh **Static RAG** — truy hồi MỘT lượt, LUÔN trả lời.
+
+    Đây là nhánh tách được đóng góp của **hiệu chỉnh/từ chối** ra khỏi đóng góp
+    của **truy hồi**: nó dùng đúng ngữ cảnh lượt 1 mà hệ corrective đã thấy,
+    đúng prompt sinh của hệ corrective, chỉ bỏ đi grader + abstain + rewrite.
+
+    ⚠️⚠️ **``action`` Ở ĐÂY LÀ THEO CẤU TẠO, KHÔNG PHẢI PHÉP ĐO.** Static RAG
+    không có ``TerminalAction`` nào khác để chọn — nó luôn sinh câu trả lời.
+    Nên ``leaked=True`` trên mọi câu A/B/D là **định nghĩa của nhánh này**, y
+    hệt cái bẫy mà DEC-051 đã phải cảnh báo với ``leakage 0/30``: trích một con
+    số do quy trình ép ra như thể nó là kết quả thực nghiệm là sai. Cờ
+    ``action_by_construction`` mang đúng cảnh báo đó đi theo từng bản ghi, để
+    bảng nào đọc file này cũng không thể vô tình đọc thành phát hiện.
+
+    **Cái ĐO được ở nhánh này nằm trong ``answer``, không nằm trong ``action``:**
+    prompt sinh vẫn bảo model nói ra khi ngữ cảnh không chứa đáp án, nên Static
+    RAG **có thể tự từ chối bằng văn bản**. Đếm chuyện đó bằng regex là dựng
+    một phép đo giả (cùng lý do đã ghi ở :func:`build_baseline_record`) — nó
+    thuộc về RAGAS faithfulness. Thứ dùng được ngay mà **không** cần LLM judge
+    là ``invalid_citations`` (DEC-045).
+
+    Args:
+        q: dòng testset (``id``/``group``/``expected_action``/…).
+        answer: văn bản do generator thật sinh ra.
+        context: chunk lượt 1 **dạng JSON** (``turns[0]["chunks"]``) — lưu lại
+            đúng thứ đã đưa vào prompt, để RAGAS chấm trên chính nó.
+        gold_rank_turn1: hạng bài vàng trong ngữ cảnh đó, chép từ ``runs.jsonl``
+            chứ không tính lại (một phép tính, một chỗ).
+    """
+    expected = q.get("expected_action")
+    return {
+        "id": q["id"],
+        "group": q["group"],
+        "system": "static_rag",
+        "user_input": q["user_input"],
+        "expected_action": expected,
+        # Không có nhánh nào khác để đi — xem cảnh báo ở docstring.
+        "action": "ANSWER",
+        "action_by_construction": True,
+        "leaked": bool(expected == "ABSTAIN"),
+        "refused": False,
+        "n_turns": 1,
+        "rewritten": False,
+        "answer": answer,
+        "invalid_citations": list(invalid_citations or []),
+        "n_chunks_shown": len(context),
+        "retrieved": list(context),
+        "gold_rank": gold_rank_turn1,
+        "reference": q.get("reference"),
+        "reference_context_ids": q.get("reference_context_ids") or [],
+        "cost": cost or {},
+    }
