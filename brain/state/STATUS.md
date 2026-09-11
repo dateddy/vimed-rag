@@ -3,9 +3,37 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-10 (Session 13 — **TUẦN 6 VIỆC (1) ĐÓNG. Guard lượt 2 (DEC-061): leakage 7% → 0%, coverage không đổi. Soi tay 30 câu A/B: leakage nội dung 6/30 = 20%, **0 câu bịa tự do** — toàn bộ là thay thế thực thể. PA 3 (DEC-062) giữ mẫu số + báo độ nhạy. 282 test PASS**)
+**Cập nhật lần cuối:** 2026-09-11 (Session 14 — **TUẦN 6 VIỆC (2) ĐÓNG: đường cong risk–coverage (DEC-063). Đường cong ĐỔI VAI — không chọn ngưỡng nữa mà chứng minh điểm vận hành nằm trên biên hiệu quả. Vách 3,056 logit · câu E kế tiếp giá 9 câu lọt · dải miễn phí 2,412 logit. 316 test PASS. Tuần 6 còn ĐÚNG một việc: RAGAS**)
 
 ## Đang làm
+
+- **✅ TUẦN 6 VIỆC (2) ĐÓNG — ĐƯỜNG CONG RISK–COVERAGE** (DEC-063).
+  `src/eval/risk_coverage.py` hết stub · `scripts/build_risk_coverage.py` →
+  `docs/risk-coverage.md` + `docs/risk-coverage.png` · 33 test · **316 test PASS**
+  (282 → 316). Thuần số, **0 lượt API, không cần Qdrant**, chạy mili-giây.
+  - **Điểm vận hành: coverage 17/21 · leakage 0/30 · risk 0,000 ·
+    `is_on_frontier = True`** — 4/52 điểm sống sót qua phép loại trội.
+  - ⚠️⚠️ **ĐƯỜNG CONG KHÔNG DÙNG ĐỂ CHỌN NGƯỠNG.** Stub cũ và `constraints.md`
+    đều hứa thế; lời hứa đó **sai**. Ngưỡng chốt ở DEC-051 bằng LOOCV. Chọn lại
+    từ đường cong dựng trên đúng 51 câu ấy là **khớp-trên-tập-đánh-giá**. Vai
+    trò mới: **bằng chứng điểm vận hành nằm trên biên hiệu quả**.
+  - **Ba con số đọc được, cả ba là kết quả:**
+    (1) **vách 3,056 logit** — E thấp nhất được trả lời `+2,708`, E cao nhất bị
+    từ chối `-0,348`, giữa hai mốc **không có câu nào**;
+    (2) **giá của câu E kế tiếp = 9 câu A/B lọt lưới** (coverage 17→19 nhưng
+    leakage 0/30 → 9/30);
+    (3) **dải miễn phí 2,412 logit** — coverage đứng yên 17/21 trong khi leakage
+    tụt 9/30 → 0/30; điểm vận hành ở đúng đầu mút tốt nhất.
+  - ⚠️ **`risk` PHỤ THUỘC TỈ LỆ TEST SET.** Ở coverage tối đa `risk = 0,588` =
+    đúng 30/51 = tỉ lệ câu A/B. Thuộc tính của **test set**, không phải của hệ
+    thống. Trích "risk giảm 59% → 0%" là sai cùng kiểu với `leakage 0/30`.
+  - ⚠️ **HAI CẬN TRÊN ĐANG BỊ TRỘN TRONG REPO:** với 0/30, **Wilson** cho
+    `0–11%` (STATUS + DEC-061 đang trích) còn **quy tắc số ba** cho `< 10%`
+    (`threshold-calibration.md` đang trích). Cả hai đúng — nhưng phải **chọn một
+    và gọi tên nó mỗi lần trích**. Chưa thống nhất trong repo.
+  - **Đối chứng chéo đã chạy:** dựng lại từ `runs.jsonl` `turns[0]` → khớp
+    `calibration_scores.json` **51/51 câu**, lệch lớn nhất **9,5e-07**.
+  - Tái lập: `python scripts/build_risk_coverage.py`
 
 - **✅ SOI XONG 30 CÂU A/B — leakage tầng NỘI DUNG của Static RAG = 6/30 = 20%
   (CI 10–37%). Và cả 6 là THAY THẾ THỰC THỂ, 0 câu bịa tự do.**
@@ -473,16 +501,17 @@
 
 ## 3 việc kế tiếp
 
-1. **`git push origin main`** — `origin/main` còn ở `0f00902`, treo **5 commit +
-   cả Session 11 lẫn Session 12 chưa commit**. Vẫn là việc **rủi ro nhất**: mất
-   máy = mất hai phiên việc, trong đó có ba kết quả đổi trục đề tài (DEC-055/056/057).
-2. **TUẦN 6 — bắt đầu được ngay, nền dữ liệu đã có.** `runs.jsonl` xong nên
-   không phải chạy lại pipeline. Thứ tự giữ bằng mọi giá (DEC-015):
+1. ~~**`git push origin main`**~~ — **✅ ĐÃ PUSH 2026-09-11.** `origin/main` giờ ở
+   `58911bb`, hết treo Session 11/12/13. Rủi ro "mất máy = mất ba phiên việc"
+   đã tắt. **Giữ nhịp:** push ngay sau mỗi lô, đừng để dồn 17 commit lần nữa.
+2. **TUẦN 6 — còn ĐÚNG MỘT việc.** `runs.jsonl` xong nên không phải chạy lại
+   pipeline. Thứ tự giữ bằng mọi giá (DEC-015):
    ~~(1) bảng **Static vs Corrective**~~ — **✅ ĐÓNG 2026-09-09 (DEC-059)**, 4 nhánh,
    kết quả âm DEC-057 nằm ngay trong bảng chính;
-   (2) **risk–coverage** — `src/eval/risk_coverage.py` vẫn là stub `NotImplementedError`;
-   (3) **RAGAS** — `src/eval/run_ragas.py` cũng stub, và `ragas==0.4.3` vẫn đang
-   **comment** trong `requirements.txt`, phải quyết cài trước.
+   ~~(2) **risk–coverage**~~ — **✅ ĐÓNG 2026-09-11 (DEC-063)**, xem mục riêng bên dưới;
+   (3) **RAGAS** — `src/eval/run_ragas.py` vẫn stub, và `ragas==0.4.3` vẫn đang
+   **comment** trong `requirements.txt`, phải quyết cài trước. **Đây là việc
+   cuối của Tuần 6.**
 3. **Cạm bẫy còn lại.**
    ⚠️ ~~Leakage sau rewrite chưa đo~~ — **✅ ĐÃ ĐO (DEC-056): 2/30, không phải 0/30.**
    Con số abstention đem đi báo cáo là **7%**. Đừng trích lại "0/30" từ DEC-051.
