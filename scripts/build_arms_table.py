@@ -41,15 +41,19 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.config import load_config  # noqa: E402
+from src.eval.answer_content import coverage_two_layers  # noqa: E402
 from src.eval.arms import (  # noqa: E402
     ARM_LABEL,
     ARM_MECHANISM,
     ARMS,
+    answered_at_turn1,
+    arm_records,
     build_table,
     content_leakage,
     fmt_cell,
     mechanism_split,
 )
+from src.eval.stats import fmt_pct  # noqa: E402
 
 RUNS = ROOT / "data" / "processed" / "runs.jsonl"
 STATIC = ROOT / "data" / "processed" / "static_rag.jsonl"
@@ -196,6 +200,38 @@ def main() -> int:
     L.append("bảo model nói ra khi ngữ cảnh không chứa đáp án, nên **phần lớn câu là tự")
     L.append("từ chối bằng văn bản**. Báo cáo con số 30/30 mà không nói điều này là để")
     L.append("người đọc hiểu thành 30 câu trả lời nguy hiểm — sai.\n")
+    # --- B4: coverage cũng có hai tầng, y như leakage ---------------------- #
+    cov2 = coverage_two_layers(arm_records(records, "corrective_t1"), answered=answered_at_turn1, group="E")
+    L.append("### Coverage cũng có HAI TẦNG — B4\n")
+    L.append("Bảng chính đếm coverage theo `action`. Nhưng `action == \"ANSWER\"`")
+    L.append("chỉ nói **grader cho qua và pipeline đi nhánh trả lời** — nó không nói")
+    L.append("câu trả lời có nội dung.\n")
+    L.append("| tầng | coverage nhóm E | đọc là |")
+    L.append("|---|---|---|")
+    L.append(f"| **`action` — SỐ CHÍNH** | {fmt_pct(cov2['action'], cov2['n'])} | "
+             "cơ chế ngưỡng có cho qua không |")
+    L.append(f"| `nội dung` — số độ nhạy | {fmt_pct(cov2['content'], cov2['n'])} | "
+             "người dùng có nhận được nội dung không |")
+    L.append("")
+    if cov2["refusal_ids"]:
+        ids = ", ".join(f"`{q}`" for q in cov2["refusal_ids"])
+        L.append(f"Câu chênh: {ids} — ra `ANSWER` nhưng generator tự viết *“ngữ")
+        L.append("cảnh không chứa thông tin…”*.\n")
+    L.append("⛔ **VÌ SAO GIỮ TẦNG `action` LÀM SỐ CHÍNH, KHÔNG ĐỔI SANG NỘI DUNG.**")
+    L.append("Hai tầng trả lời hai câu hỏi khác nhau, và con số `17/21` là thứ **cơ chế")
+    L.append("ngưỡng thật sự sinh ra** — nó là cái DEC-051/055/061/063, `constraints.md`")
+    L.append("và đường cong risk–coverage đang trích. Đổi số chính sang `16/21` là sửa 6")
+    L.append("chỗ **và dựng lại đường cong**, để đổi lấy một con số trả lời một câu hỏi")
+    L.append("khác. Báo cáo cả hai thì người đọc có đủ mà không chỗ nào phải sửa.\n")
+    L.append("⚠️ Đây **không phải** sáng kiến mới: đúng khuôn DEC-062 đã dùng cho")
+    L.append("leakage (6/30 là số chính, 3/22 và 3/19 là độ nhạy).\n")
+    L.append("⚠️ Generator làm thế là **đúng theo prompt** — `generation.txt` bảo nó")
+    L.append("*“nếu ngữ cảnh không chứa thông tin cần thiết, hãy nói rõ là chưa đủ”*.")
+    L.append("Nên đây là **tầng phòng thủ cuối đang làm việc**, không phải một lỗi. Chỗ")
+    L.append("cần vá là **hiển thị** (câu `ANSWER` vẫn kèm 5 nguồn — B3), và vá ở")
+    L.append("Streamlit, không ở pipeline: đổi prompt là phải chạy lại lô 45 phút và mọi")
+    L.append("`docs/` đã đối chứng byte-identical mất hiệu lực.\n")
+
     L.append("### Chỉ báo đo được: trích dẫn bịa (DEC-045)\n")
     L.append(f"- Nhóm A/B: **{len(bad_ab)}/{len(ab)}** câu có trích dẫn `[n]` bịa.")
     L.append(f"- Nhóm E:   **{len(bad_e)}/{len(e)}** câu.\n")

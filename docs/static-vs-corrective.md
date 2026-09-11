@@ -75,6 +75,37 @@ bảo model nói ra khi ngữ cảnh không chứa đáp án, nên **phần lớ
 từ chối bằng văn bản**. Báo cáo con số 30/30 mà không nói điều này là để
 người đọc hiểu thành 30 câu trả lời nguy hiểm — sai.
 
+### Coverage cũng có HAI TẦNG — B4
+
+Bảng chính đếm coverage theo `action`. Nhưng `action == "ANSWER"`
+chỉ nói **grader cho qua và pipeline đi nhánh trả lời** — nó không nói
+câu trả lời có nội dung.
+
+| tầng | coverage nhóm E | đọc là |
+|---|---|---|
+| **`action` — SỐ CHÍNH** | 17/21 = **81%** (CI 95% Wilson 60–92%) | cơ chế ngưỡng có cho qua không |
+| `nội dung` — số độ nhạy | 16/21 = **76%** (CI 95% Wilson 55–89%) | người dùng có nhận được nội dung không |
+
+Câu chênh: `E-21` — ra `ANSWER` nhưng generator tự viết *“ngữ
+cảnh không chứa thông tin…”*.
+
+⛔ **VÌ SAO GIỮ TẦNG `action` LÀM SỐ CHÍNH, KHÔNG ĐỔI SANG NỘI DUNG.**
+Hai tầng trả lời hai câu hỏi khác nhau, và con số `17/21` là thứ **cơ chế
+ngưỡng thật sự sinh ra** — nó là cái DEC-051/055/061/063, `constraints.md`
+và đường cong risk–coverage đang trích. Đổi số chính sang `16/21` là sửa 6
+chỗ **và dựng lại đường cong**, để đổi lấy một con số trả lời một câu hỏi
+khác. Báo cáo cả hai thì người đọc có đủ mà không chỗ nào phải sửa.
+
+⚠️ Đây **không phải** sáng kiến mới: đúng khuôn DEC-062 đã dùng cho
+leakage (6/30 là số chính, 3/22 và 3/19 là độ nhạy).
+
+⚠️ Generator làm thế là **đúng theo prompt** — `generation.txt` bảo nó
+*“nếu ngữ cảnh không chứa thông tin cần thiết, hãy nói rõ là chưa đủ”*.
+Nên đây là **tầng phòng thủ cuối đang làm việc**, không phải một lỗi. Chỗ
+cần vá là **hiển thị** (câu `ANSWER` vẫn kèm 5 nguồn — B3), và vá ở
+Streamlit, không ở pipeline: đổi prompt là phải chạy lại lô 45 phút và mọi
+`docs/` đã đối chứng byte-identical mất hiệu lực.
+
 ### Chỉ báo đo được: trích dẫn bịa (DEC-045)
 
 - Nhóm A/B: **0/30** câu có trích dẫn `[n]` bịa.

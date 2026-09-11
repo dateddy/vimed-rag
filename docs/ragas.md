@@ -1,0 +1,99 @@
+# RAGAS — Faithfulness + metric truy hồi
+
+> Sinh bởi `python scripts/build_ragas_report.py`. Đọc `data/processed/runs.jsonl`, không chạy lại pipeline.
+
+Judge: **`openai/gpt-5`**, `temperature=0` (DEC-023). Khác họ với generator `google/gemini-2.5-flash` — đó là cả mục đích: judge cùng họ với thứ nó chấm thì phép đo mất tính độc lập.
+
+## ⚠️ Đọc bảng này thế nào cho đúng
+
+**Faithfulness trừng phạt câu từ chối đúng bằng điểm 0,0.** Đo thật, không suy đoán: `E-01` (trả lời thật, có trích dẫn) ra **0,70**, còn `E-21` (*“Ngữ cảnh không chứa thông tin về…”*) ra **0,00**. Lý do: RAGAS tách lời từ chối thành một **phát biểu siêu ngôn ngữ về ngữ cảnh** rồi hỏi ngữ cảnh có suy ra được nó không — không. Nên hành vi **đúng** của hệ thống này nhận điểm thấp nhất có thể.
+
+→ Vì thế bảng dưới **không có** dòng “trung bình toàn bộ”. Lấy trung bình trên tất cả thì hệ càng an toàn điểm càng thấp, và bảng sẽ nói ngược sự thật.
+
+⚠️ **Faithfulness đo “bám ngữ cảnh”, KHÔNG đo “đúng”.** Nhánh corrective phần lớn là từ chối nên điểm đẹp vì một lý do chán. **Đừng để metric này gánh claim “% giảm hallucination”** — dụng cụ đúng cho việc đó là cờ `leaked`, `invalid_citations`, và nhãn tay 6/30 của `review_static_leaks.py`.
+
+## Faithfulness
+
+### **Corrective + guard lượt 2 — HỆ ĐANG CHẠY**
+
+| | số câu | faithfulness |
+|---|---|---|
+| **câu có phát biểu thực chất — SỐ CHÍNH** | 16 | **0.747** |
+| câu từ chối (tách ra, KHÔNG vào trung bình) | 1 | *không áp dụng* |
+| tổng đã chấm | 17 | |
+
+Câu từ chối: `E-21`.
+
+### LLM-only (không truy hồi) — ngữ cảnh **MƯỢN**
+
+| | số câu | faithfulness |
+|---|---|---|
+| **câu có phát biểu thực chất — SỐ CHÍNH** | 11 | **0.463** |
+| câu từ chối (tách ra, KHÔNG vào trung bình) | 0 | *không áp dụng* |
+| tổng đã chấm | 11 | |
+
+⚠️ **Nhánh LLM-only được chấm bằng ngữ cảnh mượn.** Nó không truy hồi nên tự nó không có ngữ cảnh nào; bảng đưa vào đúng các đoạn mà nhánh corrective lấy được cho **cùng câu hỏi đó**. Phép đo vì thế đọc là *“câu trả lời không-truy-hồi này có được chống đỡ bởi bằng chứng tốt nhất corpus đưa ra được không”* — **không phải** cùng một phép đo với dòng trên. Không nói ra thì người đọc sẽ hiểu thành hai nhánh được chấm như nhau.
+
+## So sánh hai nhánh — GHÉP CẶP trên cùng bộ câu
+
+Mẫu ghép cặp: **9 câu** cả hai nhánh đều có điểm **và** đều có phát biểu thực chất.
+
+| nhánh | faithfulness trên mẫu ghép cặp |
+|---|---|
+| **Corrective + guard lượt 2 — HỆ ĐANG CHẠY** | **0.722** |
+| LLM-only (không truy hồi) (ngữ cảnh mượn) | **0.497** |
+| **chênh lệch** | **+0.225** |
+
+Kiểm định dấu: **1 câu corrective thấp hơn · 8 câu cao hơn · p = 0.0391**. Dùng kiểm định dấu chứ không t-test — n nhỏ và phân bố faithfulness không rõ dạng, cùng lý do đã ghi ở DEC-055.
+
+⚠️⚠️ **ĐỪNG so hai trung bình rời ở hai bảng trên.** Chúng đứng trên hai tập câu khác nhau (lô chấm dừng giữa chừng ở 403), nên hiệu của chúng **không phải** là hiệu ứng. Chỉ bảng ghép cặp này mới đọc được.
+
+## B4 — hai máy dò câu “ANSWER nhưng nội dung là từ chối”
+
+Hai phép dò **độc lập** với nhau: một quét văn bản (`is_refusal_text`), một đọc điểm (`faithfulness == 0`).
+
+- theo văn bản: ['E-21']
+- theo điểm 0: ['E-21']
+- **lệch nhau**: — (hai máy dò khớp hoàn toàn)
+
+## Metric truy hồi — tính bằng `retrieval_metrics.py`, KHÔNG bằng ragas
+
+3 metric không-LLM mà backlog gọi là “của RAGAS” (`NonLLMContextRecall`, `NonLLMContextPrecisionWithReference`, `IDBasedContextPrecision`) **trùng chức năng** với module đã có sẵn trong repo và đã được test phủ. Dùng lại module đó.
+
+Mẫu số: **21 câu nhóm E** — chỉ nhóm E có `reference_context_ids`. Câu không có đáp án vàng bị **bỏ qua**, không tính là 0: tính 0 cho câu vốn không có ground truth là bịa ra một thất bại không tồn tại.
+
+| metric | giá trị |
+|---|---|
+| `mrr@1` | 0.429 |
+| `mrr@10` | 0.524 |
+| `mrr@3` | 0.524 |
+| `mrr@5` | 0.524 |
+| `ndcg@1` | 0.429 |
+| `ndcg@10` | 0.549 |
+| `ndcg@3` | 0.549 |
+| `ndcg@5` | 0.549 |
+| `recall@1` | 0.429 |
+| `recall@10` | 0.619 |
+| `recall@3` | 0.619 |
+| `recall@5` | 0.619 |
+
+## ⚠️ Tình trạng chấm
+
+| nhánh | đã chấm | chưa chấm |
+|---|---|---|
+| **Corrective + guard lượt 2 — HỆ ĐANG CHẠY** | 17/17 | 0 |
+| LLM-only (không truy hồi) | 11/51 | 40 |
+
+⛔ **Lô chấm CHƯA XONG.** Lần chạy đầu dừng ở `403 Key limit exceeded` của OpenRouter sau 28 lượt — đúng rủi ro `STATUS.md` đã ghi (*“hết tiền là 402, cùng hậu quả với 429”*). Điểm đã chấm nằm trong cache, nên nâng hạn mức key rồi chạy lại thì **chỉ tốn phần còn thiếu**.
+
+⚠️ Câu chưa chấm **KHÔNG** được tính là 0 — `None` và `0.0` là hai thứ khác hẳn nhau (`0.0` là phán quyết *“không claim nào được chống đỡ”*; chưa chấm là *không có phán quyết*). Chúng nằm ngoài mọi mẫu số ở trên.
+
+## Tái lập
+
+```
+python scripts/build_ragas_report.py
+```
+
+Điểm judge được cache ở `data/processed/ragas_scores.json` (gitignore) nên chạy lại **không tốn lượt API nào**. `--refresh` để chấm lại từ đầu.
+
+⚠️ `ragas==0.4.3` **không chạy được** với `langchain-community` 0.4.x — nó import `langchain_community.chat_models.vertexai`, API đã bị gỡ. Phải pin lùi; xem `requirements-eval.txt`.

@@ -85,11 +85,21 @@ matplotlib==3.10.8
 # sentence-transformers>=3.0     # LOẠI ở Tuần 3 — DEC-033 + DEC-037. Đừng mở lại:
                                # reranker đi thẳng transformers, xem khối Tuần 2 trên.
 # datasets>=2.19               # tải HF dataset (loader)
-# ragas==0.4.3                  # đánh giá (Tuần 6). PIN CỨNG, KHÔNG dùng `>=`.
+# ⚠️ `ragas` ĐÃ CHUYỂN SANG `requirements-eval.txt` — 2026-09-11, Tuần 6 việc (3).
+#   ĐỪNG bỏ comment ở đây, đừng chép lại dòng `ragas==` vào file này.
+#
+#   Lý do tách: đo lại bằng `pip install --dry-run` thì ragas kéo **35 gói**,
+#   trong đó có **langgraph 1.2.11** — đúng thư viện ràng buộc cứng #1 gọi tên.
+#   DEC-022 vẫn đúng (eval offline ≠ orchestration), nhưng nó được quyết khi con
+#   số là "7 gói" và không ai nhắc langgraph. Giữ quyết định, đổi cách đóng gói:
+#   core install (app + test + HF Spaces Tuần 7) không kéo langgraph nữa.
+#
+#   Và ragas 0.4.3 **cài được nhưng không chạy được** với dep mặc định (nó import
+#   `langchain_community.chat_models.vertexai`, API đã bị gỡ ở 0.4.x) — phải pin
+#   lùi `langchain-community<0.4`. Chi tiết trong `requirements-eval.txt`.
 #
 #   Verify 2026-08-19: ragas KHÔNG có bản >= 1.0 (88 release đều 0.x, mới nhất
-#   0.4.3). `pip install --dry-run ragas==0.4.3` resolve sạch trên Python 3.13.2
-#   + numpy 2.4.4 + datasets 4.8.4 + pydantic 2.13.4 → 33 gói.
+#   0.4.3). Kiểm lại 2026-09-11: vẫn 0.4.3 là mới nhất, chưa có bản vá.
 #
 #   TÊN TRƯỜNG (SingleTurnSample) — chép ở đây để soạn test set khỏi mở lại docs.
 #   Cảnh báo cũ "0.1.x vs 0.2+" đã LỖI THỜI: 0.4.x dùng họ tên mới, KHÔNG phải
@@ -106,10 +116,19 @@ matplotlib==3.10.8
 #     NonLLMContextRecall                  retrieved_contexts + reference_contexts
 #     NonLLMContextPrecisionWithReference   (như trên)
 #     IDBasedContextPrecision              retrieved_context_ids + reference_context_ids
-#   Chỉ Faithfulness buộc có LLM — hoặc FaithfulnesswithHHEM (classifier T5 nhỏ,
-#   không gọi API), tránh được bẫy "judge cùng họ Gemini với generator".
+#   ⚠️ 3 METRIC TRÊN CUỐI CÙNG **KHÔNG** LẤY TỪ RAGAS — chúng trùng chức năng
+#   với `src/eval/retrieval_metrics.py` đã có sẵn và đã được test phủ. Kéo thư
+#   viện về để tính lại thứ repo đã tính là đúng cái trôi repo đã phải gỡ bốn
+#   lần (DEC-044 · DEC-045 · DEC-046 · stats.py). Chỉ **Faithfulness** đến từ
+#   ragas — nó là thứ repo thật sự không có (tách claim + NLI từng claim).
 #
-#   CONTRACT: ragas kéo theo 7 gói họ langchain + openai 2.x. Là dependency của
-#   thư viện eval chạy OFFLINE sau pipeline, KHÔNG phải orchestration —
-#   `RAGPipeline._route()` vẫn Python thuần. Xem DEC-022. GIỮ COMMENT tới Tuần 6.
+#   ⛔ `FaithfulnesswithHHEM` ĐÃ BỊ LOẠI, đừng mở lại: HHEM là cross-encoder
+#   huấn luyện trên **tiếng Anh**, đem chấm tiếng Việt y khoa thì con số không
+#   bảo vệ được. Bẫy "judge cùng họ Gemini" là thật, nhưng nhỏ hơn bẫy "judge
+#   không hiểu ngôn ngữ đang chấm". Judge đang dùng: `openai/gpt-5` qua
+#   **OpenRouter** — khác họ với generator, thêm 0 hạ tầng (DEC-054 trả sẵn).
+#
+#   CONTRACT: ragas là dependency của thư viện eval chạy OFFLINE sau pipeline,
+#   KHÔNG phải orchestration — `RAGPipeline._route()` vẫn Python thuần. Xem
+#   DEC-022. (Con số "7 gói" ở bản trước đã SAI: thực tế 35 gói, có langgraph.)
 # beautifulsoup4>=4.12          # strip HTML nâng cao (cleaner hiện dùng regex)

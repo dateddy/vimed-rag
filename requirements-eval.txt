@@ -1,0 +1,56 @@
+# Phụ thuộc CHỈ dùng cho eval offline Tuần 6 — KHÔNG thuộc core, KHÔNG lên
+# HF Spaces. Cài riêng khi cần chấm lại Faithfulness:
+#
+#     pip install -r requirements-eval.txt
+#     python scripts/build_ragas_report.py
+#
+# Không cài thì app, pipeline và toàn bộ test vẫn chạy sạch — `src/eval/
+# run_ragas.py` import ragas BÊN TRONG hàm và nhận judge tiêm được, nên test
+# dùng judge giả (ràng buộc #2). Báo cáo đã sinh thì đã commit ở docs/ragas.md.
+
+# ---------------------------------------------------------------------------
+# ⚠️⚠️ VÌ SAO TÁCH RA FILE RIÊNG, KHÔNG NHÉT VÀO requirements.txt
+# ---------------------------------------------------------------------------
+# `requirements.txt` ghi (verify 2026-08-19): "ragas kéo theo 7 gói họ langchain
+# + openai 2.x". Số đó nay SAI. Đo lại 2026-09-11 bằng `pip install --dry-run`:
+# **35 gói**, và trong đó có **langgraph 1.2.11** — đúng thư viện mà ràng buộc
+# cứng #1 gọi tên ("KHÔNG LangGraph, KHÔNG LangChain cho orchestration").
+#
+# DEC-022 đã phân định: ragas là thư viện eval chạy OFFLINE sau pipeline, không
+# phải orchestration; `RAGPipeline._route()` vẫn Python thuần. Phân định đó vẫn
+# đúng. NHƯNG nó được đưa ra khi con số là 7 gói và không ai nhắc tới langgraph.
+#
+# Nên: giữ quyết định, đổi cách đóng gói. Tách ra đây thì
+#   - `pip install -r requirements.txt` (app + test + deploy) KHÔNG kéo langgraph;
+#   - ai mở file này thấy ngay vì sao nó tồn tại;
+#   - `tests/test_run_ragas.py` khoá bằng máy rằng `src/` không import
+#     langchain/langgraph ở bất kỳ đâu.
+#
+# ⛔ ĐỪNG GỘP NGƯỢC VÀO requirements.txt cho gọn. Cái giá của "gọn" ở đây là
+# HF Spaces Tuần 7 cài 35 gói nó không bao giờ dùng, và một câu hỏi trước hội
+# đồng mà mình không có câu trả lời sạch.
+
+# ---------------------------------------------------------------------------
+# ⚠️⚠️ ragas 0.4.3 KHÔNG CHẠY ĐƯỢC VỚI DEP MẶC ĐỊNH — phải pin lùi
+# ---------------------------------------------------------------------------
+# `pip install ragas==0.4.3` resolve SẠCH rồi chết ngay lúc import:
+#
+#     ModuleNotFoundError: No module named
+#     'langchain_community.chat_models.vertexai'
+#
+# Vì `ragas/llms/base.py` import API đó, còn `langchain-community` 0.4.x đã gỡ
+# nó. Pin resolve được nhưng dep bắc cầu trôi lên trước — đúng loại hỏng mà
+# một cái pin cứng KHÔNG chặn được, vì nó nằm ở tầng dưới cái pin.
+#
+# 0.4.3 là bản MỚI NHẤT (kiểm 2026-09-11: 88 release, không có bản > 0.4.3),
+# nên không có đường vá bằng cách nâng cấp. Chỉ còn đường pin lùi phía dưới.
+#
+# ⛔ ĐỪNG NỚI `langchain-community` LÊN >= 0.4 — nới là ragas chết lại ngay,
+# và thông báo lỗi không hề nhắc tới ragas nên rất tốn thời gian truy.
+ragas==0.4.3
+langchain-community<0.4          # 0.3.31 lúc chốt — xem lý do ngay trên
+
+# `openai` KHÔNG khai báo ở đây một cách độc lập: nó theo ragas về, và judge
+# chỉ dùng nó làm client HTTP kiểu OpenAI trỏ vào **OpenRouter**
+# (`base_url=https://openrouter.ai/api/v1`). Không có lượt gọi nào đi thẳng
+# tới OpenAI, và không cần tài khoản OpenAI — chỉ cần key OpenRouter.
