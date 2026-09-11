@@ -7,6 +7,17 @@ Nguồn: COMPRESS Session 2, mục 8 + mục 2.
 ## Ràng buộc Claude Code PHẢI tôn trọng (mục 8) — checklist
 
 - [ ] KHÔNG LangGraph, KHÔNG LangChain cho orchestration.
+      ⚠️ **`pip list` CÓ langgraph từ 2026-09-11 — và điều đó không vi phạm ô này.**
+      `ragas` kéo về **35 gói**, trong đó `langgraph 1.2.11`. DEC-022 đã phân định:
+      ragas là eval chạy **offline sau** pipeline, `RAGPipeline._route()` vẫn Python
+      thuần. Phân định ấy chỉ đứng vững chừng nào **code repo không thật sự dùng** hai
+      thư viện đó, nên điều kiện ấy nay được **khoá bằng máy**:
+      `tests/test_run_ragas.py::test_src_khong_import_langchain_hay_langgraph`
+      quét AST toàn bộ `src/`. Câu trả lời trước hội đồng là một phép kiểm chạy được,
+      không phải một lời cam đoan.
+      ⚠️ Và ragas nằm ở `requirements-eval.txt`, **không** ở `requirements.txt` — core
+      install + HF Spaces Tuần 7 không kéo langgraph. (Con số "7 gói" ghi trong
+      `requirements.txt` trước đây là **sai**; đo lại 2026-09-11 ra 35.)
 - [ ] KHÔNG gọi model/dataset thật khi import hoặc test (mọi thứ nặng phải nằm sau Fake/GATED).
 - [ ] KHÔNG chạy `run_ingestion.py` với data thật cho tới khi **Gate 0 = GO**.
 - [ ] Grader phải **thuần** (không LLM). `max_iter=1` cứng.
@@ -150,6 +161,31 @@ Báo cáo: `docs/risk-coverage.md` · `docs/risk-coverage.png`.
       leakage nội dung **6/30 = 20%** (số chính) · **14–16%** khi loại câu bị gắn cờ.
       ⚠️ Biệt dược vắng + hoạt chất có (`A-08` `A-09` `A-10` `A-11` `B-10`) **KHÔNG** bị gắn
       cờ — nhãn ABSTAIN vẫn đúng vì thông tin theo sản phẩm không suy ra được từ hoạt chất.
+- [ ] **`norm_keyword()` KHÔNG chuẩn hoá chữ số ↔ chữ, và sẽ không được sửa cho khoá này**
+      (B6, 2026-09-12). Đây là **cơ chế** đứng sau dương tính giả ở mục trên: `A-02`
+      ra 0 hit **chỉ vì** viết `"2"` thay vì `"hai"`. Sửa hàm thì **không hồi tố** —
+      test set đã đóng, mọi con số đã in ra `docs/` vẫn nguyên hiệu lực — nên việc sửa
+      chỉ có lợi cho **lần dựng test set sau**, và được hoãn có ý thức.
+      ⚠️ Ghi vào đây thay vì để trong backlog vì backlog thì Tuần 8 sẽ quên, mà đây là
+      giới hạn của **phương pháp gán nhãn**, không phải một việc tồn đọng.
+- [ ] **CHƯA kiểm corpus có *trả lời được* 3 câu `A-02` `A-05` `A-06` hay không**
+      (B7, 2026-09-12). Corpus **có bài cùng khái niệm** (mục trên đã đo), nhưng "có bài
+      cùng chủ đề" ≠ "bài đó chứa đáp án" — đúng khoảng cách mà DEC-039 đã đo được ở
+      tầng grader. Sơ bộ chỉ `A-05` đáng ngờ (5/5 bài đúng chủ đề).
+      ⛔ **Và dù kiểm ra kết quả gì thì cũng KHÔNG được đổi nhãn**: DEC-062 đã chốt
+      không bỏ/không sửa câu nào khỏi test set, vì chọn lại đúng những câu hệ thống
+      thất bại là **chọn theo kết quả**. Nên phép kiểm này chỉ có thể sinh ra một dòng
+      giới hạn — và dòng đó chính là dòng này. Mở lại phải kèm DEC mới.
+- [ ] **Faithfulness (RAGAS) KHÔNG đo được câu từ chối** (A1, đo 2026-09-11/12). Câu
+      *"ngữ cảnh không chứa thông tin về X"* bị RAGAS tách thành một **phát biểu siêu
+      ngôn ngữ về ngữ cảnh**, rồi chấm **0,0** vì ngữ cảnh không suy ra được nó — tức
+      hành vi **đúng** của hệ thống này nhận điểm thấp nhất có thể (`E-01` trả lời thật
+      = 0,70 · `E-21` từ chối = 0,00).
+      → Mọi con số faithfulness trong báo cáo tính trên **câu có phát biểu thực chất**;
+      câu từ chối tách ra đếm riêng. **Trung bình trên toàn bộ câu là con số nói ngược
+      sự thật** và không được trích.
+      ⚠️ Và Faithfulness đo *bám ngữ cảnh*, **không** đo *đúng* — nó không thay được
+      nhãn tay 6/30 cho claim "% giảm hallucination".
 - [ ] **Không có inter-annotator agreement (κ)** — dự án 1 người (DEC-013). Bù lại bằng
       *nguồn nhãn kiểm chứng được*, không bằng đồng thuận người: nhóm A/B kiểm bằng script,
       D bằng policy tự công bố, E bằng ViMedAQA ground truth. Nhóm C (nhãn theo phán đoán)

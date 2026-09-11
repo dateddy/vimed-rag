@@ -3,9 +3,104 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-11 (Session 14 — **TUẦN 6 VIỆC (2) ĐÓNG: đường cong risk–coverage (DEC-063). Đường cong ĐỔI VAI — không chọn ngưỡng nữa mà chứng minh điểm vận hành nằm trên biên hiệu quả. Vách 3,056 logit · câu E kế tiếp giá 9 câu lọt · dải miễn phí 2,412 logit. 316 test PASS. Tuần 6 còn ĐÚNG một việc: RAGAS**)
+**Cập nhật lần cuối:** 2026-09-12 (Session 15 — **TUẦN 6 VIỆC (3) — RAGAS: hạ tầng XONG, lô chấm DỞ vì 403 credit. Faithfulness TRỪNG PHẠT câu từ chối đúng (0,0) — ngược dự đoán, đổi cách lập bảng. Ghép cặp 9 câu: corrective 0,722 vs LLM-only 0,497, p = 0,0391. B1 Wilson toàn repo · B4 coverage hai tầng · B5 whitelist · B6+B7 thành Limitations. DEC-064…068. 374 test PASS**)
+
+## ⛔ BLOCKER DUY NHẤT — credit OpenRouter
+
+**Lô chấm RAGAS dừng ở `403 Key limit exceeded` sau 28/76 lượt** (2026-09-11).
+Đúng rủi ro mục Blocker đã ghi từ DEC-054: *"hết tiền là 402, cùng hậu quả với 429"*.
+
+- **Nhánh quan trọng nhất ĐÃ XONG:** `corrective_t1` chấm đủ **17/17** câu trả lời.
+- Nhánh `llm_only` mới có `E-01…E-11`. **Chỉ còn 10 câu** (`E-12…E-21`) là đủ so
+  sánh cặp đầy đủ trên nhóm E — **không phải 48**. Nhóm A/B của baseline **không
+  cần chấm**: nhánh corrective từ chối hết 30 câu đó nên không có gì để ghép cặp.
+- Điểm đã chấm nằm trong cache (`data/processed/ragas_scores.json`), khoá theo
+  **sha256** nên bền qua các lần chạy → nâng hạn mức key rồi chạy lại **chỉ tốn
+  phần còn thiếu**.
+- Đọc phần đã có mà **không tốn thêm lượt nào**:
+  `python scripts/build_ragas_report.py --cache-only`
+- ⚠️ Nâng hạn mức ở: `https://openrouter.ai/workspaces/default/keys` — **việc của Đạt**,
+  không tự làm được.
+- ⚠️ Cân nhắc trước khi nạp: `openai/gpt-5` là model **suy luận**, ~100 giây/câu và
+  tốn token gấp bội vì reasoning. Nếu credit là thứ phải để dành cho demo Tuần 7
+  thì đổi `--model` sang một model rẻ hơn là lựa chọn hợp lý — **nhưng phải chấm
+  LẠI CẢ 76 câu** (khoá cache gồm tên model, cố ý: trộn điểm hai judge dưới một
+  cái tên là dựng phép đo giả).
 
 ## Đang làm
+
+- **◐ TUẦN 6 VIỆC (3) — RAGAS: HẠ TẦNG XONG, LÔ CHẤM DỞ** (DEC-065).
+  `src/eval/run_ragas.py` hết stub · `scripts/build_ragas_report.py` → `docs/ragas.md`
+  · `src/eval/answer_content.py` mới · **374 test PASS** (316 → 374).
+  - **CHỈ Faithfulness lấy từ ragas.** 3 metric truy hồi dùng lại
+    `retrieval_metrics.py` — kéo thư viện về để tính lại thứ repo đã tính là cái
+    trôi repo đã gỡ **bốn lần**.
+  - **Judge `openai/gpt-5` qua OpenRouter**, `temperature=0`. **BỎ HHEM** dù nó
+    miễn phí: huấn luyện trên **tiếng Anh**, chấm tiếng Việt y khoa thì số không
+    bảo vệ được. Bẫy "judge cùng họ Gemini" là thật nhưng **nhỏ hơn** bẫy "judge
+    không hiểu ngôn ngữ đang chấm".
+  - ⚠️⚠️ **FAITHFULNESS TRỪNG PHẠT CÂU TỪ CHỐI ĐÚNG BẰNG 0,0** — đo thật, và
+    **ngược hẳn dự đoán** (phiên này đoán `1.0`/`nan`). `E-01` trả lời thật =
+    **0,70** · `E-21` *"ngữ cảnh không chứa thông tin…"* = **0,00**. RAGAS tách
+    lời từ chối thành **phát biểu siêu ngôn ngữ về ngữ cảnh** rồi hỏi ngữ cảnh có
+    suy ra được không — không.
+    → **KHÔNG BAO GIỜ lấy trung bình trên toàn bộ câu**: hệ càng an toàn điểm
+    càng thấp. `FaithSummary` **cố ý không có** `mean_all`, có test khoá.
+    → Đổi lại, `faithfulness == 0` thành **máy dò B4 độc lập** với phép dò văn bản;
+    trên lô hiện tại hai máy dò **khớp hoàn toàn**.
+  - ⚠️ **Faithfulness đo *bám ngữ cảnh*, KHÔNG đo *đúng*.** Đừng để nó gánh claim
+    "% giảm hallucination" — dụng cụ đúng là `leaked` · `invalid_citations` ·
+    nhãn tay 6/30.
+  - **KẾT QUẢ GHÉP CẶP (9 câu cả hai nhánh đều có điểm và đều thực chất):**
+    corrective **0,722** vs LLM-only **0,497** · Δ **+0,225** · kiểm định dấu
+    **8/9 nghiêng corrective, p = 0,0391**.
+    ⚠️ **ĐỪNG so hai trung bình rời** (0,747 vs 0,463): chúng đứng trên **hai tập
+    câu khác nhau** vì lô chấm dừng giữa chừng. Chỉ bảng ghép cặp đọc được.
+  - ⚠️ Nhánh LLM-only chấm bằng **ngữ cảnh MƯỢN** của nhánh corrective (nó không
+    truy hồi). Cách dùng **phi tiêu chuẩn**, báo cáo phải gọi tên.
+  - ⚠️ **`ragas==0.4.3` cài được nhưng KHÔNG chạy được** với dep mặc định — import
+    `langchain_community.chat_models.vertexai`, API đã gỡ ở 0.4.x. Pin cứng
+    **không chặn được** vì hỏng nằm ở tầng **dưới** cái pin. Phải
+    `langchain-community<0.4`. Xem `requirements-eval.txt`.
+  - ⚠️ **`pip list` giờ CÓ `langgraph`** — ragas kéo **35 gói** (không phải "7" như
+    `requirements.txt` ghi). Không vi phạm ràng buộc #1 (DEC-022: eval offline ≠
+    orchestration) và điều kiện đó nay **khoá bằng máy**: test quét AST toàn `src/`.
+    Ragas ở `requirements-eval.txt` nên core install + HF Spaces **không** kéo nó.
+  - Tái lập: `python scripts/build_ragas_report.py --cache-only`
+
+- **✅ B1 ĐÓNG — CẬN TRÊN THỐNG NHẤT VỀ WILSON, gọi tên ở mọi lần trích** (DEC-064).
+  Sửa ở **gốc**: `fmt_pct()` in `CI 95% Wilson a–b%` → mọi call site được đặt tên
+  cùng lúc. 5 call site `rule_of_three` trong 3 script chuyển sang `wilson`.
+  **Giữ** `rule_of_three()` — docstring của nó là chỗ duy nhất giải thích *"0/n
+  nghĩa là gì"*, xoá rồi cần lại là mời **bản sao thứ tư**.
+  - **2 lỗi thật bắt được:** `build_arms_table.py` **dán nhãn sai** (in *"< 11%
+    (quy tắc số ba)"* nhưng 11% là cận **Wilson**; số đúng, tên sai) · `wilson(0,n)[0]`
+    trả `2,8e-17` thay vì `0.0`, làm hỏng bất biến `lo <= k/n <= hi`.
+  - ⚠️ **Một claim của chính B1 bị dữ liệu bác:** *"Wilson bảo thủ hơn"* **không
+    phổ quát** — với `k=0` chỉ đúng khi **`n ≥ 14`** (điểm đảo `3Z²/(Z²−3) ≈ 13,69`);
+    ở `n=12` thì ngược lại. Kết luận vẫn đứng vì mọi mẫu số repo trích đều `n ≥ 19`,
+    nhưng đứng vì **dải n cụ thể**, không vì tính chất phổ quát. Đã khoá bằng test.
+  - `tests/test_stats.py` mới (25 test) — `stats.py` trước nay **không có test trực
+    tiếp nào** dù 3 script phụ thuộc.
+
+- **✅ B4 ĐÓNG — COVERAGE HAI TẦNG, giữ `action` làm số chính** (DEC-066).
+  `action` **17/21 = 81%** (CI Wilson 60–92%) · `nội dung` **16/21 = 76%** (CI Wilson
+  55–89%). Chênh đúng **`E-21`**. Quét 59 câu: 18 ra ANSWER, **đúng 2** nói "không
+  có thông tin" (`E-21`, `A-01`).
+  - **KHÔNG đụng pipeline.** Đổi số chính sang 16/21 là sửa **6 chỗ** *và dựng lại
+    đường cong*; giữ 17/21 thì **0 chỗ** phải sửa mà người đọc vẫn có đủ.
+  - Đúng khuôn **DEC-062** đã dùng cho leakage (6/30 chính + 3/22, 3/19 độ nhạy).
+  - Generator làm thế là **đúng theo prompt** → đây là **tầng phòng thủ cuối đang
+    làm việc**, một kết quả, không phải lỗi. Chỗ cần vá là **hiển thị** (B3), vá ở
+    **Streamlit** chứ không ở pipeline.
+
+- **✅ B5 ĐÓNG** (DEC-067) — whitelist `calibration_scores.json` (8,5 KB). Clone sạch
+  giờ dựng lại được `docs/risk-coverage.png`. **Không** whitelist `runs.jsonl` (2,3 MB).
+
+- **✅ B6 + B7 ĐÓNG — thành 2 mục Limitations, không viết code** (DEC-068).
+  B6 (`norm_keyword` chữ số↔chữ) **không hồi tố** → sửa chỉ lợi cho lần dựng test set
+  sau. B7 bị **DEC-062 khoá**: dù soi ra `A-05` đáng đổi nhãn cũng **không được đổi**,
+  nên kết quả khả dĩ duy nhất là một đoạn Limitations — viết luôn đoạn đó.
 
 - **✅ TUẦN 6 VIỆC (2) ĐÓNG — ĐƯỜNG CONG RISK–COVERAGE** (DEC-063).
   `src/eval/risk_coverage.py` hết stub · `scripts/build_risk_coverage.py` →
@@ -504,20 +599,32 @@
 1. ~~**`git push origin main`**~~ — **✅ ĐÃ PUSH 2026-09-11.** `origin/main` giờ ở
    `58911bb`, hết treo Session 11/12/13. Rủi ro "mất máy = mất ba phiên việc"
    đã tắt. **Giữ nhịp:** push ngay sau mỗi lô, đừng để dồn 17 commit lần nữa.
-2. **TUẦN 6 — còn ĐÚNG MỘT việc.** `runs.jsonl` xong nên không phải chạy lại
-   pipeline. Thứ tự giữ bằng mọi giá (DEC-015):
-   ~~(1) bảng **Static vs Corrective**~~ — **✅ ĐÓNG 2026-09-09 (DEC-059)**, 4 nhánh,
-   kết quả âm DEC-057 nằm ngay trong bảng chính;
-   ~~(2) **risk–coverage**~~ — **✅ ĐÓNG 2026-09-11 (DEC-063)**, xem mục riêng bên dưới;
-   (3) **RAGAS** — `src/eval/run_ragas.py` vẫn stub, và `ragas==0.4.3` vẫn đang
-   **comment** trong `requirements.txt`, phải quyết cài trước. **Đây là việc
-   cuối của Tuần 6.**
+2. **TUẦN 6 — cả 3 việc đã có hạ tầng; chỉ còn DỮ LIỆU của việc (3).** (DEC-015)
+   ~~(1) bảng **Static vs Corrective**~~ — **✅ ĐÓNG 2026-09-09 (DEC-059)**;
+   ~~(2) **risk–coverage**~~ — **✅ ĐÓNG 2026-09-11 (DEC-063)**;
+   ~~(3) **RAGAS** — code~~ — **✅ ĐÓNG 2026-09-12 (DEC-065)**, hết stub, 374 test PASS.
+   **◐ CÒN LẠI: 10 lượt chấm** (`llm_only`, `E-12…E-21`) — chặn bởi **403 credit
+   OpenRouter**, xem mục BLOCKER đầu file. Đây là việc duy nhất còn giữa Tuần 6
+   và Tuần 7, và nó **không phải việc code**.
+
+   ⚠️ **VIỆC NGƯỜI, LÀM ĐƯỢC NGAY, KHÔNG CHỜ CREDIT — B2: Đạt duyệt lại nhãn.**
+   `data/static_leak_review.jsonl` **30/30 dòng** vẫn `labeled_by: claude-draft-pass`.
+   Con số **20% leakage nội dung** ở bảng chính Static-vs-Corrective **chưa được
+   phép trích** cho tới khi Đạt đọc lại (DEC-014). Giảm tải: chỉ **6 câu có phát
+   biểu** (`A-02 A-05 A-06 A-08 A-10 A-11`) quyết định con số — soi kỹ 6, quét
+   nhanh 24. Quy trình: đọc `data/processed/static_leak_review.md` → sửa `verdict`
+   + đổi `labeled_by` → `python scripts/review_static_leaks.py --tally`.
+   `data/concept_variants.jsonl` **hạ ưu tiên** (chỉ đẻ ra bảng độ nhạy mà DEC-062
+   đã quyết không dùng để đổi số chính).
 3. **Cạm bẫy còn lại.**
    ⚠️ ~~Leakage sau rewrite chưa đo~~ — **✅ ĐÃ ĐO (DEC-056): 2/30, không phải 0/30.**
    Con số abstention đem đi báo cáo là **7%**. Đừng trích lại "0/30" từ DEC-051.
    ⚠️ ~~Dải AMBIGUOUS rỗng, nhánh caution chưa chạy~~ — **đã chạy** (A-08, DEC-056).
-   ⚠️ **Coverage tính theo `action` ĐẾM DƯ 1** so với nội dung: E-21 ra `ANSWER`
-   nhưng generator tự nói không có thông tin. Tuần 6 chấm RAGAS sẽ lộ ra chỗ này.
+   ⚠️ ~~**Coverage tính theo `action` ĐẾM DƯ 1**~~ — **✅ ĐÓNG 2026-09-12 (DEC-066):
+   báo cáo HAI mẫu số**, `action` 17/21 (số chính) · nội dung 16/21 (độ nhạy).
+   ⛔ **Và câu "Tuần 6 chấm RAGAS sẽ lộ ra chỗ này" ghi ở bản trước là ĐÚNG NHƯNG
+   NGƯỢC CHIỀU** — đã kiểm: RAGAS lộ ra `E-21` bằng điểm **0,0**, không phải bằng
+   một cờ đỏ về ngữ nghĩa từ chối. Ai đi tìm `nan` hay `1.0` sẽ không thấy gì.
    ⚠️ Corpus trong Qdrant **vẫn còn byline**: mọi đường mới đọc chunk ra đều phải
    tự gọi `strip_byline`, không có tầng nào cắt hộ.
    ⚠️ **Chi phí Tuần 7 phải dùng số ĐO, không dùng 17,2s dự tính** của DEC-042.
