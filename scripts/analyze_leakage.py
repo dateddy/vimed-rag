@@ -46,7 +46,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.config import load_config  # noqa: E402
 from src.eval.leakage import analyze, turn  # noqa: E402
-from src.eval.stats import fmt_pct, rule_of_three  # noqa: E402
+from src.eval.stats import fmt_pct, wilson  # noqa: E402
 
 RUNS = ROOT / "data" / "processed" / "runs.jsonl"
 OUT = ROOT / "docs" / "leakage-after-rewrite.md"
@@ -133,10 +133,10 @@ def report_lines(res: dict, runs: list[dict], cfg) -> list[str]:
         ]
     else:
         md += [
-            f"- ✅ **0 câu lọt lưới ở lượt hai.** ⚠️ Với n={ab['n']} điều đó chỉ "
-            f"chứng minh được leakage sau rewrite **< "
-            f"{100 * rule_of_three(ab['n']):.0f}%** (quy tắc số ba), KHÔNG "
-            "chứng minh bằng 0.",
+            f"- ✅ **0 câu lọt lưới ở lượt hai.** ⚠️ Với n={ab['n']} điều đó "
+            f"KHÔNG chứng minh leakage sau rewrite bằng 0 — cận trên 95% theo "
+            f"**Wilson** là **{100 * wilson(0, ab['n'])[1]:.0f}%** (B1: toàn "
+            f"repo dùng Wilson, gọi tên phương pháp ở mọi lần trích).",
         ]
 
     md += ["", "## Biên còn lại — 0 vì may hay vì dư địa?", ""]
@@ -341,8 +341,8 @@ def main() -> int:
     if ab["answered_turn2"]:
         print(f"    ⛔ lọt lưới ở lượt 2: {ab['answered_turn2']}")
     else:
-        print(f"    0 lọt lưới ở lượt 2 -> chỉ chứng minh được "
-              f"< {100 * rule_of_three(ab['n']):.0f}%")
+        print(f"    0 lọt lưới ở lượt 2 -> cận trên Wilson "
+              f"{100 * wilson(0, ab['n'])[1]:.0f}%")
 
     print(f"\n[2] BIÊN CÒN LẠI (câu A/B cao nhất so với ngưỡng)")
     for name, label in (("turn1", "lượt 1"), ("turn2", "lượt 2")):

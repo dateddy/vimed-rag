@@ -8,6 +8,13 @@ data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+# NGOẠI LỆ CÓ CHỦ Ý (B5) — 8,5 KB, là ĐẦU VÀO BẮT BUỘC của
+# `scripts/build_risk_coverage.py`, mà biểu đồ nó sinh ra (`docs/risk-coverage.png`)
+# mang claim chính của đề tài. Không whitelist thì clone sạch KHÔNG dựng lại được
+# biểu đồ đó — phải chạy lại lô ~45 phút + tốn credit trước đã.
+# ⛔ KHÔNG whitelist `runs.jsonl` (2,3 MB): nó chỉ dùng để ĐỐI CHỨNG CHÉO, và
+# script đã tự degrade kèm thông báo khi thiếu (build_risk_coverage.py:361).
+!data/processed/calibration_scores.json
 
 # Python
 __pycache__/

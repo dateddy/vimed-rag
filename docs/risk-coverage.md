@@ -18,8 +18,8 @@
 |---|---|
 | ngưỡng (`config.yaml`, sigmoid) | `0.919` |
 | ngưỡng (logit) | **+2.4288** |
-| coverage E | 17/21 = **81%** (CI 95% 60–92%) |
-| leakage A/B | 0/30 = **0%** (CI 95% 0–11%) |
+| coverage E | 17/21 = **81%** (CI 95% Wilson 60–92%) |
+| leakage A/B | 0/30 = **0%** (CI 95% Wilson 0–11%) |
 | risk (lọt / đã trả lời) | **0.000** |
 | nằm trên biên hiệu quả? | **CÓ** — không điểm nào trội hẳn nó |
 
@@ -27,7 +27,9 @@
 
 ⚠️ **`leakage 0/30` ở đây là TỰ ĐỘNG ĐÚNG, không phải kết quả** — quy trình DEC-051 đặt ngưỡng ngay TRÊN điểm A/B cao nhất. Con số đem đi báo cáo là bản LOOCV, và **không bao giờ viết "= 0"**.
 
-⚠️ **Hai cận trên, hai phương pháp — đừng trộn.** Với 0/30: **Wilson** cho `0–11%` (con số trong bảng trên, và là con số STATUS/DEC-061 đang trích); **quy tắc số ba** cho `< 10%` (con số `threshold-calibration.md` đang trích). Cả hai đều đúng, chúng chỉ là hai ước lượng khác nhau — nhưng một báo cáo dùng lẫn lộn hai con số cho cùng một phép đo thì người đọc không có cách nào biết cái nào là cái nào. **Chọn một và gọi tên nó mỗi lần trích.**
+✅ **Cận trên đã thống nhất: WILSON** — với 0/30 là `0–11%`, và mọi chỗ trích trong repo nay **gọi tên phương pháp**. Bản trước của file này phải cảnh báo *“hai cận trên, đừng trộn”* vì `threshold-calibration.md` trích quy tắc số ba (`< 10%`) còn STATUS/DEC-061 trích Wilson (`0–11%`) cho **cùng một phép đo**; cả hai đều đúng nên người đọc không có cách nào biết con số trước mắt là cái nào. **Vì sao Wilson thắng:** (1) quy tắc số ba chỉ định nghĩa được khi `k = 0`, mà báo cáo còn phải trích `6/30`, `17/21`, `3/22`, `3/19`; (2) Wilson **đã** là mặc định trên thực tế (`fmt_pct` gọi thẳng nó); (3) ở **mọi mẫu số báo cáo này dùng** Wilson bảo thủ hơn (`0–11%` so với `< 10%`) — trích cận rộng hơn thì không ai bắt bẻ được.
+
+⚠️ **Lý do (3) có điều kiện, không phải luôn đúng — nói cho chính xác.** Với `k = 0`, cận trên Wilson rút gọn thành `Z²/(n+Z²)`, còn quy tắc số ba là `3/n`; Wilson rộng hơn **chỉ khi `n > 3Z²/(Z²−3) ≈ 13,7`**, tức `n ≥ 14`. Ở `n = 12` (riêng nhóm B) thì **ngược lại**: Wilson cho `0–24%` còn quy tắc số ba cho `< 25%`. Mọi mẫu số báo cáo này thực sự trích đều là `n ≥ 19`, nên kết luận đứng vững — nhưng nó đứng vững vì **dải n cụ thể**, không vì một tính chất phổ quát. Khoá bằng `tests/test_stats.py::test_wilson_bao_thu_hon_tu_n_14`.
 
 ## Ba con số đọc được từ đường cong
 

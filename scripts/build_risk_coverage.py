@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.config import load_config  # noqa: E402
-from src.eval.stats import fmt_pct, rule_of_three, wilson  # noqa: E402
+from src.eval.stats import fmt_pct, wilson  # noqa: E402
 from src.eval.risk_coverage import (  # noqa: E402
     cliff,
     compare_sources,
@@ -224,14 +224,28 @@ def main() -> int:
         "Con số đem đi báo cáo là bản LOOCV, và **không bao giờ viết \"= 0\"**.\n"
     )
     L.append(
-        f"⚠️ **Hai cận trên, hai phương pháp — đừng trộn.** Với {op.leak_ab}/"
-        f"{op.n_ab}: **Wilson** cho `0–{100 * hi_w:.0f}%` (con số trong bảng "
-        f"trên, và là con số STATUS/DEC-061 đang trích); **quy tắc số ba** cho "
-        f"`< {100 * rule_of_three(op.n_ab):.0f}%` (con số `threshold-calibration.md` "
-        "đang trích). Cả hai đều đúng, chúng chỉ là hai ước lượng khác nhau — "
-        "nhưng một báo cáo dùng lẫn lộn hai con số cho cùng một phép đo thì "
-        "người đọc không có cách nào biết cái nào là cái nào. **Chọn một và "
-        "gọi tên nó mỗi lần trích.**\n"
+        f"✅ **Cận trên đã thống nhất: WILSON** — với {op.leak_ab}/{op.n_ab} "
+        f"là `0–{100 * hi_w:.0f}%`, và mọi chỗ trích trong repo nay **gọi tên "
+        "phương pháp**. Bản trước của file này phải cảnh báo *“hai cận "
+        "trên, đừng trộn”* vì `threshold-calibration.md` trích quy tắc số ba "
+        "(`< 10%`) còn STATUS/DEC-061 trích Wilson (`0–11%`) cho **cùng một phép "
+        "đo**; cả hai đều đúng nên người đọc không có cách nào biết con số "
+        "trước mắt là cái nào. **Vì sao Wilson thắng:** (1) quy tắc số ba chỉ "
+        "định nghĩa được khi `k = 0`, mà báo cáo còn phải trích `6/30`, `17/21`, "
+        "`3/22`, `3/19`; (2) Wilson **đã** là mặc định trên thực tế (`fmt_pct` gọi "
+        f"thẳng nó); (3) ở **mọi mẫu số báo cáo này dùng** Wilson bảo thủ hơn "
+        f"(`0–{100 * hi_w:.0f}%` so với `< 10%`) — trích cận rộng hơn thì không "
+        "ai bắt bẻ được.\n"
+    )
+    L.append(
+        "⚠️ **Lý do (3) có điều kiện, không phải luôn đúng — nói cho chính xác.** "
+        "Với `k = 0`, cận trên Wilson rút gọn thành `Z²/(n+Z²)`, còn quy tắc số "
+        "ba là `3/n`; Wilson rộng hơn **chỉ khi `n > 3Z²/(Z²−3) ≈ 13,7`**, tức "
+        "`n ≥ 14`. Ở `n = 12` (riêng nhóm B) thì **ngược lại**: Wilson cho "
+        "`0–24%` còn quy tắc số ba cho `< 25%`. Mọi mẫu số báo cáo này thực sự "
+        "trích đều là `n ≥ 19`, nên kết luận đứng vững — nhưng nó đứng vững vì "
+        "**dải n cụ thể**, không vì một tính chất phổ quát. Khoá bằng "
+        "`tests/test_stats.py::test_wilson_bao_thu_hon_tu_n_14`.\n"
     )
 
     # ------------------------------------------------- ba con số đọc được

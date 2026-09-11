@@ -57,7 +57,7 @@ sys.path.insert(0, str(ROOT))
 # Khoảng tin cậy + quy tắc số ba lấy từ MỘT chỗ duy nhất. Bản sao cũ nằm ngay
 # trong file này đã xoá: hai định nghĩa CI trong cùng một báo cáo là đúng loại
 # trôi đã phải vá ba lần (DEC-044/045/046).
-from src.eval.stats import fmt_pct, rule_of_three  # noqa: E402
+from src.eval.stats import fmt_pct, wilson  # noqa: E402
 
 SCORES = ROOT / "data" / "processed" / "calibration_scores.json"
 OUT = ROOT / "docs" / "threshold-calibration.md"
@@ -206,8 +206,8 @@ def main() -> None:
     if cv["leaked"]:
         print(f"    câu lọt lưới: {cv['leaked_ids']}")
     else:
-        print(f"    0 lọt lưới trên {cv['ab_total']} câu -> chỉ chứng minh được "
-              f"leakage < {100 * rule_of_three(cv['ab_total']):.0f}%")
+        print(f"    0 lọt lưới trên {cv['ab_total']} câu -> cận trên Wilson "
+              f"{100 * wilson(0, cv['ab_total'])[1]:.0f}%")
 
     print("\n[3] TRẦN COVERAGE Ở LEAKAGE 0 — ngưỡng có phải chỗ nghẽn không?")
     print(f"    câu A/B cao nhất: {ceil['ab_max']:+.3f}")
@@ -333,9 +333,12 @@ def write_report(conf, cal, n_d, tau_full, lo, hi, full, cv, ceil) -> None:
                f"{', '.join('`' + q + '`' for q in cv['leaked_ids'])}.", ""]
     else:
         md += [
-            f"0 câu lọt lưới trong LOOCV. ⚠️ Điều đó chỉ chứng minh được "
-            f"**leakage < {100 * rule_of_three(cv['ab_total']):.0f}%** (quy tắc số ba, "
-            f"n={cv['ab_total']}), KHÔNG chứng minh leakage bằng 0.",
+            f"0 câu lọt lưới trong LOOCV. ⚠️ Điều đó **KHÔNG** chứng minh "
+            f"leakage bằng 0: với n={cv['ab_total']}, cận trên 95% theo "
+            f"**Wilson** là **{100 * wilson(0, cv['ab_total'])[1]:.0f}%**. "
+            f"(B1 — bản trước file này trích *quy tắc số ba* `< "
+            f"{300 // cv['ab_total']}%` trong khi phần còn lại của repo trích "
+            f"Wilson cho cùng phép đo; nay thống nhất về Wilson.)",
             "",
         ]
     md += [

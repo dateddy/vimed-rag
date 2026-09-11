@@ -11,9 +11,9 @@ Hiệu chỉnh LOOCV (DEC-051) và ngưỡng đóng vào `config.yaml` (DEC-052)
 
 | mốc | nghĩa là gì | nhóm A/B |
 |---|---|---|
-| **lượt 1** | không bị chấm INCORRECT ngay → trả lời luôn (đúng thứ LOOCV đo) | 0/30 = **0%** (CI 95% 0–11%) |
-| **lượt 2** | bị chặn ở lượt 1 nhưng **rewrite kéo lên** trên ngưỡng | 2/30 = **7%** (CI 95% 2–21%) |
-| **cuối** | con số THẬT của hệ thống | 2/30 = **7%** (CI 95% 2–21%) |
+| **lượt 1** | không bị chấm INCORRECT ngay → trả lời luôn (đúng thứ LOOCV đo) | 0/30 = **0%** (CI 95% Wilson 0–11%) |
+| **lượt 2** | bị chặn ở lượt 1 nhưng **rewrite kéo lên** trên ngưỡng | 2/30 = **7%** (CI 95% Wilson 2–21%) |
+| **cuối** | con số THẬT của hệ thống | 2/30 = **7%** (CI 95% Wilson 2–21%) |
 
 - 30/30 câu A/B đi tới lượt thứ hai (tức bị chấm INCORRECT ở lượt đầu — hiệu chỉnh làm đúng việc của nó).
 - ⛔ **2 câu lọt lưới Ở LƯỢT HAI**: `A-01`, `A-08`. Đây là leakage mà hiệu chỉnh **không nhìn thấy** — vòng corrective tự tạo ra nó. **Không được vá bằng cách hạ ngưỡng**: ngưỡng đã hiệu chỉnh trên lượt 1, đụng vào là phá luôn con số DEC-051.
@@ -75,7 +75,7 @@ Trích nguyên văn để người đọc tự phán, KHÔNG dán nhãn tự đ�
 
 ## Nhóm E — rewrite có cứu được câu nào không?
 
-- coverage cuối: 17/21 = **81%** (CI 95% 60–92%)
+- coverage cuối: 17/21 = **81%** (CI 95% Wilson 60–92%)
 - 4/21 câu E bị chấm INCORRECT ở lượt đầu và đi tới rewrite; **0** trong số đó được rewrite **cứu** (cuối cùng vẫn trả lời được).
 - từ chối nhầm (false refusal): `E-05`, `E-09`, `E-12`, `E-19`.
 

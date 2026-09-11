@@ -9,9 +9,9 @@ Cấu hình: `openrouter/google/gemini-2.5-flash` · chunk 512 · ngưỡng `inc
 | # | Nhánh | Cơ chế thêm vào | Leakage A/B ↓ | Coverage E ↑ | Nhóm D bị chặn ↑ |
 |---|---|---|---|---|---|
 | 1 | **LLM-only (không truy hồi)** | — | — *(cần RAGAS)* | — *(cần RAGAS)* | — *(cần RAGAS)* |
-| 2 | **Static RAG (1 lượt, luôn trả lời)** | + truy hồi | 30/30 = **100%** (CI 95% 89–100%) † | 21/21 = **100%** (CI 95% 85–100%) † | 0/8 = **0%** (CI 95% 0–32%) † |
-| 3 | ****Corrective + guard lượt 2 — HỆ ĐANG CHẠY**** | + policy gate, grader, ngưỡng hiệu chỉnh, **guard lượt 2** | 0/30 = **0%** (CI 95% 0–11%) | 17/21 = **81%** (CI 95% 60–92%) | 8/8 = **100%** (CI 95% 68–100%) |
-| 4 | **Corrective không guard (tái lập DEC-056/057)** | − guard lượt 2 (cho lượt 2 quyền lật) | 2/30 = **7%** (CI 95% 2–21%) | 17/21 = **81%** (CI 95% 60–92%) | 8/8 = **100%** (CI 95% 68–100%) |
+| 2 | **Static RAG (1 lượt, luôn trả lời)** | + truy hồi | 30/30 = **100%** (CI 95% Wilson 89–100%) † | 21/21 = **100%** (CI 95% Wilson 85–100%) † | 0/8 = **0%** (CI 95% Wilson 0–32%) † |
+| 3 | ****Corrective + guard lượt 2 — HỆ ĐANG CHẠY**** | + policy gate, grader, ngưỡng hiệu chỉnh, **guard lượt 2** | 0/30 = **0%** (CI 95% Wilson 0–11%) | 17/21 = **81%** (CI 95% Wilson 60–92%) | 8/8 = **100%** (CI 95% Wilson 68–100%) |
+| 4 | **Corrective không guard (tái lập DEC-056/057)** | − guard lượt 2 (cho lượt 2 quyền lật) | 2/30 = **7%** (CI 95% Wilson 2–21%) | 17/21 = **81%** (CI 95% Wilson 60–92%) | 8/8 = **100%** (CI 95% Wilson 68–100%) |
 
 † = **con số theo CẤU TẠO, không phải phép đo.** Static RAG không có cơ
 chế từ chối nào nên nó trả lời mọi câu — leakage 100% là *định nghĩa* của
@@ -51,8 +51,14 @@ chạy, vẫn chấm điểm, vẫn vào `trace`** — chỉ mất quyền lật
 coverage **17/21 không đổi**. Luật này *bỏ một bậc tự do* thay vì chọn một
 con số từ dữ liệu, nên không dính bẫy khớp-trên-tập-đánh-giá của DEC-051.
 
-⚠️ Viết đúng: sau guard, leakage là **“< 11%” (CI 95%, n=30, quy tắc số ba)**,
+⚠️ Viết đúng: sau guard, leakage là **“0–11%” (CI 95% Wilson, n=30)**,
 KHÔNG phải “= 0”.
+
+> Bản trước dòng này ghi *“< 11% … quy tắc số ba”* — **dán nhãn sai**:
+> `11%` là cận Wilson, còn quy tắc số ba với n=30 cho `10%`. Con số đúng,
+> tên phương pháp sai. Đúng loại lỗi mà B1 sinh ra để dọn: khi hai cận trên
+> cùng lưu hành thì nhãn trôi sang nhau mà không ai thấy. Nay toàn repo
+> dùng **Wilson** và gọi tên nó ở mọi lần trích.
 
 ⚠️ Bốn cách vá khác đã thử và **chết vì lý do đo được** (DEC-061): đòi lượt 2
 cải thiện · đòi tìm tài liệu mới · ngưỡng bất đối xứng · đòi thực thể có mặt.
@@ -88,7 +94,7 @@ Tiêu chí (kiểm chứng được, không phải cảm nhận): *câu trả l�
 **phát biểu thuộc tính** của thực thể X, trong khi corpus có **0 bài**
 về X?* Vế sau do script tính lại — 30/30 khớp nhãn đã lưu.
 
-**Leakage tầng nội dung: 6/30 = **20%** (CI 95% 10–37%)** — `A-02`, `A-05`, `A-06`, `A-08`, `A-10`, `A-11`
+**Leakage tầng nội dung: 6/30 = **20%** (CI 95% Wilson 10–37%)** — `A-02`, `A-05`, `A-06`, `A-08`, `A-10`, `A-11`
 
 **Tách theo cơ chế — hai loại cần cách vá khác nhau:**
 
@@ -111,9 +117,9 @@ phân tích độ nhạy lại bị chọn theo kết quả.
 
 | mẫu số | leakage nội dung |
 |---|---|
-| **toàn bộ A/B — SỐ CHÍNH** | 6/30 = **20%** (CI 95% 10–37%) |
-| bỏ câu cờ rõ | 3/22 = **14%** (CI 95% 5–33%) |
-| bỏ câu cờ rõ + cờ yếu | 3/19 = **16%** (CI 95% 6–38%) |
+| **toàn bộ A/B — SỐ CHÍNH** | 6/30 = **20%** (CI 95% Wilson 10–37%) |
+| bỏ câu cờ rõ | 3/22 = **14%** (CI 95% Wilson 5–33%) |
+| bỏ câu cờ rõ + cờ yếu | 3/19 = **16%** (CI 95% Wilson 6–38%) |
 
 Câu bị loại ở mức nghiêm nhất (11): `A-01`, `A-02`, `A-03`, `A-04`, `A-05`, `A-06`, `A-07`, `A-17`, `A-18`, `B-04`, `B-06`.
 

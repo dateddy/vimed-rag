@@ -10,7 +10,7 @@
 | | ngưỡng | coverage (E) | leakage (A/B) | dùng để |
 |---|---|---|---|---|
 | Khớp trên toàn bộ 51 câu | **+2.430** (sigmoid 0.919) | 17/21 | 0/30 | con số **đóng vào `config.yaml`** |
-| **LOOCV** | thay đổi theo fold | 17/21 = **81%** (CI 95% 60–92%) | 0/30 = **0%** (CI 95% 0–11%) | con số **báo cáo ở Chương 4** |
+| **LOOCV** | thay đổi theo fold | 17/21 = **81%** (CI 95% Wilson 60–92%) | 0/30 = **0%** (CI 95% Wilson 0–11%) | con số **báo cáo ở Chương 4** |
 
 ⚠️ **`leakage 0/30` ở dòng đầu là TỰ ĐỘNG ĐÚNG, không phải kết quả.** Quy trình chọn ngưỡng đặt nó ngay TRÊN điểm A/B cao nhất, nên bằng xây dựng thì không câu A/B nào vượt được. Trích nó như một phát hiện thực nghiệm là sai. Dòng LOOCV mới là con số có nội dung.
 
@@ -49,7 +49,7 @@ Qua 51 fold, ngưỡng chạy từ **+2.329** đến **+2.635** (biên độ **0
 
 Ngưỡng là hàm của **điểm A/B cao nhất** — một thống kê thứ tự cực trị. Bỏ đúng câu đang giữ kỷ lục ra khỏi tập chọn là ngưỡng tụt xuống câu cao nhì, và câu bị bỏ ra thường lọt lưới. Đó là phép đo trực tiếp mức độ phụ thuộc của ngưỡng vào **một** câu.
 
-0 câu lọt lưới trong LOOCV. ⚠️ Điều đó chỉ chứng minh được **leakage < 10%** (quy tắc số ba, n=30), KHÔNG chứng minh leakage bằng 0.
+0 câu lọt lưới trong LOOCV. ⚠️ Điều đó **KHÔNG** chứng minh leakage bằng 0: với n=30, cận trên 95% theo **Wilson** là **11%**. (B1 — bản trước file này trích *quy tắc số ba* `< 10%` trong khi phần còn lại của repo trích Wilson cho cùng phép đo; nay thống nhất về Wilson.)
 
 ## Giới hạn — phải vào báo cáo
 

@@ -43,14 +43,49 @@ def wilson(k: int, n: int) -> tuple[float, float]:
     denom = 1 + Z * Z / n
     center = (p + Z * Z / (2 * n)) / denom
     half = (Z / denom) * math.sqrt(p * (1 - p) / n + Z * Z / (4 * n * n))
-    return (max(0.0, center - half), min(1.0, center + half))
+    lo, hi = max(0.0, center - half), min(1.0, center + half)
+    # Ở hai biên, `center` và `half` bằng nhau về mặt TOÁN HỌC (với k=0 thì
+    # p=0 nên cả hai cùng rút gọn về `Z²/(2n·denom)`), nên cận phải đúng bằng
+    # 0 — float để lại cặn cỡ 2,8e-17. Cặn đó vô hại lúc in (`:.0f`) nhưng làm
+    # `wilson(0, n)[0] == 0.0` trả về False, tức một phép so sánh hiển nhiên
+    # đúng lại sai, và làm hỏng cả bất biến `lo <= k/n <= hi`. Chốt về giá trị
+    # đúng. (Bắt được nhờ `tests/test_stats.py` ngay lượt chạy đầu tiên của nó.)
+    if k == 0:
+        lo = 0.0
+    if k == n:
+        hi = 1.0
+    return (lo, hi)
 
 
 def rule_of_three(n: int) -> float:
     """Cận trên 95% của tỉ lệ khi quan sát ĐÚNG 0 sự kiện trong n lượt.
 
     Đây là câu trả lời cho "0/30 nghĩa là gì": không phải "bằng 0", mà là
-    "nhỏ hơn 3/30 = 10%". Con số này phải đi kèm mọi lần trích một mẫu số 0.
+    "nhỏ hơn 3/30 = 10%".
+
+    ⛔ **KHÔNG IN HÀM NÀY VÀO ``docs/`` NỮA — B1 chuẩn hoá toàn repo về Wilson.**
+    Hàm vẫn ở đây, và việc giữ nó là có chủ ý, vì hai lý do:
+    (1) docstring này là chỗ duy nhất trong repo giải thích *"0/n nghĩa là gì"*;
+    (2) xoá hàm rồi lúc cần lại chính là đường mời **bản sao thứ tư** vào nhà —
+    xem cảnh báo đầu module.
+
+    Vì sao Wilson thắng, ghi lại để khỏi mở lại cuộc tranh luận:
+    - Quy tắc số ba **chỉ định nghĩa được khi k = 0**. Repo còn phải trích
+      ``6/30`` (leakage nội dung), ``17/21`` (coverage), ``3/22``, ``3/19`` —
+      với những số đó quy tắc số ba **không nói được gì**.
+    - Wilson **đã là mặc định trên thực tế**: ``fmt_pct`` gọi thẳng nó, mà
+      ``fmt_pct`` là đường in chính của ``arms.py`` + ``leakage.py``.
+    - Ở **mọi mẫu số repo thật sự trích** Wilson bảo thủ hơn: ``0/30`` → Wilson
+      ``0–11%`` so với quy tắc số ba ``< 10%``. Trích cận rộng hơn thì không ai
+      bắt bẻ được.
+      ⚠️ **Có điều kiện, đừng nới phát biểu ra:** với ``k = 0`` cận trên Wilson
+      rút gọn thành ``Z²/(n+Z²)``, nên nó rộng hơn ``3/n`` **chỉ khi
+      ``n ≥ 14``** (điểm đảo chiều ``3Z²/(Z²−3) ≈ 13,69``). Ở ``n = 12`` —
+      đúng cỡ riêng nhóm B — thì **ngược lại**. Lý do (3) đứng vững nhờ dải n
+      của repo (mọi mẫu số đều ``n ≥ 19``), không nhờ một tính chất phổ quát.
+      Khoá ở ``tests/test_stats.py::test_wilson_bao_thu_hon_tu_n_14``.
+
+    Dùng được: đối chứng nhanh khi nghi Wilson cài sai (xem ``tests/test_stats.py``).
     """
     return 3.0 / n if n else 1.0
 
@@ -78,11 +113,19 @@ def sign_test(diffs: list[float]) -> tuple[int, int, float]:
 
 
 def fmt_pct(k: int, n: int) -> str:
-    """``k/n`` kèm phần trăm và khoảng tin cậy Wilson, dạng Markdown."""
+    """``k/n`` kèm phần trăm và khoảng tin cậy Wilson, dạng Markdown.
+
+    ⚠️ **GỌI TÊN "Wilson" TRONG CHUỖI TRẢ VỀ — cố ý, đừng rút gọn lại** (B1).
+    Repo từng trích lẫn lộn hai cận trên cho cùng một phép đo ``0/30``:
+    Wilson ``0–11%`` ở chỗ này, quy tắc số ba ``< 10%`` ở chỗ kia. Cả hai đều
+    đúng, nên người đọc **không có cách nào** biết con số trước mặt là cái nào
+    nếu phương pháp không được gọi tên. Sửa ở đây thì mọi call site
+    (``arms.py``, ``leakage.py``, mọi script) được đặt tên cùng một lúc.
+    """
     if n == 0:
         return "0/0 = **—**"
     lo, hi = wilson(k, n)
     return (
         f"{k}/{n} = **{100 * k / n:.0f}%** "
-        f"(CI 95% {100 * lo:.0f}–{100 * hi:.0f}%)"
+        f"(CI 95% Wilson {100 * lo:.0f}–{100 * hi:.0f}%)"
     )

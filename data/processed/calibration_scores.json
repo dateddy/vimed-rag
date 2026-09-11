@@ -1,0 +1,424 @@
+{
+  "config": {
+    "size": 512,
+    "mode": "hybrid",
+    "max_length": 512,
+    "top_k_dense": 10
+  },
+  "n_questions": 59,
+  "scores": [
+    {
+      "qid": "A-01",
+      "group": "A",
+      "max_logit": 2.1533749103546143,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "A-02",
+      "group": "A",
+      "max_logit": 1.2238060235977173,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "A-03",
+      "group": "A",
+      "max_logit": 0.295154333114624,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "A-04",
+      "group": "A",
+      "max_logit": -3.394011974334717,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "A-05",
+      "group": "A",
+      "max_logit": 1.5674058198928833,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "A-06",
+      "group": "A",
+      "max_logit": 1.9507750272750854,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "A-07",
+      "group": "A",
+      "max_logit": -0.8842813372612,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "A-08",
+      "group": "A",
+      "max_logit": -0.8839878439903259,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "A-09",
+      "group": "A",
+      "max_logit": 1.6043282747268677,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "A-10",
+      "group": "A",
+      "max_logit": 1.4469897747039795,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "A-11",
+      "group": "A",
+      "max_logit": -1.1176117658615112,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "A-12",
+      "group": "A",
+      "max_logit": 1.2962020635604858,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "A-13",
+      "group": "A",
+      "max_logit": -7.106003284454346,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "A-14",
+      "group": "A",
+      "max_logit": -6.940211296081543,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "A-15",
+      "group": "A",
+      "max_logit": -2.9660797119140625,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "A-16",
+      "group": "A",
+      "max_logit": -3.9570658206939697,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "A-17",
+      "group": "A",
+      "max_logit": -4.244560718536377,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "A-18",
+      "group": "A",
+      "max_logit": -3.372684955596924,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "B-01",
+      "group": "B",
+      "max_logit": -2.237501859664917,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "B-02",
+      "group": "B",
+      "max_logit": -2.891705274581909,
+      "gold_rank": null,
+      "n_docs": 4
+    },
+    {
+      "qid": "B-03",
+      "group": "B",
+      "max_logit": -5.433746337890625,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "B-04",
+      "group": "B",
+      "max_logit": -1.7001465559005737,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "B-05",
+      "group": "B",
+      "max_logit": -6.866194248199463,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "B-06",
+      "group": "B",
+      "max_logit": -4.076711654663086,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "B-07",
+      "group": "B",
+      "max_logit": -6.356431007385254,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "B-08",
+      "group": "B",
+      "max_logit": -5.995004653930664,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "B-09",
+      "group": "B",
+      "max_logit": -5.391168117523193,
+      "gold_rank": null,
+      "n_docs": 7
+    },
+    {
+      "qid": "B-10",
+      "group": "B",
+      "max_logit": 0.7034234404563904,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "B-11",
+      "group": "B",
+      "max_logit": -7.552465438842773,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "B-12",
+      "group": "B",
+      "max_logit": -5.615025997161865,
+      "gold_rank": null,
+      "n_docs": 7
+    },
+    {
+      "qid": "D-01",
+      "group": "D",
+      "max_logit": -2.3593616485595703,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "D-02",
+      "group": "D",
+      "max_logit": 1.4004442691802979,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "D-03",
+      "group": "D",
+      "max_logit": 1.628531813621521,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "D-04",
+      "group": "D",
+      "max_logit": -3.6823830604553223,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "D-05",
+      "group": "D",
+      "max_logit": -1.5158556699752808,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "D-06",
+      "group": "D",
+      "max_logit": -0.2427518665790558,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "D-07",
+      "group": "D",
+      "max_logit": -2.894031047821045,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "D-08",
+      "group": "D",
+      "max_logit": -0.5559758543968201,
+      "gold_rank": null,
+      "n_docs": 7
+    },
+    {
+      "qid": "E-01",
+      "group": "E",
+      "max_logit": 6.353372573852539,
+      "gold_rank": 1,
+      "n_docs": 9
+    },
+    {
+      "qid": "E-02",
+      "group": "E",
+      "max_logit": 3.8249502182006836,
+      "gold_rank": 6,
+      "n_docs": 9
+    },
+    {
+      "qid": "E-03",
+      "group": "E",
+      "max_logit": 4.116818428039551,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "E-04",
+      "group": "E",
+      "max_logit": 3.579177141189575,
+      "gold_rank": 1,
+      "n_docs": 5
+    },
+    {
+      "qid": "E-05",
+      "group": "E",
+      "max_logit": -0.35572904348373413,
+      "gold_rank": 2,
+      "n_docs": 9
+    },
+    {
+      "qid": "E-06",
+      "group": "E",
+      "max_logit": 3.3361289501190186,
+      "gold_rank": 1,
+      "n_docs": 9
+    },
+    {
+      "qid": "E-07",
+      "group": "E",
+      "max_logit": 5.379299163818359,
+      "gold_rank": null,
+      "n_docs": 7
+    },
+    {
+      "qid": "E-08",
+      "group": "E",
+      "max_logit": 5.049891471862793,
+      "gold_rank": 2,
+      "n_docs": 7
+    },
+    {
+      "qid": "E-09",
+      "group": "E",
+      "max_logit": -0.34833189845085144,
+      "gold_rank": 2,
+      "n_docs": 6
+    },
+    {
+      "qid": "E-10",
+      "group": "E",
+      "max_logit": 3.1171979904174805,
+      "gold_rank": 1,
+      "n_docs": 5
+    },
+    {
+      "qid": "E-11",
+      "group": "E",
+      "max_logit": 4.75439977645874,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "E-12",
+      "group": "E",
+      "max_logit": -1.295320749282837,
+      "gold_rank": 1,
+      "n_docs": 7
+    },
+    {
+      "qid": "E-13",
+      "group": "E",
+      "max_logit": 7.566737174987793,
+      "gold_rank": null,
+      "n_docs": 10
+    },
+    {
+      "qid": "E-14",
+      "group": "E",
+      "max_logit": 5.5253777503967285,
+      "gold_rank": 2,
+      "n_docs": 8
+    },
+    {
+      "qid": "E-15",
+      "group": "E",
+      "max_logit": 3.990602493286133,
+      "gold_rank": 1,
+      "n_docs": 8
+    },
+    {
+      "qid": "E-16",
+      "group": "E",
+      "max_logit": 6.2500104904174805,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "E-17",
+      "group": "E",
+      "max_logit": 5.0486907958984375,
+      "gold_rank": 1,
+      "n_docs": 4
+    },
+    {
+      "qid": "E-18",
+      "group": "E",
+      "max_logit": 6.674908638000488,
+      "gold_rank": null,
+      "n_docs": 8
+    },
+    {
+      "qid": "E-19",
+      "group": "E",
+      "max_logit": -2.824540376663208,
+      "gold_rank": null,
+      "n_docs": 9
+    },
+    {
+      "qid": "E-20",
+      "group": "E",
+      "max_logit": 3.1382455825805664,
+      "gold_rank": 1,
+      "n_docs": 7
+    },
+    {
+      "qid": "E-21",
+      "group": "E",
+      "max_logit": 2.7075095176696777,
+      "gold_rank": 2,
+      "n_docs": 6
+    }
+  ]
+}
