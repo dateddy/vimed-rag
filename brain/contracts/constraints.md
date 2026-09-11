@@ -10,15 +10,28 @@ Nguồn: COMPRESS Session 2, mục 8 + mục 2.
 - [ ] KHÔNG gọi model/dataset thật khi import hoặc test (mọi thứ nặng phải nằm sau Fake/GATED).
 - [ ] KHÔNG chạy `run_ingestion.py` với data thật cho tới khi **Gate 0 = GO**.
 - [ ] Grader phải **thuần** (không LLM). `max_iter=1` cứng.
-- [ ] Ngưỡng grader để default tạm + comment `"chọn từ risk-coverage Tuần 6"`.
+- [x] ~~Ngưỡng grader để default tạm + comment `"chọn từ risk-coverage Tuần 6"`.~~
+      **✅ ĐÓNG 2026-09-11 (DEC-063), nhưng KHÔNG theo cách ô này mô tả.**
+      Ngưỡng chốt ở **DEC-051 bằng LOOCV**, không phải từ đường cong — chọn lại từ
+      đường cong dựng trên đúng 51 câu ấy là khớp-trên-tập-đánh-giá. Đường cong
+      (`docs/risk-coverage.md`) giờ **chứng minh** điểm vận hành nằm trên biên hiệu
+      quả: `is_on_frontier = True`, và 4/52 điểm sống sót qua phép loại trội.
 - [ ] Repo đã có file sẵn → **đọc trước, đừng ghi đè**.
 
 ## Trục đóng góp — phần lõi trí tuệ, đừng làm loãng (mục 2)
 
 CRAG gốc: retrieval kém → fallback **web search** (nguồn không kiểm chứng, rủi ro trong y tế).
 ViMed-RAG thay bằng **calibrated abstention**: dùng rerank score + trạng thái grader làm điểm
-tin cậy → dựng **đường cong risk–coverage** → chọn ngưỡng trả lời/từ chối **từ dữ liệu**
-(không phải hằng số 0.3 tùy tiện).
+tin cậy → chọn ngưỡng trả lời/từ chối **từ dữ liệu** (không phải hằng số 0.3 tùy tiện)
+→ dựng **đường cong risk–coverage** để chứng minh ngưỡng đó nằm trên biên hiệu quả.
+
+⚠️ **THỨ TỰ HAI BƯỚC CUỐI ĐÃ ĐẢO — DEC-063, 2026-09-11.** Bản trước viết
+*"dựng đường cong → chọn ngưỡng từ đường cong"*. Thực tế ngưỡng chốt **trước**,
+bằng LOOCV (DEC-051), và đó là thứ tự **đúng**: chọn ngưỡng từ một đường cong
+dựng trên chính 51 câu đánh giá là khớp-trên-tập-đánh-giá — cái bẫy LOOCV sinh
+ra để tránh. Đường cong vẫn là **"1 biểu đồ"** mà claim bên dưới đòi, chỉ đổi
+vai: từ *cơ chế chọn* thành *bằng chứng điểm vận hành nằm trên biên hiệu quả*.
+Báo cáo: `docs/risk-coverage.md` · `docs/risk-coverage.png`.
 
 ### Claim ĐƯỢC phép
 - [ ] "Hệ thống biết khi nào KHÔNG đủ căn cứ để trả lời" — đo được: **1 biểu đồ + 1 bảng**.
