@@ -121,6 +121,28 @@ def policy_rule(trace: list[TraceStep]) -> str | None:
     return None
 
 
+def guard_suppressed(trace: list[TraceStep]) -> str | None:
+    """Lớp chặn lượt 2 có **thật sự giữ lại** một câu trả lời không (DEC-061)?
+
+    Trả về trạng thái mà lượt 2 đòi hỏi (``"CORRECT"``/``"AMBIGUOUS"``) khi
+    guard đã chặn; ``None`` khi guard chạy mà không có gì để chặn (lượt 2 vẫn
+    INCORRECT) **hoặc** khi guard tắt.
+
+    ⚠️ ``None`` gộp hai chuyện — "guard chạy nhưng không chặn" và "guard tắt".
+    Cần tách thì dùng :func:`guard_ran`: bước ``GUARD`` được ghi **kể cả khi
+    không chặn** (``note`` rỗng), đúng quy ước của bước ``POLICY``.
+    """
+    for step in trace:
+        if step.step == "GUARD":
+            return step.note or None
+    return None
+
+
+def guard_ran(trace: list[TraceStep]) -> bool:
+    """Lớp chặn lượt 2 có được thực thi không — tách khỏi "có chặn gì không"."""
+    return any(step.step == "GUARD" for step in trace)
+
+
 def gold_rank(chunks: list[RetrievedChunk], gold_ids) -> int | None:
     """Hạng (1-based) của **BÀI** vàng đầu tiên trong danh sách đã sắp.
 
@@ -250,6 +272,10 @@ def build_record(
         "refused": bool(expected == "ANSWER" and not answered),
         "abstain_mechanism": abstain_mechanism(result.trace),
         "policy_rule": policy_rule(result.trace),
+        # DEC-061: guard đã chạy chưa / đã giữ lại câu trả lời nào chưa. Hai
+        # trường riêng vì "chạy" và "chặn" là hai phép đếm khác nhau.
+        "guard_ran": guard_ran(result.trace),
+        "guard_suppressed": guard_suppressed(result.trace),
         "n_turns": len(turns),
         "rewritten": result.rewritten_query is not None,
         "rewritten_query": result.rewritten_query,

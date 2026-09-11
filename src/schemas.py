@@ -94,7 +94,7 @@ class TraceStep:
     theo nhánh (CORRECT/AMBIGUOUS/INCORRECT) và vẽ đường cong risk–coverage.
     """
 
-    step: str  # POLICY | RETRIEVE | GRADE | REWRITE | GENERATE | ABSTAIN
+    step: str  # POLICY | RETRIEVE | GRADE | REWRITE | GUARD | GENERATE | ABSTAIN
     state: str | None
     score: float | None
     note: str = ""

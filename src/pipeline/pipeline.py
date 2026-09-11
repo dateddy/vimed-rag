@@ -114,6 +114,28 @@ class RAGPipeline:
             ctx = self._retriever.retrieve(q2)
             state = self._grade(ctx, trace, note="sau rewrite", after="RETRIEVE")
 
+            # --- Lớp chặn lượt 2 (DEC-061) --------------------------------- #
+            # Truy hồi + chấm điểm Ở TRÊN vẫn chạy đủ, có chủ đích: `trace` phải
+            # giữ nguyên điểm lượt 2 — đó là thứ DEC-056/057 đo được và là thứ
+            # bảng Tuần 6 cần. Cái bị tước là **quyền LẬT quyết định**, không
+            # phải quyền chạy.
+            if not self._cfg.corrective.allow_turn2_promotion:
+                # `note` khác rỗng = đã chặn THẬT (lượt 2 đòi trả lời mà bị giữ
+                # lại); rỗng = lượt 2 vẫn INCORRECT nên không có gì để chặn.
+                # Cùng quy ước với bước POLICY, để Tuần 6 đếm được "guard đã
+                # chạy" tách khỏi "guard đã chặn".
+                trace.append(
+                    TraceStep(
+                        step="GUARD",
+                        state=state.value,
+                        score=None,
+                        note="" if state == GraderState.INCORRECT else state.value,
+                    )
+                )
+                # `break` chứ không `continue`: guard bật thì mọi lượt sau cũng
+                # không lật được gì, chạy tiếp chỉ tốn thêm lượt gọi LLM.
+                break
+
             if state == GraderState.CORRECT:
                 answer = self._generate(q2, ctx, trace, caution=False)
                 return self._result(

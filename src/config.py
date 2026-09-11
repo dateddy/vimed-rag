@@ -79,6 +79,12 @@ class GraderConfig:
 @dataclass(frozen=True)
 class CorrectiveConfig:
     max_iter: int
+    # Lượt 2 có được LẬT phán quyết INCORRECT của lượt 1 không (DEC-061).
+    # Mặc định **False** = không được. Lý do nằm ở số đo: điểm lượt 2 cao nhất
+    # của nhóm A/B là **+4,003**, của nhóm E là **+0,290** — phân bố ĐẢO NGƯỢC,
+    # nên điểm lượt 2 không phải tín hiệu tin cậy hợp lệ và không được trao cho
+    # nó quyền quyết định. Để `True` để tái lập con số cũ của DEC-056/057.
+    allow_turn2_promotion: bool = False
 
 
 @dataclass(frozen=True)

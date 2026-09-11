@@ -104,6 +104,11 @@ grader:
 
 corrective:
   max_iter: 1           # số lần rewrite tối đa khi INCORRECT (đúng 1 lần)
+  # Lượt 2 KHÔNG được lật phán quyết INCORRECT của lượt 1 (DEC-061).
+  # Đo được: điểm lượt-2 cao nhất nhóm A/B = +4,003 · nhóm E = +0,290 -> phân bố
+  # ĐẢO NGƯỢC, không tồn tại ngưỡng nào tách được. Bật lại (`true`) để tái lập
+  # con số cũ của DEC-056/057: leakage 2/30 thay vì 0/30.
+  allow_turn2_promotion: false
 
 generation:
   temperature: 0.2
