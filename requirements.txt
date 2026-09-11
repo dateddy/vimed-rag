@@ -58,6 +58,28 @@ httpx>=0.27
 # mà không phải viết lại code.
 google-genai>=2.0
 
+# --- Tuần 6: biểu đồ risk–coverage (DEC-063) ---
+matplotlib==3.10.8
+#
+# KHÔNG để trong khối GATED như `ragas`, và đây là lựa chọn có lý do: claim
+# chính của đề tài ("hệ thống biết khi nào KHÔNG đủ căn cứ để trả lời") được
+# `contracts/constraints.md` định nghĩa là đo bằng **1 biểu đồ + 1 bảng**.
+# Biểu đồ đó là `docs/risk-coverage.png` — nó phải dựng lại được trên máy sạch,
+# không phải sau một bước bỏ comment mà người clone repo không biết là có.
+#
+# PIN CỨNG, KHÔNG dùng `>=`: cùng lý do đã ghi cho `ragas` — biểu đồ đem đi bảo
+# vệ phải dựng lại ra đúng cái đã xem, và matplotlib đổi mặc định style giữa
+# các minor version.
+#
+# Dùng ở ĐÚNG MỘT chỗ: `scripts/build_risk_coverage.py:draw()`, sau một
+# `try: import matplotlib`. Thiếu gói thì script vẫn sinh đủ Markdown, chỉ bỏ
+# biểu đồ và nói ra. `src/eval/risk_coverage.py` **không** import nó (thuần
+# số) nên không có đường nào để test kéo matplotlib vào — ràng buộc #2.
+#
+# Backend ép `Agg` TRƯỚC khi import `pyplot`: máy dựng không có backend GUI, và
+# để mặc định thì `pyplot` đi dò backend rồi hỏng theo kiểu khó đọc trên
+# Windows headless.
+
 # --- GATED: chỉ dùng sau khi Gate 0 GO (Tuần 3+) ---
 # Bỏ comment khi thực sự cần, để scaffold cài nhẹ và test nhanh.
 # sentence-transformers>=3.0     # LOẠI ở Tuần 3 — DEC-033 + DEC-037. Đừng mở lại:
