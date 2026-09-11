@@ -52,37 +52,22 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8")
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+# Khoảng tin cậy + quy tắc số ba lấy từ MỘT chỗ duy nhất. Bản sao cũ nằm ngay
+# trong file này đã xoá: hai định nghĩa CI trong cùng một báo cáo là đúng loại
+# trôi đã phải vá ba lần (DEC-044/045/046).
+from src.eval.stats import fmt_pct, rule_of_three  # noqa: E402
+
 SCORES = ROOT / "data" / "processed" / "calibration_scores.json"
 OUT = ROOT / "docs" / "threshold-calibration.md"
 
 ABSTAIN_GROUPS = ("A", "B")  # phải TỪ CHỐI: corpus không có tài liệu
 ANSWER_GROUPS = ("E",)       # phải TRẢ LỜI: corpus có tài liệu
-Z = 1.96                     # 95%
 
 
 def sigmoid(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-x))
-
-
-def wilson(k: int, n: int) -> tuple[float, float]:
-    """Khoảng tin cậy Wilson 95% cho tỉ lệ k/n.
-
-    Dùng Wilson chứ không dùng Wald (p ± z·sqrt(p(1-p)/n)): với n nhỏ và p gần
-    0 hoặc 1 — đúng vùng của bài này — Wald cho khoảng vượt ra ngoài [0,1] và
-    hẹp một cách sai lệch.
-    """
-    if n == 0:
-        return (0.0, 1.0)
-    p = k / n
-    denom = 1 + Z * Z / n
-    center = (p + Z * Z / (2 * n)) / denom
-    half = (Z / denom) * math.sqrt(p * (1 - p) / n + Z * Z / (4 * n * n))
-    return (max(0.0, center - half), min(1.0, center + half))
-
-
-def rule_of_three(n: int) -> float:
-    """Cận trên 95% của tỉ lệ khi quan sát ĐÚNG 0 sự kiện trong n lượt."""
-    return 3.0 / n if n else 1.0
 
 
 def pick_threshold(cal: list[dict]) -> tuple[float | None, float, float | None]:
@@ -180,11 +165,6 @@ def ceiling(cal: list[dict]) -> dict:
         "scored_low": [(r["qid"], r["gold_rank"], r["max_logit"]) for r in scored_low],
         "cliff": gap,
     }
-
-
-def fmt_pct(k: int, n: int) -> str:
-    lo, hi = wilson(k, n)
-    return f"{k}/{n} = **{100 * k / n:.0f}%** (CI 95% {100 * lo:.0f}–{100 * hi:.0f}%)"
 
 
 def main() -> None:

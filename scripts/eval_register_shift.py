@@ -41,6 +41,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from src.config import load_config  # noqa: E402
+from src.eval.stats import sign_test  # noqa: E402
 from src.retrieval.indexer import collection_name  # noqa: E402
 
 # Tái dùng ĐÚNG phần chấm điểm của eval_retrieval thay vì chép lại: cùng bài học
@@ -60,24 +61,6 @@ OUT_MD = ROOT / "docs" / "register-shift.md"
 # Ngưỡng đang dùng, quy về logit để so với max_logit (DEC-052).
 # sigmoid(x) = 0.919  ->  x = ln(0.919/0.081)
 THRESHOLD_LOGIT = math.log(0.919 / (1 - 0.919))
-
-
-def sign_test(diffs: list[float]) -> tuple[int, int, float]:
-    """Kiểm định dấu (nhị thức chính xác, hai phía). Trả (âm, dương, p).
-
-    Dùng kiểm định dấu chứ không dùng t-test: n=21, phân bố điểm nhóm E **lưỡng
-    cực** (DEC-051) nên giả định chuẩn của t-test sai ngay từ đầu. Kiểm định dấu
-    không giả định gì về phân bố — đổi lại nó yếu hơn, và đó là cái giá đúng
-    phải trả khi không biết dạng phân bố.
-    """
-    neg = sum(1 for d in diffs if d < 0)
-    pos = sum(1 for d in diffs if d > 0)
-    n = neg + pos              # bỏ qua các cặp bằng nhau
-    if n == 0:
-        return neg, pos, 1.0
-    k = min(neg, pos)
-    tail = sum(math.comb(n, i) for i in range(k + 1)) / (2 ** n)
-    return neg, pos, min(1.0, 2 * tail)
 
 
 def main() -> None:

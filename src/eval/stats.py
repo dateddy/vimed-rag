@@ -6,19 +6,19 @@ thuộc cho khoảng tin cậy sai lệch nhất, nên chỗ này để riêng r
 
 Thuần số: không mạng, không model, không đọc file — import được ở mọi nơi.
 
-⚠️ **HAI BẢN SAO ĐANG TỒN TẠI, ghi ra đây thay vì im lặng.**
-Ba hàm dưới đây được viết TRƯỚC module này, nằm trong hai script:
+✅ **BẢN CÓ THẨM QUYỀN DUY NHẤT — bản sao đã dọn xong 2026-09-08.**
+``wilson``/``rule_of_three`` từng nằm trong ``scripts/calibrate_threshold.py``
+và ``sign_test`` trong ``scripts/eval_register_shift.py``; cả ba bản sao đã bị
+xoá, hai script giờ import từ đây. Trước khi xoá đã quét đối chứng 1.890 cặp
+``(k, n)`` và 3.005 vector hiệu — ba bản trùng khớp tuyệt đối, nên mọi con số
+đã in ra báo cáo vẫn nguyên hiệu lực.
 
-    scripts/calibrate_threshold.py   -> wilson(), rule_of_three()
-    scripts/eval_register_shift.py   -> sign_test()
-
-Ba bản hiện giống hệt nhau về công thức. Nhưng đây đúng là loại trôi đã phải
-vá ba lần rồi (DEC-044 regex policy · DEC-045 regex byline · DEC-046 client
-LLM): hai bản của cùng một phép tính thì sớm muộn lệch nhau, và lệch ở đây
-nghĩa là hai bảng trong CÙNG một báo cáo dùng hai định nghĩa khoảng tin cậy
-khác nhau mà không ai thấy. **Việc dọn:** trỏ hai script trên về module này
-rồi xoá bản sao của chúng. Chưa làm trong phiên này vì cả hai file đang nằm
-trong lô commit dở của Đạt — sửa vào là gây xung đột cho việc đang chạy.
+⛔ **ĐỪNG chép lại một bản thứ hai của bất kỳ hàm nào dưới đây.** Hai bản của
+cùng một phép tính thì sớm muộn lệch nhau, và lệch ở đây nghĩa là hai bảng
+trong CÙNG một báo cáo dùng hai định nghĩa khoảng tin cậy khác nhau mà không
+ai thấy. Đây là nước cờ chống trôi lần thứ tư của repo — sau DEC-044 (regex
+policy) · DEC-045 (regex byline) · DEC-046 (client LLM). Module thuần số,
+không phụ thuộc gì, nên không có lý do "import nặng quá" để chép lại.
 """
 
 from __future__ import annotations
