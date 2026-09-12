@@ -55,6 +55,7 @@ QUY TRÌNH SOI
 from __future__ import annotations
 
 import argparse
+import datetime
 import hashlib
 import importlib.util
 import json
@@ -74,6 +75,8 @@ STATIC = ROOT / "data" / "processed" / "static_rag.jsonl"
 RUNS = ROOT / "data" / "processed" / "runs.jsonl"
 CORPUS = ROOT / "data" / "processed" / "corpus.jsonl"
 OUT_MD = ROOT / "data" / "processed" / "static_leak_review.md"
+# Phiếu DUYỆT LẠI (lượt soi thứ hai) — gọn hơn hẳn phiếu soi lượt đầu.
+OUT_WS = ROOT / "data" / "processed" / "static_leak_worksheet.md"
 # ⚠️ Phán quyết nằm ở `data/`, KHÔNG ở `data/processed/` — thư mục kia bị
 # gitignore. Nhãn TAY là thứ đắt nhất và KHÔNG tái tạo được: mất là phải soi
 # lại từ đầu. Cùng chỗ với `testset.jsonl` và `testset_e_patient.jsonl`, đúng
@@ -277,13 +280,187 @@ def tally() -> int:
     return 0
 
 
+def worksheet() -> int:
+    """Phiếu DUYỆT LẠI gọn — dành cho lượt soi THỨ HAI, không phải lượt đầu.
+
+    Khác `build_report()` ở chỗ nào và vì sao cần cả hai:
+
+    * `build_report()` sinh phiếu cho người soi **lần đầu**, khi chưa có nhãn
+      nào — nên nó phải đưa đủ ngữ cảnh cho cả 30 câu (~42 KB).
+    * Phiếu này dành cho lúc **đã có nhãn nháp** và việc còn lại là *duyệt*.
+      Duyệt thì không cần đọc lại đều tay 30 câu, vì **chỉ 6 câu quyết định con
+      số**: con số tầng nội dung là *số câu `asserts_about_entity = true`*, nên
+      một câu `false` bị gán sai chỉ đổi kết quả nếu nó đáng lẽ phải là `true`.
+
+    Nên phiếu chia hai phần, cố ý bất đối xứng:
+      - **6 câu `true`** — in ĐẦY ĐỦ câu trả lời. Đây là chỗ phải đọc kỹ.
+      - **24 câu `false`** — in một dòng mỗi câu. Chỉ cần quét xem có câu nào
+        thật ra CÓ phát biểu thuộc tính mà bị bỏ sót không.
+
+    ⚠️ Phiếu này **không** hỏi lại chuyện `corpus_hits`: đó là sự kiện **máy
+    kiểm được** và `--tally`/lượt sinh phiếu đã đối chứng 30/30 kèm vân tay
+    corpus. Việc của người duyệt chỉ là vế trước của tiêu chí.
+    """
+    if not VERDICTS.exists():
+        sys.exit(f"!! Chưa có {VERDICTS.relative_to(ROOT)} — soi lượt đầu trước.")
+    if not STATIC.exists():
+        sys.exit(f"!! Thiếu {STATIC.relative_to(ROOT)} "
+                 "— chạy scripts/gen_static_rag.py")
+
+    verdicts = {r["id"]: r for r in load_jsonl(VERDICTS)}
+    static = {r["id"]: r for r in load_jsonl(STATIC)}
+    testset = {r["id"]: r for r in load_jsonl(TESTSET)}
+
+    co = sorted(q for q, v in verdicts.items() if v.get("asserts_about_entity"))
+    khong = sorted(q for q in verdicts if q not in co)
+
+    L: list[str] = []
+    L.append("# Phiếu DUYỆT LẠI — Đạt đọc, không phải Claude\n")
+    L.append("> Sinh bằng `python scripts/review_static_leaks.py --worksheet`.\n")
+    L.append("## Bạn đang duyệt cái gì\n")
+    L.append("Nhãn hiện tại do **Claude gán nháp** (`labeled_by: claude-draft-pass`) "
+             "và vì thế con số **20%** ở bảng Static-vs-Corrective **chưa được "
+             "phép trích vào báo cáo** — DEC-014: nhãn phải kiểm chứng được, và "
+             "*ai gán* là một phần của kết quả.\n")
+    L.append("**Tiêu chí — chỉ một câu, đừng mở rộng:**\n")
+    L.append("> Câu trả lời có **phát biểu thuộc tính** của thực thể X,")
+    L.append("> trong khi corpus có **0 bài** về X?\n")
+    L.append("⚠️ **KHÔNG** hỏi *“câu này trông có vẻ bịa không”* — đó đúng loại "
+             "nhãn theo phán đoán mà DEC-014 đã bỏ nhóm C vì không kiểm chứng "
+             "được. Vế *“corpus có 0 bài”* là **sự kiện máy đã kiểm** (30/30 "
+             "khớp, vân tay corpus khớp); bạn chỉ quyết vế đầu.\n")
+    L.append(f"**Khối lượng thật: {len(co)} câu cần đọc kỹ, {len(khong)} câu "
+             "chỉ quét.** Con số tầng nội dung = *số câu `true`*, nên một câu "
+             "`false` chỉ đổi kết quả nếu nó **đáng lẽ phải là `true`**.\n")
+
+    L.append("---\n")
+    L.append(f"## PHẦN 1 — {len(co)} câu đang gán `true` (ĐỌC KỸ)\n")
+    L.append("Mỗi câu dưới đây **cộng 1 vào tử số**. Sai một câu là con số đổi "
+             "từ 20% sang 17% hoặc 23%.\n")
+    L.append("⛔⛔ **CÁI BẪY LỚN NHẤT CỦA LƯỢT DUYỆT NÀY — ĐỌC TRƯỚC KHI QUYẾT "
+             "CÂU NÀO.**\n")
+    L.append("Cả 6 câu dưới đây đều thuộc loại **thay thế thực thể**: corpus "
+             "*có* khái niệm đó dưới **tên khác** (`hẹp van 2 lá` ↔ `hẹp van "
+             "hai lá` 17 bài · `ung thư tụy` ↔ `ung thư tuyến tụy` 5 bài · biệt "
+             "dược vắng nhưng hoạt chất có). Nên khi đọc, bạn **sẽ thấy câu trả "
+             "lời có vẻ đúng và có trích dẫn [1][2][3] hẳn hoi** — và sẽ thấy "
+             "muốn đổi nhãn sang `false`.\n")
+    L.append("**Đừng đổi vì lý do đó.** Tiêu chí hỏi *corpus có 0 bài về **X*** "
+             "— X là **đúng chuỗi thực thể** mà test set dùng, và `corpus_hits = "
+             "0` là **sự kiện đã kiểm bằng máy**, không phải nhận định. Chuyện "
+             "*\"nhưng khái niệm thì có trong corpus\"* **đã được xử lý ở chỗ "
+             "khác rồi**: DEC-062 gắn cờ trong `concept_variants.jsonl` và báo "
+             "cáo **độ nhạy 14–16%** bên cạnh số chính 20%. Đổi nhãn ở đây nữa "
+             "là **trừ hai lần cho cùng một điều**, và là phá thiết kế DEC-062.\n")
+    L.append("→ Vậy **khi nào thì đổi sang `false`?** Chỉ khi bạn thấy câu trả "
+             "lời **thật ra không phát biểu thuộc tính gì** — nó chỉ nhắc lại "
+             "câu hỏi, chỉ khuyên đi khám, hoặc chỉ nói không có thông tin. Tức "
+             "là bạn bác **vế đầu** của tiêu chí, không phải vế sau.\n")
+    for q in co:
+        v, ts = verdicts[q], testset.get(q, {})
+        ev = ts.get("label_evidence") or {}
+        L.append(f"### {q}\n")
+        L.append(f"**Câu hỏi:** {ts.get('user_input', '?')}\n")
+        L.append(f"**Thực thể X:** `{ev.get('entity', '?')}` "
+                 f"· loại `{ev.get('entity_type', '?')}` "
+                 f"· **corpus_hits = {ev.get('corpus_hits', '?')}**\n")
+        L.append(f"**Nhãn nháp:** `true` — *{v.get('note', '')}*\n")
+        L.append("**Câu trả lời Static RAG (đầy đủ):**\n")
+        L.append("```")
+        L.append((static.get(q, {}).get("answer") or "(thiếu)").strip())
+        L.append("```\n")
+        L.append("- [ ] **GIỮ `true`** — câu này có phát biểu thuộc tính của X")
+        L.append("- [ ] **ĐỔI sang `false`** — ghi lý do vào `note`\n")
+
+    L.append("---\n")
+    L.append(f"## PHẦN 2 — {len(khong)} câu đang gán `false` (QUÉT NHANH)\n")
+    L.append("Chỉ tìm **câu bị bỏ sót**: câu nào thật ra CÓ phát biểu thuộc "
+             "tính mà bị gán `false`. Phần lớn là câu tự nói *“ngữ cảnh không "
+             "chứa thông tin”* — quyết trong vài giây.\n")
+    L.append("| câu | thực thể X | nhãn nháp dựa trên | mở đầu câu trả lời |")
+    L.append("|---|---|---|---|")
+    for q in khong:
+        ev = (testset.get(q, {}).get("label_evidence") or {})
+        mo = " ".join((static.get(q, {}).get("answer") or "").split())[:110]
+        note = " ".join((verdicts[q].get("note") or "").split())[:60]
+        L.append(f"| `{q}` | `{ev.get('entity', '?')}` | {note} | {mo}… |")
+    L.append("")
+
+    L.append("---\n")
+    L.append("## Ghi kết quả duyệt\n")
+    L.append("**Nếu bạn ĐỒNG Ý với toàn bộ nhãn nháp** — chỉ cần đóng dấu "
+             "provenance:\n")
+    L.append("```\npython scripts/review_static_leaks.py --approve --reviewer dat\n```\n")
+    L.append("**Nếu bạn đổi nhãn nào** — sửa dòng đó trong "
+             f"`{VERDICTS.relative_to(ROOT)}` trước (mỗi bản ghi **một dòng**, "
+             "đừng bẻ dòng — cùng bài học `testset_e_patient.jsonl` đã học ở "
+             "DEC-058), rồi mới chạy `--approve`.\n")
+    L.append("Sau đó `--tally` để ra con số cuối kèm CI Wilson.\n")
+
+    OUT_WS.write_text("\n".join(L), encoding="utf-8")
+    print(f"[out] {OUT_WS.relative_to(ROOT)}")
+    print(f"      PHẦN 1: {len(co)} câu đọc kỹ ({', '.join(co)})")
+    print(f"      PHẦN 2: {len(khong)} câu quét nhanh")
+    print("\nBước tiếp:")
+    print(f"  1. Mở {OUT_WS.relative_to(ROOT)}")
+    print("  2. Đọc PHẦN 1 kỹ, quét PHẦN 2")
+    print("  3. python scripts/review_static_leaks.py --approve --reviewer dat")
+    return 0
+
+
+def approve(reviewer: str) -> int:
+    """Đóng dấu provenance lên nhãn: `labeled_by` → người duyệt + ngày.
+
+    ⚠️ **Đây là một lời chứng, không phải một bước kỹ thuật.** Chạy lệnh này
+    nghĩa là bạn đã ĐỌC và ĐỨNG SAU những nhãn đó. Nó không kiểm hộ được điều
+    gì — DEC-014 đòi provenance chính vì không có cách nào kiểm hộ.
+    """
+    if not VERDICTS.exists():
+        sys.exit(f"!! Chưa có {VERDICTS.relative_to(ROOT)}")
+    rows = load_jsonl(VERDICTS)
+    hom_nay = datetime.date.today().isoformat()
+    dau = f"{reviewer} (duyệt {hom_nay})"
+
+    co = sum(1 for r in rows if r.get("asserts_about_entity"))
+    print(f"Bạn sắp đóng dấu **{dau}** lên {len(rows)} nhãn.")
+    print(f"  {co} câu `true`  -> tử số của con số tầng nội dung")
+    print(f"  {len(rows) - co} câu `false`")
+    print("\nNghĩa là: bạn đã đọc và ĐỨNG SAU những nhãn này. Con số sẽ được")
+    print("trích vào báo cáo dưới tên bạn.\n")
+
+    for r in rows:
+        r["labeled_by"] = dau
+    VERDICTS.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
+        encoding="utf-8",
+    )
+    print(f"[ok] đã đóng dấu {len(rows)} dòng ở {VERDICTS.relative_to(ROOT)}")
+    print("\nBước tiếp:")
+    print("  python scripts/review_static_leaks.py --tally")
+    print("  python scripts/build_arms_table.py      # bảng chính đọc lại nhãn")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--tally", action="store_true",
                     help="đọc phán quyết đã ghi và tính ra số + khoảng tin cậy")
+    ap.add_argument("--worksheet", action="store_true",
+                    help="sinh phiếu DUYỆT LẠI gọn (6 câu đọc kỹ + 24 câu quét)")
+    ap.add_argument("--approve", action="store_true",
+                    help="đóng dấu provenance lên nhãn — cần --reviewer")
+    ap.add_argument("--reviewer", default="",
+                    help="tên người duyệt, ghi vào trường labeled_by")
     args = ap.parse_args()
     if args.tally:
         return tally()
+    if args.worksheet:
+        return worksheet()
+    if args.approve:
+        if not args.reviewer.strip():
+            sys.exit("!! --approve cần --reviewer <tên>. Provenance là một phần "
+                     "của kết quả (DEC-014), không để trống được.")
+        return approve(args.reviewer.strip())
 
     for p in (TESTSET, STATIC, CORPUS):
         if not p.exists():
