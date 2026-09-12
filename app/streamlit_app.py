@@ -9,13 +9,33 @@ HAI TAB, có chủ đích tách rời:
 2. **Corrective loop (Fake)** — giữ nguyên demo cũ, score điều khiển bằng
    slider để xem 3 nhánh ANSWER / CAUTION / ABSTAIN.
 
-⛔ **Vì sao KHÔNG nối retriever thật vào `RAGPipeline`** — DEC-039. Ngưỡng
-`grader.correct_threshold = 0.6` đã được đo và **bác bỏ**: ở ngưỡng đó
-**10/30 câu nhóm A/B (corpus không có tài liệu) vẫn được TRẢ LỜI**. Nối vào
-là dựng một demo trông chạy tốt nhưng trả lời cả những câu đáng lẽ phải từ
-chối — đúng thứ mà cả đề tài đang cố chứng minh là mình không làm. Tab 1 vì
-thế chỉ hiển thị **truy hồi + điểm rerank**, và ghi rõ grader SẼ nói gì kèm
-cảnh báo là ngưỡng chưa hiệu chỉnh.
+⚠️⚠️ **FILE NÀY ĐANG ĐỨNG YÊN Ở TUẦN 3 TRONG KHI HỆ ĐÃ ĐI TỚI TUẦN 6.**
+
+Bản trước viết: *"KHÔNG nối retriever thật vào `RAGPipeline` — DEC-039, ngưỡng
+`0.6` đã bị bác bỏ, ở ngưỡng đó 10/30 câu A/B vẫn được trả lời"*. Lý do đó
+**đã hết hiệu lực**, và đây là cách nó hết:
+
+* **DEC-051** hiệu chỉnh ngưỡng bằng LOOCV → `+2,430 logit = sigmoid 0,919`.
+* **DEC-052** đóng số đó vào `config.yaml` (`incorrect 0.919` / `correct 0.933`)
+  — ngưỡng `0.6` **không còn tồn tại ở đâu** ngoài mấy dòng chữ trong file này.
+* **DEC-061** thêm guard lượt 2 → leakage **0/30**, coverage **17/21** không đổi.
+
+Nên điều kiện mà DEC-039 đặt ra đã được thoả, và cái còn thiếu bây giờ **không
+phải một lý do, mà là công sức**: tab chạy `RAGPipeline` **đầu-cuối thật** chưa
+được viết. Đó là việc **C3 của Tuần 7**.
+
+⛔ **HAI TAB HIỆN CÓ ĐỀU KHÔNG PHẢI HỆ THẬT** — đừng demo mà nói ngược:
+
+1. **Truy hồi thật** — `HybridRetriever` + `BgeReranker` trên Qdrant Cloud.
+   Thật, nhưng **dừng ở truy hồi**: không sinh câu trả lời, không có policy
+   gate, không có vòng corrective.
+2. **Corrective loop (Fake)** — đủ 3 nhánh ANSWER / CAUTION / ABSTAIN nhưng
+   chạy bằng `FakeRetriever` + `FakeGenerator`, score kéo bằng slider.
+
+→ **Hệ quả cho B3** (câu `ANSWER` hiện 5 nguồn cạnh một câu nói *"không có
+thông tin"*, `A-01`/`E-21`): lỗi đó **chưa hiện ra ở UI này**, vì không tab nào
+chạy generator thật. Nó sẽ hiện ra **ngay khi** tab đầu-cuối được viết — nên
+chỗ vá đúng là **lúc viết tab đó**, không phải một bản vá riêng bây giờ.
 
 CHẠY:
     streamlit run app/streamlit_app.py
@@ -44,10 +64,15 @@ from src.retrieval.indexer import collection_name  # noqa: E402
 from src.retrieval.reranker import sigmoid  # noqa: E402  (thuần Python, không kéo torch)
 from src.retrieval.retriever import RETRIEVAL_MODES, FakeRetriever  # noqa: E402
 
-# Điểm giữa DẢI AN TOÀN đo ở đúng cấu hình triển khai (DEC-042):
-# A/B cao nhất +2.15 · E thứ 9 +3.12 -> dải (+2.15, +3.12], 0/30 câu A/B lọt lưới.
-# CHƯA phải ngưỡng chính thức — chốt ở Tuần 6, bắt buộc có tập giữ lại (DEC-039).
-SAFE_LOGIT_HINT = 2.63
+# ⚠️ HẰNG SỐ NÀY ĐÃ LỖI THỜI — giữ lại CHỈ để giải thích vì sao nó từng tồn tại.
+#
+# 2.63 là điểm giữa dải an toàn đo ở DEC-042, hồi ngưỡng còn CHƯA hiệu chỉnh.
+# Nay ngưỡng thật nằm trong `config/config.yaml` (DEC-051/052) và mọi chỗ trong
+# file này phải đọc `cfg.grader.*`, KHÔNG đọc hằng số ở đây.
+#
+# ⛔ Đừng dùng nó để hiển thị bất cứ con số nào cho người xem: một demo in ra
+# ngưỡng khác với ngưỡng hệ đang chạy là demo mô tả sai chính nó.
+SAFE_LOGIT_HINT = 2.63  # noqa: F401 — lịch sử, xem cảnh báo trên
 
 
 # --------------------------------------------------------------------------- #
@@ -78,7 +103,12 @@ def _real_parts():
 
 
 def _grader_verdict(cfg, score: float) -> tuple[str, str]:
-    """Grader SẼ nói gì với score này — chỉ để tham khảo, xem DEC-039."""
+    """Grader SẼ nói gì với score này, theo ĐÚNG ngưỡng trong `config.yaml`.
+
+    Đọc `cfg.grader.*` chứ không hằng số tại chỗ: ngưỡng đã hiệu chỉnh bằng
+    LOOCV (DEC-051) và đóng vào config ở DEC-052. Một demo in ra con số khác
+    với con số hệ đang chạy là demo mô tả sai chính nó.
+    """
     g = cfg.grader
     if score >= g.correct_threshold:
         return "CORRECT", "🟢"
@@ -93,7 +123,9 @@ def _grader_verdict(cfg, score: float) -> tuple[str, str]:
 def tab_real(cfg) -> None:
     st.caption(
         "`HybridRetriever` + `BgeReranker` chạy thật trên Qdrant Cloud. "
-        "Đây là **truy hồi**, chưa phải sinh câu trả lời (Tuần 4)."
+        "⚠️ Đây là **truy hồi**, KHÔNG phải hệ đầy đủ: chưa có policy gate, "
+        "chưa sinh câu trả lời, chưa có vòng corrective. Tab đầu-cuối là "
+        "việc C3 của Tuần 7."
     )
 
     c1, c2, c3 = st.columns(3)
@@ -105,7 +137,9 @@ def tab_real(cfg) -> None:
         f"`top_k_dense={cfg.retrieval.top_k_dense}` → rerank → "
         f"`top_k_rerank={cfg.retrieval.top_k_rerank}` · "
         f"`rerank_max_length={cfg.retrieval.rerank_max_length}` "
-        f"(cấu hình chi phí Tuần 7 — DEC-042, ~17s/truy vấn trên CPU)"
+        f"(cấu hình chi phí Tuần 7 — DEC-042. ⚠️ `17,2s` là số **dự tính**; "
+        f"số ĐO được trên hệ đầy đủ là **~45s** nhánh từ chối · **~27s** "
+        f"nhánh trả lời — nhánh an toàn đắt hơn)"
     )
 
     query = st.text_input("Câu hỏi:", "Triệu chứng tăng huyết áp?", key="q_real")
@@ -156,13 +190,14 @@ def tab_real(cfg) -> None:
         state, badge = _grader_verdict(cfg, top)
         st.metric("Thời gian", f"{took:.1f}s", help="Rerank chiếm ~99%")
         st.info(
-            f"{badge} Grader SẼ trả **{state}** (score cao nhất `{top:.4f}` so với "
-            f"CORRECT ≥ `{cfg.grader.correct_threshold}`).\n\n"
-            f"⛔ **Đừng tin con số này.** Ngưỡng `0.6` đã bị bác bỏ bằng dữ liệu "
-            f"(DEC-039): ở ngưỡng đó **10/30 câu nhóm A/B vẫn được trả lời**. "
-            f"Mép an toàn đo được nằm quanh sigmoid "
-            f"**{sigmoid(SAFE_LOGIT_HINT):.3f}**. Ngưỡng chính "
-            f"thức chốt ở Tuần 6, bắt buộc có tập giữ lại."
+            f"{badge} Grader SẼ trả **{state}** — score cao nhất `{top:.4f}`, "
+            f"ngưỡng CORRECT ≥ `{cfg.grader.correct_threshold}` / INCORRECT < "
+            f"`{cfg.grader.incorrect_threshold}` (`config/config.yaml`).\n\n"
+            f"✅ Ngưỡng này **đã được hiệu chỉnh bằng LOOCV** trên 51 câu "
+            f"(DEC-051): coverage **17/21 = 81%** (CI Wilson 60–92%), leakage "
+            f"**0/30** (CI Wilson 0–11%) sau guard lượt 2 (DEC-061).\n\n"
+            f"⚠️ *SẼ trả* chứ không phải *đã trả*: tab này dừng ở *truy hồi*, "
+            f"chưa chạy policy gate lẫn vòng corrective."
         )
     else:
         st.metric("Thời gian", f"{took:.1f}s")
@@ -248,8 +283,10 @@ def main() -> None:
 
     st.divider()
     st.caption(
-        "⚠️ Hệ thống nghiên cứu, KHÔNG thay thế tư vấn y tế. "
-        "Chưa có sinh câu trả lời (Tuần 4) và chưa hiệu chỉnh ngưỡng (Tuần 6)."
+        "⚠️ Hệ thống nghiên cứu, KHÔNG thay thế tư vấn y tế. Nhãn abstention "
+        "theo khả năng truy xuất + policy, KHÔNG theo đánh giá lâm sàng; "
+        "chưa có reviewer y khoa. UI này mới là **truy hồi + demo Fake**, "
+        "chưa phải hệ đầu-cuối."
     )
 
 
