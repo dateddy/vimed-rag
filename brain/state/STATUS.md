@@ -3,7 +3,26 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-12 (Session 15 — **TUẦN 6 VIỆC (3) — RAGAS: hạ tầng XONG, lô chấm DỞ vì 403 credit. Faithfulness TRỪNG PHẠT câu từ chối đúng (0,0) — ngược dự đoán, đổi cách lập bảng. Ghép cặp 9 câu: corrective 0,722 vs LLM-only 0,497, p = 0,0391. B1 Wilson toàn repo · B4 coverage hai tầng · B5 whitelist · B6+B7 thành Limitations. DEC-064…068. 374 test PASS**)
+**Cập nhật lần cuối:** 2026-09-13 (Session 15 — **RAGAS hạ tầng XONG, lô chấm DỞ vì 403 credit (còn đúng 7 lượt). Faithfulness TRỪNG PHẠT câu từ chối đúng (0,0) — ngược dự đoán. Ghép cặp 9 câu: corrective 0,722 vs LLM-only 0,497, p = 0,0391. B1 Wilson · B4 coverage hai tầng · B5 whitelist · B6+B7 Limitations · B2 nửa đầu ĐÃ DUYỆT (20% trích được). AUDIT B2 ra 4 ISSUE, vá 3, ISSUE-069 chờ duyệt `concept_variants.jsonl`. DEC-064…069. 391 test PASS**)
+
+## ⚠️ AUDIT B2 (2026-09-13) — 4 ISSUE, còn 1 mở
+
+Audit đầy đủ + risk_accepted + rollback ở **`01_OPEN_ISSUES.md`**. Quyết định: **DEC-069**.
+
+- **◐ ISSUE-069 — CÒN MỞ, việc người, KHÔNG chờ credit.** Báo cáo in **một** dòng
+  *"Người gán nhãn: dat"* ở **đầu mục**, nhưng bảng **độ nhạy 14–16%** nằm dưới lại lấy
+  từ `concept_variants.jsonl` — file **khác**, và nó vẫn **30/30 `classified_by:
+  claude-draft-pass`**. DEC-014 coi provenance là **một phần của kết quả** → đó là mô tả
+  **sai kết quả**. Báo cáo nay đã tách provenance theo **từng con số**; đóng hẳn thì
+  phải duyệt nốt file kia (xem "3 việc kế tiếp").
+- **✅ ISSUE-072 (nguyên nhân gốc)** — hai file nhãn dùng **hai tên trường** khác nhau và
+  mọi công cụ provenance chỉ biết `labeled_by`. Cơ chế duy nhất dựng để chống lỗi này có
+  đúng một điểm mù, và nó nằm **chính xác** ở file còn nhãn nháp. Đã thêm bảng `NHAN` +
+  `doc_provenance()`; `--tally` nay tố ra file nào còn nháp.
+- **✅ ISSUE-070** STATUS mô tả trạng thái đã hết tồn tại · **✅ ISSUE-071** bộ sinh
+  worksheet hard-code câu *"chưa được phép trích"* nên sinh lại vẫn nói sai.
+- ⚠️ **`--approve` IDEMPOTENT** — chỉ đóng dấu bản ghi **còn nháp**; nhãn đã duyệt
+  không bị **dời ngày**. Chạy lại bao nhiêu lần cũng an toàn (2 test khoá).
 
 ## ⛔ BLOCKER DUY NHẤT — credit OpenRouter
 

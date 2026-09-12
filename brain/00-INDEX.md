@@ -11,10 +11,12 @@ Bản đồ lớp context. Tách theo **tốc độ thay đổi**, không theo c
 | `../config/abstention_policy.md` | **Chính sách từ chối v1.1** — 4 rule D-1…D-4, bản CÓ THẨM QUYỀN (nhãn nhóm D trỏ về nó) | Implement `check_policy()`, soạn thêm câu nhóm D | Đạt | Đổi = tăng version = soát lại nhãn D |
 | `../config/abstention_policy.yaml` | Bản dịch regex của policy để chạy được (DEC-031) | Tuần 4–5 khi wire policy gate | Đạt | Phải cùng version với bản `.md` |
 | `../data/testset.jsonl` | **Safety subset 50 câu** A18/B12/D8/E12 — deliverable Tuần 5 | Tuần 3 (recall@k) · Tuần 6 (abstention P/R) | Đạt | Đóng; đổi = chạy lại nghiệm thu |
+| `../01_OPEN_ISSUES.md` | **Nhật ký audit** — ISSUE-069…072 kèm reproducer chạy được + risk_accepted + rollback point | Sau mỗi vòng review, hoặc khi nghi một con số | Đạt | Append; đóng issue thì ghi trạng thái, đừng xoá |
 | `state/STATUS.md` | Trạng thái hiện tại + 3 mục "đã biết, đừng làm lại" + backlog | Đầu/cuối mỗi session | Đạt | Ghi đè mỗi session |
 | `../notebooks/kaggle_build_index.ipynb` | **Dây nối chạy embed+index trên Kaggle T4** — bản đã chạy thật, đã ra 2 collection | Khi chạy lại index | Đạt | Sống tới hết Tuần 3 |
 | `../notebooks/colab_build_index.ipynb` | Bản Colab dự phòng — **CHƯA CHẠY THỬ BAO GIỜ**, phải soi lại trước khi tin | Chỉ khi Kaggle hết quota GPU | Đạt | Sống tới hết Tuần 3 |
-| `handoff/2026-09-11-session14.md` | Handoff Session 14 (**TUẦN 6 việc (2) ĐÓNG · risk–coverage đổi vai · vách 3,056 logit · câu E kế tiếp giá 9 câu lọt**) | **Đầu phiên sau, cần biết dừng ở đâu** | Đạt | Archive sau 2 tuần |
+| `handoff/2026-09-13-session15.md` | Handoff Session 15 (**RAGAS code xong lô chấm dở 403 · Faithfulness phạt câu từ chối 0,0 · B1 Wilson · B4 hai tầng · audit B2 ra ISSUE-069**) | **Đầu phiên sau, cần biết dừng ở đâu** | Đạt | Archive sau 2 tuần |
+| `handoff/2026-09-11-session14.md` | Handoff Session 14 (TUẦN 6 việc (2) đóng · risk–coverage đổi vai · vách 3,056 logit) | Cần lịch sử DEC-063 | Đạt | Archive sau 2 tuần |
 | `handoff/2026-09-10-session13.md` | Handoff Session 13 (TUẦN 6 việc (1) đóng · guard lượt 2 đưa leakage 7%→0 · soi tay 30 câu A/B) | Cần lịch sử DEC-059…062 | Đạt | Archive sau 2 tuần |
 | `handoff/2026-09-08-session12.md` | Handoff Session 12 (Tuần 5 đóng · leakage sau rewrite 2/30 · vòng corrective cứu 0 lọt 2) | Cần lịch sử DEC-056…058 | Đạt | Archive sau 2 tuần |
 | `handoff/2026-09-08-session11.md` | Handoff Session 11 (Tuần 4 đóng · OpenRouter · phương án B đo xong) | Cần lịch sử DEC-044…055 | Đạt | Archive sau 2 tuần |
