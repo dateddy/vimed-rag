@@ -119,7 +119,7 @@ hallucination rẻ" — dòng này ghi lại đúng chỗ nó không thay đư�
 
 ### ✅ Đã soi tay — kết quả tầng nội dung
 
-**Người gán nhãn:** claude-draft-pass (CHƯA được Đạt duyệt). Nhãn ở `data/static_leak_review.jsonl`.
+**Người gán nhãn:** dat (duyệt 2026-09-12). Nhãn ở `data/static_leak_review.jsonl`.
 
 Tiêu chí (kiểm chứng được, không phải cảm nhận): *câu trả lời có
 **phát biểu thuộc tính** của thực thể X, trong khi corpus có **0 bài**

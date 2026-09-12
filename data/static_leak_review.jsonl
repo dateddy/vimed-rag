@@ -1,30 +1,30 @@
-{"id": "A-08", "asserts_about_entity": true, "note": "Khẳng định 'Co-Diovan là thuốc ức chế thụ thể angiotensin II' + liệt kê 4 nhóm tương tác. Corpus có valsartan 12 bài / hydrochlorothiazid 10 bài -> nội dung là của NHÓM ARB, gán sang biệt dược.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)", "concept_in_corpus": true}
-{"id": "A-11", "asserts_about_entity": true, "note": "Liệt kê 9 mục chống chỉ định cho 'Atenolol TV.PHARM'. Corpus có atenolol 13 bài -> chống chỉ định của HOẠT CHẤT, gán sang sản phẩm không có.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)", "concept_in_corpus": true}
-{"id": "A-05", "asserts_about_entity": true, "note": "Nêu triệu chứng tiểu đường do ung thư tuyến tụy. 'ung thư tụy' 0 hit nhưng 'ung thư tuyến tụy' 5 bài -> chỉ là biến thể chuỗi, khái niệm CÓ trong corpus.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)", "concept_in_corpus": true}
-{"id": "A-06", "asserts_about_entity": true, "note": "Nêu cơ chế liên quan tăng áp ĐM phổi / thuyên tắc phổi, có số liệu 34%. 'thuyên tắc động mạch phổi' 0 hit nhưng 'thuyên tắc phổi' 17 bài.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)", "concept_in_corpus": true}
-{"id": "A-02", "asserts_about_entity": true, "note": "Liệt kê 3 nguyên nhân đau ngực ở hẹp van hai lá. 'hẹp van 2 lá' 0 hit CHỈ vì viết số '2'; 'hẹp van hai lá' 17 bài.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)", "concept_in_corpus": true}
-{"id": "A-10", "asserts_about_entity": true, "note": "Nêu yêu cầu chế độ ăn khi dùng atorvastatin. Sản phẩm 'T.V Pharm' 0 hit nhưng 'atorvastatin' 46 bài -> nội dung của hoạt chất.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)", "concept_in_corpus": true}
-{"id": "B-02", "asserts_about_entity": false, "note": "Nói thẳng ngữ cảnh không chứa thông tin về Bồ công anh.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-12", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về Ameflu DAYTIME.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-09", "asserts_about_entity": false, "note": "Nói thẳng không đề cập tác dụng phụ của A.t Vildagliptin.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-01", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về Biviantac.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-06", "asserts_about_entity": false, "note": "Nói thẳng không đề cập dấu hiệu móng tay chân.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-12", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về phèn đen.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-11", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về xương bánh chè.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-15", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về tim sen.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-07", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về áp xe hậu môn.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-04", "asserts_about_entity": false, "note": "Nói thẳng không đề cập triệu chứng viêm mống mắt.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-10", "asserts_about_entity": false, "note": "Nói thẳng không đề cập thuốc Ampicillin Vidipha.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-08", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về quả cau.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-04", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về rò động tĩnh mạch thông tim.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-14", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về nụ hoa tam thất.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-16", "asserts_about_entity": false, "note": "Nói thẳng không đề cập tác dụng của kim thất tai.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-18", "asserts_about_entity": false, "note": "Nói thẳng không đề cập DHEA ảnh hưởng cholesterol.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-17", "asserts_about_entity": false, "note": "Nói thẳng không đề cập triệu chứng rối loạn vùng hạ đồi. (Lưu ý: 'vùng dưới đồi' CÓ 5 bài trong corpus, nhưng câu trả lời vẫn từ chối.)", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-07", "asserts_about_entity": false, "note": "Nói thẳng không có thông tin về biến chứng không lỗ van ba lá.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-03", "asserts_about_entity": false, "note": "Nói thẳng không có thông tin về chức năng thùy đỉnh.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-01", "asserts_about_entity": false, "note": "⚠️ LỌT Ở TẦNG HÀNH ĐỘNG NHƯNG KHÔNG Ở TẦNG NỘI DUNG: corrective ra ANSWER, nhưng generator tự viết 'Ngữ cảnh không chứa thông tin về vai trò của siêu âm tim...'. Khớp ghi nhận DEC-056.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-13", "asserts_about_entity": false, "note": "Nói thẳng không có thông tin về thuốc Apitim.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-05", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về cây móc.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "A-03", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về thuyên tắc tĩnh mạch sâu.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
-{"id": "B-09", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về bệnh Hirschsprung.", "labeled_by": "claude-draft-pass (CHƯA được Đạt duyệt)"}
+{"id": "A-08", "asserts_about_entity": true, "note": "Khẳng định 'Co-Diovan là thuốc ức chế thụ thể angiotensin II' + liệt kê 4 nhóm tương tác. Corpus có valsartan 12 bài / hydrochlorothiazid 10 bài -> nội dung là của NHÓM ARB, gán sang biệt dược.", "labeled_by": "dat (duyệt 2026-09-12)", "concept_in_corpus": true}
+{"id": "A-11", "asserts_about_entity": true, "note": "Liệt kê 9 mục chống chỉ định cho 'Atenolol TV.PHARM'. Corpus có atenolol 13 bài -> chống chỉ định của HOẠT CHẤT, gán sang sản phẩm không có.", "labeled_by": "dat (duyệt 2026-09-12)", "concept_in_corpus": true}
+{"id": "A-05", "asserts_about_entity": true, "note": "Nêu triệu chứng tiểu đường do ung thư tuyến tụy. 'ung thư tụy' 0 hit nhưng 'ung thư tuyến tụy' 5 bài -> chỉ là biến thể chuỗi, khái niệm CÓ trong corpus.", "labeled_by": "dat (duyệt 2026-09-12)", "concept_in_corpus": true}
+{"id": "A-06", "asserts_about_entity": true, "note": "Nêu cơ chế liên quan tăng áp ĐM phổi / thuyên tắc phổi, có số liệu 34%. 'thuyên tắc động mạch phổi' 0 hit nhưng 'thuyên tắc phổi' 17 bài.", "labeled_by": "dat (duyệt 2026-09-12)", "concept_in_corpus": true}
+{"id": "A-02", "asserts_about_entity": true, "note": "Liệt kê 3 nguyên nhân đau ngực ở hẹp van hai lá. 'hẹp van 2 lá' 0 hit CHỈ vì viết số '2'; 'hẹp van hai lá' 17 bài.", "labeled_by": "dat (duyệt 2026-09-12)", "concept_in_corpus": true}
+{"id": "A-10", "asserts_about_entity": true, "note": "Nêu yêu cầu chế độ ăn khi dùng atorvastatin. Sản phẩm 'T.V Pharm' 0 hit nhưng 'atorvastatin' 46 bài -> nội dung của hoạt chất.", "labeled_by": "dat (duyệt 2026-09-12)", "concept_in_corpus": true}
+{"id": "B-02", "asserts_about_entity": false, "note": "Nói thẳng ngữ cảnh không chứa thông tin về Bồ công anh.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-12", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về Ameflu DAYTIME.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-09", "asserts_about_entity": false, "note": "Nói thẳng không đề cập tác dụng phụ của A.t Vildagliptin.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-01", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về Biviantac.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-06", "asserts_about_entity": false, "note": "Nói thẳng không đề cập dấu hiệu móng tay chân.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-12", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về phèn đen.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-11", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về xương bánh chè.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-15", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về tim sen.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-07", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về áp xe hậu môn.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-04", "asserts_about_entity": false, "note": "Nói thẳng không đề cập triệu chứng viêm mống mắt.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-10", "asserts_about_entity": false, "note": "Nói thẳng không đề cập thuốc Ampicillin Vidipha.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-08", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về quả cau.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-04", "asserts_about_entity": false, "note": "Nói thẳng không tìm thấy thông tin về rò động tĩnh mạch thông tim.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-14", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về nụ hoa tam thất.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-16", "asserts_about_entity": false, "note": "Nói thẳng không đề cập tác dụng của kim thất tai.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-18", "asserts_about_entity": false, "note": "Nói thẳng không đề cập DHEA ảnh hưởng cholesterol.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-17", "asserts_about_entity": false, "note": "Nói thẳng không đề cập triệu chứng rối loạn vùng hạ đồi. (Lưu ý: 'vùng dưới đồi' CÓ 5 bài trong corpus, nhưng câu trả lời vẫn từ chối.)", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-07", "asserts_about_entity": false, "note": "Nói thẳng không có thông tin về biến chứng không lỗ van ba lá.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-03", "asserts_about_entity": false, "note": "Nói thẳng không có thông tin về chức năng thùy đỉnh.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-01", "asserts_about_entity": false, "note": "⚠️ LỌT Ở TẦNG HÀNH ĐỘNG NHƯNG KHÔNG Ở TẦNG NỘI DUNG: corrective ra ANSWER, nhưng generator tự viết 'Ngữ cảnh không chứa thông tin về vai trò của siêu âm tim...'. Khớp ghi nhận DEC-056.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-13", "asserts_about_entity": false, "note": "Nói thẳng không có thông tin về thuốc Apitim.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-05", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về cây móc.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "A-03", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về thuyên tắc tĩnh mạch sâu.", "labeled_by": "dat (duyệt 2026-09-12)"}
+{"id": "B-09", "asserts_about_entity": false, "note": "Nói thẳng chưa đủ thông tin về bệnh Hirschsprung.", "labeled_by": "dat (duyệt 2026-09-12)"}
