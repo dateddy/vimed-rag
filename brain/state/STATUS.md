@@ -617,15 +617,23 @@
    OpenRouter**, xem mục BLOCKER đầu file. Đây là việc duy nhất còn giữa Tuần 6
    và Tuần 7, và nó **không phải việc code**.
 
-   ⚠️ **VIỆC NGƯỜI, LÀM ĐƯỢC NGAY, KHÔNG CHỜ CREDIT — B2: Đạt duyệt lại nhãn.**
-   `data/static_leak_review.jsonl` **30/30 dòng** vẫn `labeled_by: claude-draft-pass`.
-   Con số **20% leakage nội dung** ở bảng chính Static-vs-Corrective **chưa được
-   phép trích** cho tới khi Đạt đọc lại (DEC-014). Giảm tải: chỉ **6 câu có phát
-   biểu** (`A-02 A-05 A-06 A-08 A-10 A-11`) quyết định con số — soi kỹ 6, quét
-   nhanh 24. Quy trình: đọc `data/processed/static_leak_review.md` → sửa `verdict`
-   + đổi `labeled_by` → `python scripts/review_static_leaks.py --tally`.
-   `data/concept_variants.jsonl` **hạ ưu tiên** (chỉ đẻ ra bảng độ nhạy mà DEC-062
-   đã quyết không dùng để đổi số chính).
+   ✅ **B2 XONG MỘT NỬA — `static_leak_review.jsonl` ĐÃ ĐƯỢC DUYỆT** (2026-09-12,
+   `labeled_by: dat`). 30/30 nhãn giữ nguyên, **0 câu bị đổi** — đúng kết cục
+   phiếu đã dự đoán. **Con số 20% leakage nội dung nay TRÍCH ĐƯỢC.**
+
+   ⛔ **CÒN NỬA SAU — `concept_variants.jsonl` vẫn 30/30 `classified_by:
+   claude-draft-pass`** (ISSUE-069). File này nuôi **bảng độ nhạy 14–16%**, mà
+   bảng đó là thứ **chống đỡ cho quyết định không bỏ câu nào** của DEC-062 — tức
+   nó gánh một **lập luận phương pháp**, không phải con số phụ. Để nó mang nhãn
+   nháp là để chỗ yếu nằm đúng chỗ cần mạnh.
+   - Phiếu: `python scripts/review_static_leaks.py --worksheet-variants`
+   - Duyệt: `python scripts/review_static_leaks.py --approve --reviewer dat`
+     (chỉ đóng dấu nhãn **còn nháp**; nhãn đã duyệt 2026-09-12 **không bị dời ngày**)
+   - ⚠️ Hai bẫy ghi trong phiếu: (1) **đừng bỏ** `A-17` `A-18` `B-06` khỏi danh
+     sách cờ dù hệ đã từ chối đúng — cờ gắn **theo tiêu chí**, bỏ chúng là làm
+     chính phân tích độ nhạy bị chọn theo kết quả; (2) **đừng gộp**
+     `variant_generic_of_brand` (5 câu) vào `variant_same_concept` — nhãn ABSTAIN
+     của chúng **vẫn đúng**, và có test khoá.
 3. **Cạm bẫy còn lại.**
    ⚠️ ~~Leakage sau rewrite chưa đo~~ — **✅ ĐÃ ĐO (DEC-056): 2/30, không phải 0/30.**
    Con số abstention đem đi báo cáo là **7%**. Đừng trích lại "0/30" từ DEC-051.

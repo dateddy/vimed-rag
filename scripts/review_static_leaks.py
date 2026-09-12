@@ -77,6 +77,8 @@ CORPUS = ROOT / "data" / "processed" / "corpus.jsonl"
 OUT_MD = ROOT / "data" / "processed" / "static_leak_review.md"
 # Phiếu DUYỆT LẠI (lượt soi thứ hai) — gọn hơn hẳn phiếu soi lượt đầu.
 OUT_WS = ROOT / "data" / "processed" / "static_leak_worksheet.md"
+# Phiếu duyệt cho cờ biến thể — bộ nhãn nuôi bảng ĐỘ NHẠY (DEC-062).
+OUT_WSV = ROOT / "data" / "processed" / "concept_variants_worksheet.md"
 # ⚠️ Phán quyết nằm ở `data/`, KHÔNG ở `data/processed/` — thư mục kia bị
 # gitignore. Nhãn TAY là thứ đắt nhất và KHÔNG tái tạo được: mất là phải soi
 # lại từ đầu. Cùng chỗ với `testset.jsonl` và `testset_e_patient.jsonl`, đúng
@@ -92,6 +94,78 @@ def load_jsonl(path: Path) -> list[dict]:
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
+
+
+# --------------------------------------------------------------------------- #
+# PROVENANCE — ai đứng sau mỗi bộ nhãn (DEC-014)
+# --------------------------------------------------------------------------- #
+# ⚠️ HAI FILE NHÃN, HAI TÊN TRƯỜNG KHÁC NHAU. Đây là nguồn của ISSUE-069:
+# `--approve` và `--tally` trước đây chỉ biết `labeled_by`, nên
+# `concept_variants.jsonl` — file nuôi bảng ĐỘ NHẠY — không có đường nào để lộ
+# ra rằng nó vẫn mang nhãn nháp. Báo cáo vì thế in MỘT dòng "người gán nhãn"
+# ở đầu mục và phủ luôn lên cả số liệu chưa được duyệt.
+#
+# Bảng này tồn tại để chuyện đó không lặp lại: thêm file nhãn mới thì thêm
+# một dòng ở đây, và mọi chỗ hiển thị/đóng dấu tự biết.
+NHAN = {
+    "leaks": (VERDICTS, "labeled_by", "phán quyết soi tay (số CHÍNH 6/30)"),
+    "variants": (VARIANTS, "classified_by", "cờ biến thể (bảng ĐỘ NHẠY 14–16%)"),
+}
+
+
+def ten_ngan(path: Path) -> str:
+    """Đường dẫn gọn để in. Path ngoài repo thì in nguyên — đừng ném lỗi.
+
+    `Path.relative_to()` ném `ValueError` khi path không nằm dưới ROOT, và
+    một hàm ĐANG ĐÓNG DẤU NHÃN mà chết vì chuyện định dạng chuỗi là hỏng sai
+    chỗ. (Bắt được nhờ `tests/test_provenance.py` ngay lượt chạy đầu.)
+    """
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def la_nhap(gia_tri) -> bool:
+    """Giá trị provenance này còn là bản nháp chưa ai duyệt?
+
+    Rỗng cũng tính là nháp: thiếu trường không phải là "đã duyệt".
+    """
+    s = str(gia_tri or "").lower()
+    return (not s) or ("draft" in s) or ("chưa" in s)
+
+
+def doc_provenance() -> dict[str, dict]:
+    """Trạng thái provenance của mọi file nhãn — một chỗ duy nhất."""
+    out: dict[str, dict] = {}
+    for khoa, (path, truong, mo_ta) in NHAN.items():
+        if not path.exists():
+            out[khoa] = {"path": path, "field": truong, "desc": mo_ta,
+                         "rows": [], "draft": [], "ok": [], "ai": []}
+            continue
+        rows = load_jsonl(path)
+        draft = [r["id"] for r in rows if la_nhap(r.get(truong))]
+        out[khoa] = {
+            "path": path, "field": truong, "desc": mo_ta, "rows": rows,
+            "draft": draft,
+            "ok": [r["id"] for r in rows if not la_nhap(r.get(truong))],
+            "ai": sorted({str(r.get(truong) or "(thiếu trường)")
+                          for r in rows if not la_nhap(r.get(truong))}),
+        }
+    return out
+
+
+def ghi_jsonl(path: Path, rows: list[dict]) -> None:
+    """Ghi lại JSONL — **mỗi bản ghi ĐÚNG MỘT DÒNG**.
+
+    ⚠️ DEC-058: sửa tay từng làm một bản ghi trải ra nhiều dòng; JSON vẫn hợp
+    lệ nhưng mọi chỗ đọc `json.loads(l)` theo từng dòng sẽ crash. Mọi đường ghi
+    phải đi qua đây.
+    """
+    path.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
+        encoding="utf-8",
+    )
 
 
 def load_ab_module():
@@ -269,9 +343,31 @@ def tally() -> int:
     if thieu_truong:
         print(f"  ⚠️  {len(thieu_truong)} dòng thiếu `concept_in_corpus`: {thieu_truong}")
         print()
-    print("  Ai gán nhãn:", ", ".join(sorted(
-        {str(r.get("labeled_by", "?")) for r in rows})))
+    # ⚠️ In provenance của MỌI file nhãn, không chỉ file đẻ ra số chính.
+    # Bản trước chỉ in `labeled_by` nên `concept_variants.jsonl` — file
+    # nuôi bảng ĐỘ NHẠY ngay phía trên — không có đường nào lộ ra rằng nó
+    # vẫn mang nhãn nháp (ISSUE-069/072).
+    print("  PROVENANCE:")
+    _prov = doc_provenance()
+    _con_nhap = []
+    for _k, _p in _prov.items():
+        if not _p["rows"]:
+            continue
+        _ai = ", ".join(_p["ai"]) or "—"
+        _n = len(_p["draft"])
+        _co = f"⚠️ CÒN {_n} NHÃN NHÁP" if _n else "✅ đã duyệt"
+        print(f"    {_p['path'].name:26s} {_co:22s} {_ai}")
+        print(f"        -> {_p['desc']}")
+        if _p["draft"]:
+            _con_nhap.append(_p["desc"])
     print()
+    if _con_nhap:
+        print("  ⛔ CHƯA ĐƯỢC TRÍCH TRỌN MỤC NÀY VÀO BÁO CÁO:")
+        for _d in _con_nhap:
+            print(f"       - {_d} còn mang nhãn nháp")
+        print("     DEC-014: provenance là MỘT PHẦN của kết quả. Chạy")
+        print("     `--approve --reviewer <tên>` sau khi đã đọc.")
+        print()
     if thieu or chua:
         print("⚠️  Số trên tính trên phần ĐÃ soi. Soi đủ 30 câu rồi hãy trích vào báo cáo.")
     else:
@@ -318,10 +414,21 @@ def worksheet() -> int:
     L.append("# Phiếu DUYỆT LẠI — Đạt đọc, không phải Claude\n")
     L.append("> Sinh bằng `python scripts/review_static_leaks.py --worksheet`.\n")
     L.append("## Bạn đang duyệt cái gì\n")
-    L.append("Nhãn hiện tại do **Claude gán nháp** (`labeled_by: claude-draft-pass`) "
-             "và vì thế con số **20%** ở bảng Static-vs-Corrective **chưa được "
-             "phép trích vào báo cáo** — DEC-014: nhãn phải kiểm chứng được, và "
-             "*ai gán* là một phần của kết quả.\n")
+    # ⚠️ ĐỌC provenance THẬT, đừng hard-code. Bản trước in cứng câu "nhãn hiện
+    # tại do Claude gán nháp … chưa được phép trích", nên sau khi Đạt duyệt
+    # xong thì phiếu sinh LẠI vẫn nói y câu đó (ISSUE-071) — một phiếu bảo
+    # người dùng đừng trích một con số đã hợp lệ.
+    pv = doc_provenance()["leaks"]
+    if pv["draft"]:
+        L.append(f"Nhãn hiện tại: **{len(pv['draft'])}/{len(pv['rows'])} còn là "
+                 "bản nháp của Claude**, nên con số **20%** ở bảng "
+                 "Static-vs-Corrective **chưa được phép trích vào báo cáo** — "
+                 "DEC-014: nhãn phải kiểm chứng được, và *ai gán* là một phần "
+                 "của kết quả.\n")
+    else:
+        L.append(f"✅ Bộ nhãn này **đã được duyệt** — {', '.join(pv['ai'])}. Con "
+                 "số **20%** trích vào báo cáo được. Phiếu dưới đây giữ lại để "
+                 "**soi lại khi cần**, không phải một việc còn treo.\n")
     L.append("**Tiêu chí — chỉ một câu, đừng mở rộng:**\n")
     L.append("> Câu trả lời có **phát biểu thuộc tính** của thực thể X,")
     L.append("> trong khi corpus có **0 bài** về X?\n")
@@ -408,33 +515,166 @@ def worksheet() -> int:
     return 0
 
 
-def approve(reviewer: str) -> int:
-    """Đóng dấu provenance lên nhãn: `labeled_by` → người duyệt + ngày.
+def worksheet_variants() -> int:
+    """Phiếu duyệt cho `concept_variants.jsonl` — bộ nhãn nuôi bảng ĐỘ NHẠY.
+
+    Vì sao bộ nhãn này cũng phải được duyệt, dù nó không đẻ ra con số chính:
+    bảng độ nhạy là thứ **chống đỡ cho quyết định không bỏ câu nào** của
+    DEC-062 — tức nó đang gánh một **lập luận phương pháp**, không phải một
+    con số phụ. Để nó mang nhãn nháp là để chỗ yếu nằm đúng vào chỗ cần mạnh.
+    """
+    prov = doc_provenance()["variants"]
+    if not prov["rows"]:
+        sys.exit(f"!! Chưa có {VARIANTS.relative_to(ROOT)}")
+    rows = prov["rows"]
+    verdicts = {r["id"]: r for r in load_jsonl(VERDICTS)} if VERDICTS.exists() else {}
+
+    from collections import Counter
+    dem = Counter(r.get("class") for r in rows)
+
+    L: list[str] = []
+    L.append("# Phiếu DUYỆT cờ biến thể khái niệm — Đạt đọc\n")
+    L.append("> Sinh bằng `python scripts/review_static_leaks.py "
+             "--worksheet-variants`.\n")
+    L.append("## Bạn đang duyệt cái gì\n")
+    L.append("`data/concept_variants.jsonl` phân 30 câu A/B thành **3 lớp**. Nó "
+             "**không** đẻ ra con số chính 20% — nó đẻ ra **bảng độ nhạy "
+             "14–16%**, và bảng đó là thứ **chống đỡ cho quyết định không bỏ "
+             "câu nào** của DEC-062. Tức nó gánh một **lập luận phương pháp**, "
+             "không phải một con số phụ.\n")
+    L.append(f"Hiện trạng: **{len(prov['draft'])}/{len(rows)} nhãn còn là bản "
+             "nháp của Claude** (`classified_by: claude-draft-pass`).\n")
+
+    L.append("**Câu hỏi để duyệt — chỉ một câu:**\n")
+    L.append("> Corpus có chứa **cùng khái niệm** với thực thể X dưới một")
+    L.append("> **tên khác** không? Và nếu có thì là loại nào?\n")
+    L.append("Đây là **sự kiện tra được** (số bài đi kèm từng biến thể ở cột "
+             "`variants`), không phải cảm nhận.\n")
+
+    L.append("---\n")
+    L.append("## ⛔ HAI CÁI BẪY — đọc trước khi quyết câu nào\n")
+    L.append("**BẪY 1 — đừng bỏ câu khỏi danh sách cờ vì hệ thống đã từ chối "
+             "đúng.** Danh sách cờ **cố ý** gồm cả `A-17`, `A-18`, `B-06` — "
+             "những câu hệ **đã từ chối đúng**. Cờ được gắn **theo tiêu chí**, "
+             "không theo kết cục. Nếu chỉ gắn cờ cho câu đã lọt lưới thì chính "
+             "phân tích độ nhạy lại **bị chọn theo kết quả** — đúng cái bệnh nó "
+             "sinh ra để chữa.\n")
+    L.append(f"**BẪY 2 — đừng gộp `variant_generic_of_brand` "
+             f"({dem.get('variant_generic_of_brand', 0)} câu) vào "
+             "`variant_same_concept`.** Với những câu đó, **nhãn ABSTAIN VẪN "
+             "ĐÚNG**: thông tin theo *sản phẩm cụ thể* (liều, dạng bào chế, tá "
+             "dược của một hãng) **không suy ra được** từ hoạt chất. Gộp hai "
+             "lớp là vứt đi mấy câu nhãn đứng vững — và **đã có test khoá** "
+             "điều này, gộp thì test đỏ.\n")
+
+    L.append("---\n")
+    nhan_lop = {
+        "variant_same_concept": ("CÙNG KHÁI NIỆM, KHÁC CÁCH VIẾT — nhãn ABSTAIN ĐÁNG NGỜ",
+                                 "Corpus **có** tài liệu về khái niệm này; hệ lẽ ra trả lời được."),
+        "variant_generic_of_brand": ("BIỆT DƯỢC VẮNG, HOẠT CHẤT CÓ — nhãn ABSTAIN VẪN ĐÚNG",
+                                     "Thông tin theo sản phẩm không suy ra được từ hoạt chất."),
+        "no_variant": ("KHÔNG CÓ BIẾN THỂ — nhãn ABSTAIN ĐÚNG hoàn toàn",
+                       "Corpus không có khái niệm này dưới bất kỳ tên nào."),
+    }
+    for lop in ("variant_same_concept", "variant_generic_of_brand", "no_variant"):
+        trong = [r for r in rows if r.get("class") == lop]
+        if not trong:
+            continue
+        tieu_de, giai = nhan_lop[lop]
+        L.append(f"## `{lop}` — {len(trong)} câu\n")
+        L.append(f"**{tieu_de}.** {giai}\n")
+        L.append("| câu | thực thể X | cờ | biến thể tìm thấy (số bài) | ghi chú | hệ có lọt không |")
+        L.append("|---|---|---|---|---|---|")
+        for r in sorted(trong, key=lambda x: x["id"]):
+            bt = r.get("variants") or {}
+            bt_txt = " · ".join(f"`{k}` **{v}**" for k, v in bt.items()) or "—"
+            lot = verdicts.get(r["id"], {}).get("asserts_about_entity")
+            lot_txt = ("⚠️ **CÓ lọt**" if lot is True
+                       else "từ chối đúng" if lot is False else "—")
+            note = " ".join((r.get("note") or "").split())[:70]
+            L.append(f"| `{r['id']}` | {r.get('entity', '?')} | "
+                     f"{r.get('confidence', '?')} | {bt_txt} | {note} | {lot_txt} |")
+        L.append("")
+
+    L.append("---\n")
+    L.append("## Ghi kết quả duyệt\n")
+    L.append("Đồng ý toàn bộ:\n")
+    L.append("```\npython scripts/review_static_leaks.py --approve --reviewer dat\n```\n")
+    L.append("Lệnh đó **chỉ đóng dấu nhãn còn là bản nháp** — nhãn đã duyệt "
+             "(`static_leak_review.jsonl`, 2026-09-12) **không bị đụng tới**, "
+             "không bị dời ngày. Chạy lại bao nhiêu lần cũng an toàn.\n")
+    L.append(f"Muốn đổi lớp của câu nào thì sửa dòng đó trong "
+             f"`{VARIANTS.relative_to(ROOT)}` trước (mỗi bản ghi **một dòng** — "
+             "DEC-058), rồi mới `--approve`.\n")
+
+    OUT_WSV.write_text("\n".join(L), encoding="utf-8")
+    print(f"[out] {OUT_WSV.relative_to(ROOT)}")
+    for lop, n in dem.items():
+        print(f"      {lop:28s} {n} câu")
+    print(f"      còn nháp: {len(prov['draft'])}/{len(rows)}")
+    print("\nBước tiếp:")
+    print(f"  1. Mở {OUT_WSV.relative_to(ROOT)}")
+    print("  2. python scripts/review_static_leaks.py --approve --reviewer dat")
+    return 0
+
+
+def approve(reviewer: str, chi: str = "") -> int:
+    """Đóng dấu provenance lên nhãn — **cả hai** file, chỉ bản ghi CÒN LÀ NHÁP.
 
     ⚠️ **Đây là một lời chứng, không phải một bước kỹ thuật.** Chạy lệnh này
     nghĩa là bạn đã ĐỌC và ĐỨNG SAU những nhãn đó. Nó không kiểm hộ được điều
     gì — DEC-014 đòi provenance chính vì không có cách nào kiểm hộ.
+
+    **Bản ghi đã duyệt rồi thì KHÔNG bị đụng tới** — không đóng dấu đè, không
+    đổi ngày. Nếu không thế thì chạy lại lệnh này sẽ âm thầm dời ngày duyệt
+    2026-09-12 sang hôm nay, tức xoá mất *khi nào* lời chứng được đưa ra. Nhờ
+    vậy lệnh **chạy lại bao nhiêu lần cũng an toàn**.
+
+    ``chi`` giới hạn vào một khoá của :data:`NHAN` (``leaks`` / ``variants``).
     """
-    if not VERDICTS.exists():
-        sys.exit(f"!! Chưa có {VERDICTS.relative_to(ROOT)}")
-    rows = load_jsonl(VERDICTS)
+    prov = doc_provenance()
+    khoa = [chi] if chi else list(NHAN)
     hom_nay = datetime.date.today().isoformat()
     dau = f"{reviewer} (duyệt {hom_nay})"
 
-    co = sum(1 for r in rows if r.get("asserts_about_entity"))
-    print(f"Bạn sắp đóng dấu **{dau}** lên {len(rows)} nhãn.")
-    print(f"  {co} câu `true`  -> tử số của con số tầng nội dung")
-    print(f"  {len(rows) - co} câu `false`")
-    print("\nNghĩa là: bạn đã đọc và ĐỨNG SAU những nhãn này. Con số sẽ được")
+    can = [k for k in khoa if prov[k]["draft"]]
+    if not can:
+        print("Không có nhãn nào còn là bản nháp — mọi file đã được duyệt:")
+        for k in khoa:
+            p = prov[k]
+            if p["rows"]:
+                print(f"  {p['path'].name:28s} {', '.join(p['ai'])}")
+        return 0
+
+    print(f"Bạn sắp đóng dấu **{dau}** lên:\n")
+    for k in can:
+        p = prov[k]
+        print(f"  {ten_ngan(p['path'])}")
+        print(f"      {p['desc']}")
+        print(f"      {len(p['draft'])} nhãn còn nháp"
+              + (f" · {len(p['ok'])} nhãn đã duyệt (GIỮ NGUYÊN)"
+                 if p["ok"] else ""))
+        if k == "leaks":
+            co = sum(1 for r in p["rows"] if r.get("asserts_about_entity"))
+            print(f"      trong đó {co} câu `true` -> tử số con số tầng nội dung")
+        if k == "variants":
+            from collections import Counter
+            c = Counter(r.get("class") for r in p["rows"])
+            print(f"      phân lớp: {dict(c)}")
+        print()
+    print("Nghĩa là: bạn đã đọc và ĐỨNG SAU những nhãn này. Con số sẽ được")
     print("trích vào báo cáo dưới tên bạn.\n")
 
-    for r in rows:
-        r["labeled_by"] = dau
-    VERDICTS.write_text(
-        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
-        encoding="utf-8",
-    )
-    print(f"[ok] đã đóng dấu {len(rows)} dòng ở {VERDICTS.relative_to(ROOT)}")
+    for k in can:
+        p = prov[k]
+        truong = p["field"]
+        for r in p["rows"]:
+            if la_nhap(r.get(truong)):
+                r[truong] = dau
+        ghi_jsonl(p["path"], p["rows"])
+        print(f"[ok] {ten_ngan(p['path'])} — đóng dấu "
+              f"{len(p['draft'])} dòng, giữ nguyên {len(p['ok'])}")
+
     print("\nBước tiếp:")
     print("  python scripts/review_static_leaks.py --tally")
     print("  python scripts/build_arms_table.py      # bảng chính đọc lại nhãn")
@@ -447,20 +687,26 @@ def main() -> int:
                     help="đọc phán quyết đã ghi và tính ra số + khoảng tin cậy")
     ap.add_argument("--worksheet", action="store_true",
                     help="sinh phiếu DUYỆT LẠI gọn (6 câu đọc kỹ + 24 câu quét)")
+    ap.add_argument("--worksheet-variants", action="store_true",
+                    help="sinh phiếu duyệt CỜ BIẾN THỂ (bộ nhãn nuôi bảng độ nhạy)")
     ap.add_argument("--approve", action="store_true",
-                    help="đóng dấu provenance lên nhãn — cần --reviewer")
+                    help="đóng dấu provenance lên nhãn CÒN NHÁP — cần --reviewer")
+    ap.add_argument("--only", choices=sorted(NHAN),
+                    help="chỉ đóng dấu một bộ nhãn (mặc định: cả hai)")
     ap.add_argument("--reviewer", default="",
-                    help="tên người duyệt, ghi vào trường labeled_by")
+                    help="tên người duyệt, ghi vào trường provenance")
     args = ap.parse_args()
     if args.tally:
         return tally()
     if args.worksheet:
         return worksheet()
+    if args.worksheet_variants:
+        return worksheet_variants()
     if args.approve:
         if not args.reviewer.strip():
             sys.exit("!! --approve cần --reviewer <tên>. Provenance là một phần "
                      "của kết quả (DEC-014), không để trống được.")
-        return approve(args.reviewer.strip())
+        return approve(args.reviewer.strip(), args.only or "")
 
     for p in (TESTSET, STATIC, CORPUS):
         if not p.exists():

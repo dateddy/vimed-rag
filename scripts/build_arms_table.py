@@ -80,6 +80,53 @@ def sign(n: int | None) -> str:
     return f"{n:+d}" if n else "0"
 
 
+def _ai_gan(rows: list[dict], truong: str) -> tuple[list[str], int]:
+    """``(danh sách người đã duyệt, số nhãn còn là bản nháp)``."""
+    nhap = [r for r in rows
+            if not str(r.get(truong) or "")
+            or "draft" in str(r.get(truong)).lower()
+            or "chưa" in str(r.get(truong)).lower()]
+    ai = sorted({str(r[truong]) for r in rows
+                 if r.get(truong) and r not in nhap})
+    return ai, len(nhap)
+
+
+def _dong_provenance(verdicts: list[dict], variants: list[dict]) -> str:
+    """Dòng provenance **gắn với từng con số**, không gắn với cả mục.
+
+    ⛔ **VÌ SAO KHÔNG PHẢI MỘT DÒNG CHUNG.** Mục này in ra hai nhóm con số đến
+    từ **hai bộ nhãn khác nhau**:
+
+    * số CHÍNH ``6/30`` ← ``static_leak_review.jsonl`` (trường ``labeled_by``)
+    * bảng ĐỘ NHẠY ``3/22`` ``3/19`` ← ``concept_variants.jsonl``
+      (trường ``classified_by``)
+
+    Bản trước in một dòng *"Người gán nhãn: …"* đọc từ file thứ nhất, đặt ở đầu
+    mục. Người đọc hiểu nó phủ lên mọi thứ bên dưới — kể cả bảng độ nhạy, mà
+    lúc đó vẫn mang nhãn nháp. DEC-014 coi provenance là **một phần của kết
+    quả**, nên đó là mô tả **sai** kết quả (ISSUE-069).
+    """
+    ai_v, nhap_v = _ai_gan(verdicts, "labeled_by")
+    ai_c, nhap_c = _ai_gan(variants, "classified_by")
+
+    def mo_ta(ai: list[str], nhap: int, tong: int) -> str:
+        if nhap:
+            return (f"⚠️ **{nhap}/{tong} nhãn CÒN LÀ BẢN NHÁP** của Claude "
+                    "— chưa được phép trích")
+        return f"✅ {', '.join(ai) or '—'}"
+
+    return (
+        "| con số | nguồn nhãn | ai đứng sau |\n"
+        "|---|---|---|\n"
+        f"| **số CHÍNH** — leakage nội dung `6/30` | "
+        f"`data/static_leak_review.jsonl` | "
+        f"{mo_ta(ai_v, nhap_v, len(verdicts))} |\n"
+        f"| bảng **ĐỘ NHẠY** — `3/22`, `3/19` | "
+        f"`data/concept_variants.jsonl` | "
+        f"{mo_ta(ai_c, nhap_c, len(variants))} |\n"
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--triage", type=int, default=6,
@@ -246,11 +293,16 @@ def main() -> int:
     if verdicts:
         cl = content_leakage(verdicts, load_jsonl(VARIANTS))
         ms = mechanism_split(verdicts)
-        by = sorted({str(v.get("labeled_by", "?")) for v in verdicts})
         h = cl["headline"]
         L.append("### ✅ Đã soi tay — kết quả tầng nội dung\n")
-        L.append(f"**Người gán nhãn:** {', '.join(by)}. "
-                 "Nhãn ở `data/static_leak_review.jsonl`.\n")
+        # ⚠️ PROVENANCE PHẢI GẮN VỚI TỪNG CON SỐ, KHÔNG PHẢI VỚI CẢ MỤC.
+        # Bản trước in MỘT dòng "Người gán nhãn: …" ở đầu mục, đọc từ
+        # `static_leak_review.jsonl`. Nhưng bảng ĐỘ NHẠY phía dưới (`3/22`,
+        # `3/19`) lấy từ `concept_variants.jsonl` — một file KHÁC, provenance
+        # KHÁC. Người đọc thấy một dòng "đã duyệt" ở đầu mục và hiểu là mọi
+        # con số dưới đó đã được duyệt. Đó là ISSUE-069, và DEC-014 coi
+        # provenance là MỘT PHẦN của kết quả nên đây là mô tả sai kết quả.
+        L.append(_dong_provenance(verdicts, load_jsonl(VARIANTS)))
         L.append("Tiêu chí (kiểm chứng được, không phải cảm nhận): *câu trả lời có")
         L.append("**phát biểu thuộc tính** của thực thể X, trong khi corpus có **0 bài**")
         L.append("về X?* Vế sau do script tính lại — 30/30 khớp nhãn đã lưu.\n")

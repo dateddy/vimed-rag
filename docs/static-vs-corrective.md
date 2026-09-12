@@ -119,7 +119,10 @@ hallucination rẻ" — dòng này ghi lại đúng chỗ nó không thay đư�
 
 ### ✅ Đã soi tay — kết quả tầng nội dung
 
-**Người gán nhãn:** dat (duyệt 2026-09-12). Nhãn ở `data/static_leak_review.jsonl`.
+| con số | nguồn nhãn | ai đứng sau |
+|---|---|---|
+| **số CHÍNH** — leakage nội dung `6/30` | `data/static_leak_review.jsonl` | ✅ dat (duyệt 2026-09-12) |
+| bảng **ĐỘ NHẠY** — `3/22`, `3/19` | `data/concept_variants.jsonl` | ⚠️ **30/30 nhãn CÒN LÀ BẢN NHÁP** của Claude — chưa được phép trích |
 
 Tiêu chí (kiểm chứng được, không phải cảm nhận): *câu trả lời có
 **phát biểu thuộc tính** của thực thể X, trong khi corpus có **0 bài**
