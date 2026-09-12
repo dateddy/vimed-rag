@@ -28,9 +28,9 @@ Câu từ chối: `E-21`.
 
 | | số câu | faithfulness |
 |---|---|---|
-| **câu có phát biểu thực chất — SỐ CHÍNH** | 11 | **0.463** |
+| **câu có phát biểu thực chất — SỐ CHÍNH** | 9 | **0.497** |
 | câu từ chối (tách ra, KHÔNG vào trung bình) | 0 | *không áp dụng* |
-| tổng đã chấm | 11 | |
+| tổng đã chấm | 9 | |
 
 ⚠️ **Nhánh LLM-only được chấm bằng ngữ cảnh mượn.** Nó không truy hồi nên tự nó không có ngữ cảnh nào; bảng đưa vào đúng các đoạn mà nhánh corrective lấy được cho **cùng câu hỏi đó**. Phép đo vì thế đọc là *“câu trả lời không-truy-hồi này có được chống đỡ bởi bằng chứng tốt nhất corpus đưa ra được không”* — **không phải** cùng một phép đo với dòng trên. Không nói ra thì người đọc sẽ hiểu thành hai nhánh được chấm như nhau.
 
@@ -79,10 +79,14 @@ Mẫu số: **21 câu nhóm E** — chỉ nhóm E có `reference_context_ids`. C
 
 ## ⚠️ Tình trạng chấm
 
+Chạy với `--pairable-only`: nhánh LLM-only **chỉ chấm câu ghép cặp được** — tức câu mà nhánh corrective cũng có phát biểu thực chất.
+
+**Tập bị cắt là tập `paired_comparison()` vốn đã bỏ**, nên không mất thông tin nào: (a) 30 câu A/B — nhánh corrective **từ chối hết** (leakage 0/30) nên không có gì ghép cặp, và chấm faithfulness một câu LLM-only nói về thực thể **vắng mặt khỏi corpus** đối chiếu với ngữ cảnh **mượn từ corpus** thì ra ~0 **theo cấu tạo** — đúng loại tautology DEC-051 đã cảnh báo và DEC-061 gặp lại ở *cách vá (4)*; (b) câu nhánh corrective từ chối (`E-21`) không có claim nào để chấm.
+
 | nhánh | đã chấm | chưa chấm |
 |---|---|---|
 | **Corrective + guard lượt 2 — HỆ ĐANG CHẠY** | 17/17 | 0 |
-| LLM-only (không truy hồi) | 11/51 | 40 |
+| LLM-only (không truy hồi) | 9/16 | 7 |
 
 ⛔ **Lô chấm CHƯA XONG.** Lần chạy đầu dừng ở `403 Key limit exceeded` của OpenRouter sau 28 lượt — đúng rủi ro `STATUS.md` đã ghi (*“hết tiền là 402, cùng hậu quả với 429”*). Điểm đã chấm nằm trong cache, nên nâng hạn mức key rồi chạy lại thì **chỉ tốn phần còn thiếu**.
 

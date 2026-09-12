@@ -27,9 +27,26 @@ Qdrant**. Có gọi API: judge Faithfulness. Kết quả được cache xuống
 
 CHẠY
 ----
-  python scripts/build_ragas_report.py              # dùng cache nếu có
-  python scripts/build_ragas_report.py --refresh    # chấm lại, TỐN lượt API
+  # đọc phần đã chấm, KHÔNG gọi API lượt nào — chạy cái này trước
+  python scripts/build_ragas_report.py --cache-only
+
+  # CHẠY TIẾP phần còn thiếu, rẻ nhất có thể (khuyến nghị)
+  python scripts/build_ragas_report.py --pairable-only
+
+  python scripts/build_ragas_report.py              # dùng cache, chấm nốt TẤT CẢ
+  python scripts/build_ragas_report.py --refresh    # chấm LẠI từ đầu, TỐN nhất
   python scripts/build_ragas_report.py --limit 3    # thử vài câu cho rẻ
+
+⚠️ **CHI PHÍ ĐO ĐƯỢC, KHÔNG PHẢI ƯỚC LƯỢNG:** 28 câu đầu tốn **$3,17** trên
+OpenRouter → **~$0,11/câu** với `openai/gpt-5`. Đó là model **suy luận**, nên
+nó đốt token vào reasoning trước khi phát JSON và mất ~100 giây/câu. Lô đầu
+tiên **chết ở `403 Key limit exceeded`** vì hạn mức key là $3.
+
+`--pairable-only` đưa nhánh LLM-only từ 59 câu xuống còn **đúng tập ghép cặp
+được** — và tập bị cắt là tập mà `paired_comparison()` **vốn đã bỏ**, nên
+không mất một thông tin nào. Xem lý do đầy đủ ngay tại chỗ dùng cờ này.
+
+Mã thoát: **2** nếu lô chấm còn dở. Một lô dở mà exit 0 là lô nói dối.
 """
 
 from __future__ import annotations
@@ -93,7 +110,12 @@ def judge_co_cache(judge, cache: dict, model: str, *, cache_only: bool = False):
     bị bỏ qua (judge trả `None`) thay vì đi hỏi. Sinh ra vì lô đầu tiên
     chết giữa chừng ở **403 Key limit exceeded** sau 28/76 câu — khi credit là
     thứ khan hiếm thì phải đọc được phần đã trả tiền mà không trả thêm lần nữa.
+
+    Trả về ``(judge_đã_bọc, hong)`` — ``hong`` là list rỗng, và nó **có phần
+    tử** nếu lô phải dừng gọi API giữa chừng. Trả ra thay vì in rồi quên, để
+    `main()` đặt được mã thoát đúng: một lô chấm dở mà exit 0 là lô nói dối.
     """
+    hong: list[Exception] = []
     def bao(user_input: str, response: str,
             contexts: list[str]) -> float | None:
         # ⚠️ sha256, KHÔNG `hash()`: `hash()` của chuỗi bị salt theo tiến trình
@@ -104,14 +126,26 @@ def judge_co_cache(judge, cache: dict, model: str, *, cache_only: bool = False):
         k = hashlib.sha256(thô.encode("utf-8")).hexdigest()[:32]
         if k in cache:
             return float(cache[k])
-        if cache_only:
+        if cache_only or hong:
             return None      # chưa chấm được — KHÔNG phải điểm 0
-        v = float(judge(user_input, response, contexts))
+        try:
+            v = float(judge(user_input, response, contexts))
+        except Exception as e:                                  # noqa: BLE001
+            # ⛔ HẾT CREDIT / BỊ CHẶN THÌ DỪNG GỌI, ĐỪNG VỠ CẢ LÔ.
+            # Lần chạy đầu (2026-09-11) chết thành traceback giữa chừng ở
+            # `403 Key limit exceeded` — cache vẫn giữ được 28 điểm nhờ ghi
+            # từng câu, nhưng báo cáo thì không sinh ra nổi. Nay: ghi nhận
+            # lỗi MỘT lần, tắt công tắc, để mọi câu sau trả None ngay (không
+            # gọi thêm, không tốn thêm), và lô vẫn chạy hết để sinh báo cáo
+            # trên phần đã có.
+            hong.append(e)
+            print(f"\n⛔ DỪNG GỌI API: {type(e).__name__}: {str(e)[:200]}\n")
+            return None
         cache[k] = v
         CACHE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
         return v
 
-    return bao
+    return bao, hong
 
 
 def bang_faith(s, nhan: str) -> list[str]:
@@ -142,6 +176,10 @@ def main() -> int:
     ap.add_argument("--model", default=DEFAULT_JUDGE_MODEL)
     ap.add_argument("--cache-only", action="store_true",
                     help="CHỈ đọc điểm đã cache, KHÔNG gọi API lượt nào")
+    ap.add_argument("--pairable-only", action="store_true",
+                    help="nhánh LLM-only: CHỈ chấm câu ghép cặp được "
+                         "(48 câu -> 10). Xem docstring để biết vì sao rẻ mà "
+                         "không mất thông tin nào")
     args = ap.parse_args()
 
     if not RUNS.exists():
@@ -162,7 +200,8 @@ def main() -> int:
     # `--cache-only` thì không dựng judge thật -> không cần cả ragas lẫn key.
     that = (lambda *a: 0.0) if args.cache_only else make_openrouter_judge(
         api_key, args.model)
-    judge = judge_co_cache(that, cache, args.model, cache_only=args.cache_only)
+    judge, hong = judge_co_cache(that, cache, args.model,
+                                 cache_only=args.cache_only)
 
     # ---- nhánh ĐANG CHẠY THẬT: corrective + guard lượt 2 (DEC-061)
     corr = arm_records(records, "corrective_t1")
@@ -180,9 +219,25 @@ def main() -> int:
         for r in corr
     }
     base = arm_records(records, "llm_only")
+    if args.pairable_only:
+        # Chỉ giữ câu GHÉP CẶP ĐƯỢC — tức câu nhánh corrective cũng có phát
+        # biểu thực chất. Đưa 48 câu còn thiếu xuống còn 10.
+        #
+        # ⚠️ VÌ SAO KHÔNG MẤT THÔNG TIN NÀO, chứ không phải cắt cho rẻ:
+        #  - 30 câu A/B: nhánh corrective TỪ CHỐI HẾT (leakage 0/30), nên không
+        #    có gì để ghép cặp. Và chấm faithfulness câu LLM-only nói về thực
+        #    thể VẮNG MẶT khỏi corpus, đối chiếu với ngữ cảnh MƯỢN từ corpus,
+        #    thì ra ~0 **theo cấu tạo** — đúng loại tautology DEC-051 đã cảnh
+        #    báo, và DEC-061 gặp lại ở "cách vá (4)".
+        #  - Câu nhánh corrective từ chối (`E-21`) cũng không ghép cặp được:
+        #    lời từ chối không có claim nào để chấm.
+        # Nên tập bị cắt là tập mà `paired_comparison()` **vốn đã bỏ**.
+        ghep = {r.id for r in s_corr.substantive}
+        base = [r for r in base if r["id"] in ghep]
     if args.limit:
         base = base[: args.limit]
-    print(f"[2] {ARM_LABEL['llm_only']}: {len(base)} câu (ngữ cảnh MƯỢN)")
+    print(f"[2] {ARM_LABEL['llm_only']}: {len(base)} câu (ngữ cảnh MƯỢN)"
+          + (" — CHỈ câu ghép cặp được" if args.pairable_only else ""))
     s_base = score_records(base, judge, arm="llm_only", contexts_by_id=ctx)
     if s_base.unscored:
         print(f"    ⚠️ {len(s_base.unscored)} câu CHƯA CHẤM ĐƯỢC")
@@ -281,6 +336,19 @@ def main() -> int:
         L.append("")
 
     L.append("## ⚠️ Tình trạng chấm\n")
+    if args.pairable_only:
+        L.append("Chạy với `--pairable-only`: nhánh LLM-only **chỉ chấm câu ghép "
+                 "cặp được** — tức câu mà nhánh corrective cũng có phát biểu "
+                 "thực chất.\n")
+        L.append("**Tập bị cắt là tập `paired_comparison()` vốn đã bỏ**, nên "
+                 "không mất thông tin nào: (a) 30 câu A/B — nhánh corrective "
+                 "**từ chối hết** (leakage 0/30) nên không có gì ghép cặp, và "
+                 "chấm faithfulness một câu LLM-only nói về thực thể **vắng "
+                 "mặt khỏi corpus** đối chiếu với ngữ cảnh **mượn từ corpus** "
+                 "thì ra ~0 **theo cấu tạo** — đúng loại tautology DEC-051 đã "
+                 "cảnh báo và DEC-061 gặp lại ở *cách vá (4)*; (b) câu nhánh "
+                 "corrective từ chối (`E-21`) không có claim nào để chấm.\n")
+
     tong_c = len(s_corr.rows) + len(s_corr.unscored)
     tong_b = len(s_base.rows) + len(s_base.unscored)
     L.append("| nhánh | đã chấm | chưa chấm |")
@@ -318,6 +386,23 @@ def main() -> int:
     tb2 = s_base.mean_faithfulness
     print(f"   llm_only     : {len(s_base.substantive)} câu thực chất, "
           f"faithfulness {'—' if tb2 is None else f'{tb2:.3f}'}")
+
+    thieu = len(s_corr.unscored) + len(s_base.unscored)
+    if hong:
+        print(f"\n⛔ LÔ CHẤM DỪNG GIỮA CHỪNG — còn {thieu} câu chưa chấm.")
+        print(f"   Nguyên nhân: {type(hong[0]).__name__}")
+        print("   Điểm đã chấm ĐÃ được giữ trong cache (ghi từng câu), nên")
+        print("   chạy lại sau khi gỡ nguyên nhân chỉ tốn đúng phần còn thiếu.")
+        print("\n   Kiểm hạn mức key OpenRouter:")
+        print("     curl -H \"Authorization: Bearer $KEY\" "
+              "https://openrouter.ai/api/v1/key")
+        print("   Nâng hạn mức: https://openrouter.ai/workspaces/default/keys")
+        # ⚠️ Mã thoát KHÁC 0: một lô chấm dở mà exit 0 là lô nói dối, và
+        # `docs/ragas.md` sẽ âm thầm mang số của một mẫu nhỏ hơn ta tưởng.
+        return 2
+    if thieu and not args.cache_only:
+        print(f"\n⚠️ Còn {thieu} câu chưa chấm (không phải do lỗi API).")
+        return 2
     return 0
 
 
