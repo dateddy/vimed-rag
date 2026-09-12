@@ -10,22 +10,32 @@
 **Lô chấm RAGAS dừng ở `403 Key limit exceeded` sau 28/76 lượt** (2026-09-11).
 Đúng rủi ro mục Blocker đã ghi từ DEC-054: *"hết tiền là 402, cùng hậu quả với 429"*.
 
-- **Nhánh quan trọng nhất ĐÃ XONG:** `corrective_t1` chấm đủ **17/17** câu trả lời.
-- Nhánh `llm_only` mới có `E-01…E-11`. **Chỉ còn 10 câu** (`E-12…E-21`) là đủ so
-  sánh cặp đầy đủ trên nhóm E — **không phải 48**. Nhóm A/B của baseline **không
-  cần chấm**: nhánh corrective từ chối hết 30 câu đó nên không có gì để ghép cặp.
-- Điểm đã chấm nằm trong cache (`data/processed/ragas_scores.json`), khoá theo
-  **sha256** nên bền qua các lần chạy → nâng hạn mức key rồi chạy lại **chỉ tốn
-  phần còn thiếu**.
-- Đọc phần đã có mà **không tốn thêm lượt nào**:
-  `python scripts/build_ragas_report.py --cache-only`
-- ⚠️ Nâng hạn mức ở: `https://openrouter.ai/workspaces/default/keys` — **việc của Đạt**,
-  không tự làm được.
-- ⚠️ Cân nhắc trước khi nạp: `openai/gpt-5` là model **suy luận**, ~100 giây/câu và
-  tốn token gấp bội vì reasoning. Nếu credit là thứ phải để dành cho demo Tuần 7
-  thì đổi `--model` sang một model rẻ hơn là lựa chọn hợp lý — **nhưng phải chấm
-  LẠI CẢ 76 câu** (khoá cache gồm tên model, cố ý: trộn điểm hai judge dưới một
-  cái tên là dựng phép đo giả).
+**Trạng thái key đo 2026-09-12** (`GET /api/v1/key`): `limit $3` · `usage $3,17` ·
+`limit_remaining 0`. **Chưa được nâng** → lượt chấm tiếp theo vẫn 403.
+
+- **CHI PHÍ ĐO ĐƯỢC, không phải ước lượng: 28 câu tốn $3,17 → ~$0,11/câu** với
+  `openai/gpt-5`. Đó là model **suy luận** nên đốt token vào reasoning trước khi
+  phát JSON, ~100 giây/câu. Hạn mức $3 là lý do nó chết đúng ở câu 28.
+- **Nhánh quan trọng nhất ĐÃ XONG:** `corrective_t1` chấm đủ **17/17**.
+- **CÒN ĐÚNG 7 CÂU** với `--pairable-only` (không phải 48, cũng không phải 10):
+  nhánh `llm_only` chỉ cần chấm **tập ghép cặp được** = 16 câu, đã có 9.
+  → **~$0,80.** Đặt hạn mức **$5** là dư, và còn dư cho demo Tuần 7.
+- ⚠️ **Việc của Đạt, không tự làm được:** nâng hạn mức ở
+  `https://openrouter.ai/workspaces/default/keys`.
+- **Sau khi nâng, chạy đúng một lệnh:**
+  `python scripts/build_ragas_report.py --pairable-only`
+- Đọc phần đã có mà **không tốn lượt nào**: thêm `--cache-only`.
+- ⚠️ **Vì sao cắt 48 → 7 mà không mất thông tin nào:** tập bị cắt đúng là tập
+  `paired_comparison()` **vốn đã bỏ**. (a) 30 câu A/B — corrective **từ chối hết**
+  nên không có gì ghép cặp, và chấm faithfulness câu LLM-only nói về thực thể
+  **vắng mặt khỏi corpus** đối chiếu ngữ cảnh **mượn từ corpus** thì ra ~0 **theo
+  cấu tạo** — đúng loại tautology DEC-051 cảnh báo, DEC-061 gặp lại ở *cách vá (4)*.
+  (b) `E-21` là lời từ chối, không có claim nào để chấm.
+- ⚠️ **ĐỪNG đổi `--model` cho rẻ** trừ khi credit thực sự eo hẹp: khoá cache gồm
+  **tên model** (cố ý — trộn điểm hai judge dưới một cái tên là dựng phép đo giả),
+  nên đổi model là **chấm lại cả 76 câu**, đắt hơn hẳn 7 câu còn thiếu.
+- ✅ Lô nay **không vỡ nữa** khi hết credit: ghi nhận lỗi một lần, tắt công tắc gọi
+  API, vẫn sinh báo cáo trên phần đã có, **thoát mã 2** (lô dở mà exit 0 là lô nói dối).
 
 ## Đang làm
 
