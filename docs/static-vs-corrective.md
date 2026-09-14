@@ -8,7 +8,7 @@ Cấu hình: `openrouter/google/gemini-2.5-flash` · chunk 512 · ngưỡng `inc
 
 | # | Nhánh | Cơ chế thêm vào | Leakage A/B ↓ | Coverage E ↑ | Nhóm D bị chặn ↑ |
 |---|---|---|---|---|---|
-| 1 | **LLM-only (không truy hồi)** | — | — *(cần RAGAS)* | — *(cần RAGAS)* | — *(cần RAGAS)* |
+| 1 | **LLM-only (không truy hồi)** | — | — *(không có TerminalAction)* | — *(không có TerminalAction)* | — *(không có TerminalAction)* |
 | 2 | **Static RAG (1 lượt, luôn trả lời)** | + truy hồi | 30/30 = **100%** (CI 95% Wilson 89–100%) † | 21/21 = **100%** (CI 95% Wilson 85–100%) † | 0/8 = **0%** (CI 95% Wilson 0–32%) † |
 | 3 | ****Corrective + guard lượt 2 — HỆ ĐANG CHẠY**** | + policy gate, grader, ngưỡng hiệu chỉnh, **guard lượt 2** | 0/30 = **0%** (CI 95% Wilson 0–11%) | 17/21 = **81%** (CI 95% Wilson 60–92%) | 8/8 = **100%** (CI 95% Wilson 68–100%) |
 | 4 | **Corrective không guard (tái lập DEC-056/057)** | − guard lượt 2 (cho lượt 2 quyền lật) | 2/30 = **7%** (CI 95% Wilson 2–21%) | 17/21 = **81%** (CI 95% Wilson 60–92%) | 8/8 = **100%** (CI 95% Wilson 68–100%) |
@@ -18,9 +18,18 @@ chế từ chối nào nên nó trả lời mọi câu — leakage 100% là *đ�
 nhánh, không phải phát hiện. Trích nó như kết quả thực nghiệm là lặp lại
 đúng lỗi mà DEC-051 đã phải cảnh báo với `leakage 0/30`.
 
-`— (cần RAGAS)` = LLM-only không có `TerminalAction`, nên *"nó có từ chối
-không"* phải đọc văn bản. Đoán bằng regex là dựng một phép đo giả; ô này
-do RAGAS faithfulness (việc 3 của Tuần 6) lấp.
+`— (không có TerminalAction)` = LLM-only không phát ra phán quyết nào, nên
+*"nó có từ chối không"* phải đọc văn bản. Đoán bằng regex là dựng một phép
+đo giả, nên ô để trống.
+
+⚠️ **Hai ô trống này là vĩnh viễn, không phải việc còn treo.** Bản trước
+của dòng này nói ngược lại — nó chỉ sang việc (3) của Tuần 6 như thứ sẽ
+điền chúng vào. Việc (3) **đã xong** (2026-09-14), và ô vẫn trống: thứ nó
+trả về đo *mức bám ngữ cảnh của câu trả lời*, một thang đo khác hẳn
+leakage và coverage. Trộn hai thang đo vào một hàng bảng là đúng cái
+`docs/ragas.md` dành hẳn một cảnh báo riêng để cấm.
+So sánh thật giữa LLM-only và corrective nằm ở **bảng ghép cặp** của
+`docs/ragas.md` — đọc ở đó, đừng đọc ở hàng này.
 
 `— (chưa chạy)` = nhánh chưa có dữ liệu trên nhóm đó. Nhóm D của Static
 RAG cần `python scripts/gen_static_rag.py --retrieve-missing` (cần Qdrant):
@@ -122,7 +131,7 @@ hallucination rẻ" — dòng này ghi lại đúng chỗ nó không thay đư�
 | con số | nguồn nhãn | ai đứng sau |
 |---|---|---|
 | **số CHÍNH** — leakage nội dung `6/30` | `data/static_leak_review.jsonl` | ✅ dat (duyệt 2026-09-12) |
-| bảng **ĐỘ NHẠY** — `3/22`, `3/19` | `data/concept_variants.jsonl` | ⚠️ **30/30 nhãn CÒN LÀ BẢN NHÁP** của Claude — chưa được phép trích |
+| bảng **ĐỘ NHẠY** — `3/22`, `3/19` | `data/concept_variants.jsonl` | ✅ dat (duyệt 2026-09-14) |
 
 Tiêu chí (kiểm chứng được, không phải cảm nhận): *câu trả lời có
 **phát biểu thuộc tính** của thực thể X, trong khi corpus có **0 bài**

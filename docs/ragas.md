@@ -28,25 +28,25 @@ Câu từ chối: `E-21`.
 
 | | số câu | faithfulness |
 |---|---|---|
-| **câu có phát biểu thực chất — SỐ CHÍNH** | 9 | **0.497** |
+| **câu có phát biểu thực chất — SỐ CHÍNH** | 16 | **0.481** |
 | câu từ chối (tách ra, KHÔNG vào trung bình) | 0 | *không áp dụng* |
-| tổng đã chấm | 9 | |
+| tổng đã chấm | 16 | |
 
 ⚠️ **Nhánh LLM-only được chấm bằng ngữ cảnh mượn.** Nó không truy hồi nên tự nó không có ngữ cảnh nào; bảng đưa vào đúng các đoạn mà nhánh corrective lấy được cho **cùng câu hỏi đó**. Phép đo vì thế đọc là *“câu trả lời không-truy-hồi này có được chống đỡ bởi bằng chứng tốt nhất corpus đưa ra được không”* — **không phải** cùng một phép đo với dòng trên. Không nói ra thì người đọc sẽ hiểu thành hai nhánh được chấm như nhau.
 
 ## So sánh hai nhánh — GHÉP CẶP trên cùng bộ câu
 
-Mẫu ghép cặp: **9 câu** cả hai nhánh đều có điểm **và** đều có phát biểu thực chất.
+Mẫu ghép cặp: **16 câu** cả hai nhánh đều có điểm **và** đều có phát biểu thực chất.
 
 | nhánh | faithfulness trên mẫu ghép cặp |
 |---|---|
-| **Corrective + guard lượt 2 — HỆ ĐANG CHẠY** | **0.722** |
-| LLM-only (không truy hồi) (ngữ cảnh mượn) | **0.497** |
-| **chênh lệch** | **+0.225** |
+| **Corrective + guard lượt 2 — HỆ ĐANG CHẠY** | **0.747** |
+| LLM-only (không truy hồi) (ngữ cảnh mượn) | **0.481** |
+| **chênh lệch** | **+0.266** |
 
-Kiểm định dấu: **1 câu corrective thấp hơn · 8 câu cao hơn · p = 0.0391**. Dùng kiểm định dấu chứ không t-test — n nhỏ và phân bố faithfulness không rõ dạng, cùng lý do đã ghi ở DEC-055.
+Kiểm định dấu: **2 câu corrective thấp hơn · 14 câu cao hơn · p = 0.0042**. Dùng kiểm định dấu chứ không t-test — n nhỏ và phân bố faithfulness không rõ dạng, cùng lý do đã ghi ở DEC-055.
 
-⚠️⚠️ **ĐỪNG so hai trung bình rời ở hai bảng trên.** Chúng đứng trên hai tập câu khác nhau (lô chấm dừng giữa chừng ở 403), nên hiệu của chúng **không phải** là hiệu ứng. Chỉ bảng ghép cặp này mới đọc được.
+✅ **Lô chấm đã xong**, nên hai bảng trên đứng trên đúng bộ câu của bảng ghép cặp này — ba con số khớp nhau là vì thế, không phải trùng hợp.
 
 ## B4 — hai máy dò câu “ANSWER nhưng nội dung là từ chối”
 
@@ -86,17 +86,15 @@ Chạy với `--pairable-only`: nhánh LLM-only **chỉ chấm câu ghép cặp 
 | nhánh | đã chấm | chưa chấm |
 |---|---|---|
 | **Corrective + guard lượt 2 — HỆ ĐANG CHẠY** | 17/17 | 0 |
-| LLM-only (không truy hồi) | 9/16 | 7 |
-
-⛔ **Lô chấm CHƯA XONG.** Lần chạy đầu dừng ở `403 Key limit exceeded` của OpenRouter sau 28 lượt — đúng rủi ro `STATUS.md` đã ghi (*“hết tiền là 402, cùng hậu quả với 429”*). Điểm đã chấm nằm trong cache, nên nâng hạn mức key rồi chạy lại thì **chỉ tốn phần còn thiếu**.
-
-⚠️ Câu chưa chấm **KHÔNG** được tính là 0 — `None` và `0.0` là hai thứ khác hẳn nhau (`0.0` là phán quyết *“không claim nào được chống đỡ”*; chưa chấm là *không có phán quyết*). Chúng nằm ngoài mọi mẫu số ở trên.
+| LLM-only (không truy hồi) | 16/16 | 0 |
 
 ## Tái lập
 
 ```
-python scripts/build_ragas_report.py
+python scripts/build_ragas_report.py --pairable-only
 ```
+
+⚠️ **Cờ `--pairable-only` là một phần của lệnh, không phải tuỳ chọn cho nhanh.** Bỏ nó ra thì nhánh LLM-only nở từ **16 câu ghép cặp** lên **51 câu**, mẫu số mọi bảng đổi theo, và script gọi API thật cho phần chênh.
 
 Điểm judge được cache ở `data/processed/ragas_scores.json` (gitignore) nên chạy lại **không tốn lượt API nào**. `--refresh` để chấm lại từ đầu.
 
