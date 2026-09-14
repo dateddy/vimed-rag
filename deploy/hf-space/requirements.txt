@@ -1,0 +1,45 @@
+# requirements của HF SPACE — CỐ Ý KHÁC `requirements.txt` ở gốc repo.
+#
+# Gốc repo giữ LEAN có lý do (ghi trong chính file đó): `pip install -r
+# requirements.txt` trên clone sạch phải nhẹ, và test phải chạy được khi KHÔNG
+# có torch. Space thì ngược lại — nó là chỗ DUY NHẤT thật sự cần chạy model.
+# Nên hai file, không phải một file thoả hiệp cả hai.
+#
+# ⛔ ĐỪNG chép các dòng dưới ngược vào `requirements.txt` gốc: làm thế là mọi
+#    lần cài repo kéo theo ~2,5 GB torch, và ràng buộc #2 mất chốt chặn tự nhiên.
+
+# --- torch bản CPU ---
+# Space free là CPU. `torch` mặc định trên PyPI là bản CUDA: tải thêm vài GB
+# wheel `nvidia-*` mà KHÔNG dùng tới, làm cold start lâu và dễ đụng trần build.
+# Hậu tố `+cpu` CHỈ tồn tại trên index của PyTorch nên nó ép đúng bản CPU —
+# `--extra-index-url` một mình KHÔNG đủ (pip vẫn có thể lấy bản cao hơn ở PyPI).
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.6.0+cpu
+
+# --- PIN CỨNG đúng bộ đang chạy được trên máy Đạt (đo 2026-09-14) ---
+# Vì sao pin chứ không `>=`: cặp FlagEmbedding/transformers này là chỗ ĐÃ CÓ
+# tiền sử gãy — DEC-037 ghi nhánh reranker của FlagEmbedding chết trên
+# transformers 5.x (`tokenizer.prepare_for_model()` bị gỡ), nên repo đi thẳng
+# `AutoModelForSequenceClassification`. Thả version là mời pip giải ra một tổ
+# hợp khác, rồi hỏng trên một máy ở xa đúng lúc cần đo.
+transformers==5.5.4
+FlagEmbedding==1.4.0
+numpy==2.4.4
+
+# --- hạ tầng ---
+streamlit==1.63.0
+qdrant-client==1.19.0
+httpx==0.28.1
+PyYAML>=6.0
+
+# ⚠️ `streamlit` PHẢI có ở đây. HuggingFace đã BỎ SDK `streamlit` cho Space mới
+#    (API chỉ còn nhận `gradio|docker|static`, kiểm 2026-09-14) nên Space này
+#    chạy bằng **Docker** — không còn SDK nào cài streamlit hộ nữa.
+
+# --- KHÔNG cài, có chủ ý ---
+# google-genai: chỉ cần khi `models.llm_provider: google`. Đang dùng OpenRouter
+#               (DEC-054) = httpx thuần. Tab 1 không sinh câu trả lời nên lần
+#               deploy này KHÔNG cần. Thêm lại khi làm tab đầu-cuối (Task 5)
+#               NẾU lúc đó đổi sang provider google.
+# matplotlib  : chỉ `scripts/build_risk_coverage.py` dùng, không phải app.
+# ragas       : tuyệt đối không — nó kéo langgraph (ràng buộc #1).
