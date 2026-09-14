@@ -107,9 +107,15 @@ Báo cáo: `docs/risk-coverage.md` · `docs/risk-coverage.png`.
       end-to-end trên hệ thật: `A-01` và `A-08` đều lật `ANSWER`→`ABSTAIN`, `E-01`
       giữ nguyên `ANSWER`.
       ⛔ **SỐ ĐƯỢC PHÉP TRÍCH TUỲ THEO CẤU HÌNH — nói rõ cấu hình mỗi lần trích:**
-      hệ đang chạy (có guard) = **leakage < 11%** (0/30, CI 95%, quy tắc số ba);
-      cấu hình `allow_turn2_promotion: true` = **7%**. Viết "0%" trần trụi là sai
-      y như DEC-051 đã cảnh báo — 0/30 không chứng minh được bằng 0.
+      hệ đang chạy (có guard) = **leakage 0–11%** (0/30, **CI 95% Wilson**);
+      cấu hình `allow_turn2_promotion: true` = **7%** (2/30, CI 95% Wilson 2–21%).
+      Viết "0%" trần trụi là sai y như DEC-051 đã cảnh báo — 0/30 không chứng
+      minh được bằng 0.
+      ⚠️ Dòng này **từng dán nhãn sai** (ghi `< 11%` là "quy tắc số ba", trong khi
+      11% là cận **Wilson**; quy tắc số ba với n=30 cho 10%). Sửa 2026-09-14 —
+      DEC-064 đã chốt Wilson toàn repo và sửa ở gốc `fmt_pct()`, nhưng dòng này
+      **viết tay** nên không được sửa theo. Đúng lý do DEC-064 tồn tại: hai cận
+      trên cùng lưu hành thì nhãn trôi sang nhau mà không ai thấy.
       ⚠️ **Vẫn phải ghi 3 điều:** (a) LOOCV ước lượng *quy trình chọn ngưỡng*, không
       ước lượng con số đóng vào `config.yaml`; (b) mỗi câu E vẫn nặng **4,8 điểm**
       coverage — CV không làm test set lớn lên; (c) `leakage 0/30` ở bản khớp toàn
@@ -186,6 +192,12 @@ Báo cáo: `docs/risk-coverage.md` · `docs/risk-coverage.png`.
       sự thật** và không được trích.
       ⚠️ Và Faithfulness đo *bám ngữ cảnh*, **không** đo *đúng* — nó không thay được
       nhãn tay 6/30 cho claim "% giảm hallucination".
+      ✅ **SỐ ĐƯỢC PHÉP TRÍCH (lô chấm xong 2026-09-14, DEC-070):** chỉ bảng **ghép
+      cặp** — 16 câu cả hai nhánh đều có điểm và đều thực chất: corrective **0,747**
+      vs LLM-only **0,481**, Δ **+0,266**, kiểm định dấu **14–2, p = 0,0042**.
+      ⛔ Và phải nói kèm: nhánh LLM-only được chấm bằng **ngữ cảnh MƯỢN** của nhánh
+      corrective (nó không truy hồi). Đó là cách dùng **phi tiêu chuẩn** — giấu nó đi
+      thì người đọc hiểu thành hai nhánh được chấm như nhau.
 - [ ] **Không có inter-annotator agreement (κ)** — dự án 1 người (DEC-013). Bù lại bằng
       *nguồn nhãn kiểm chứng được*, không bằng đồng thuận người: nhóm A/B kiểm bằng script,
       D bằng policy tự công bố, E bằng ViMedAQA ground truth. Nhóm C (nhãn theo phán đoán)
