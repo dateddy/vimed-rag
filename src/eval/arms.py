@@ -215,7 +215,12 @@ def fmt_cell(cell: dict, *, by_construction: bool = False) -> str:
     trích một con số ra khỏi bảng thì họ trích cái ô, không trích chú thích.
     """
     if cell.get("answered") is None:
-        return "— *(cần RAGAS)*"
+        # ⚠️ KHÔNG ghi "(cần RAGAS)" — đó là một lời hứa không thực hiện được
+        # (ISSUE-075). RAGAS trả về **faithfulness**, thứ đo "bám ngữ cảnh";
+        # nó không phải leakage cũng không phải coverage, nên nó không lấp
+        # được ô này dù đã chấm xong. Ô trống vì nhánh llm_only **không có
+        # `TerminalAction`** — đó là lý do cơ chế, và nó không đổi.
+        return "— *(không có TerminalAction)*"
     if not cell.get("n"):
         # Mẫu số 0 = nhánh này chưa chạy trên nhóm đó (nhóm D của Static RAG).
         # In "0/0 = 0%" ở đây là dựng một ô trông như đã đo.

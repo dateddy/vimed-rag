@@ -127,8 +127,17 @@ def test_llm_only_ra_none_chu_khong_ra_khong():
     assert cell["n"] == 1, "vẫn phải đếm được mẫu số"
 
 
-def test_fmt_cell_noi_ro_can_ragas():
-    assert "RAGAS" in fmt_cell({"n": 30, "answered": None})
+def test_fmt_cell_noi_LY_DO_CO_CHE_chu_khong_hua_ragas_se_lap():
+    """⛔ ISSUE-075 — ô trống phải nêu **lý do cơ chế**, KHÔNG hứa hẹn.
+
+    Bản trước ghi *"(cần RAGAS)"*, đọc thành *"chờ việc 3 Tuần 6 là ô có số"*.
+    RAGAS đã chấm xong 2026-09-14 và ô **vẫn** trống — vì faithfulness đo
+    *bám ngữ cảnh*, không phải leakage cũng không phải coverage. Lời hứa ấy
+    không thực hiện được bằng bất kỳ lượng công việc nào.
+    """
+    o = fmt_cell({"n": 30, "answered": None})
+    assert "TerminalAction" in o, "ô phải nêu lý do cơ chế"
+    assert "RAGAS" not in o, "đừng hứa RAGAS sẽ lấp ô này — nó không lấp được"
 
 
 def test_delta_lien_quan_toi_llm_only_la_none():

@@ -97,3 +97,101 @@
 **Lỗi mới bắt được trong lúc vá:** `approve()` gọi `relative_to(ROOT)` → ném `ValueError` với path ngoài repo. Một hàm đang đóng dấu nhãn mà chết vì định dạng chuỗi là hỏng sai chỗ. Đã tách thành `ten_ngan()`. Bắt được nhờ `tests/test_provenance.py` ngay lượt chạy đầu.
 
 **Còn lại để đóng ISSUE-069:** Đạt đọc `data/processed/concept_variants_worksheet.md` rồi chạy `python scripts/review_static_leaks.py --approve --reviewer dat`.
+
+### ISSUE-073 · Canh bao lo cham dung giua chung o 403 in vo dieu kien, nay da thanh sai
+
+- **Severity**: HIGH
+- **Status**: OPEN
+- **Component**: eval
+- **Description**:
+  scripts/build_ragas_report.py:305-308 append cau canh bao DUNG so hai trung binh roi ... (lo cham dung giua chung o 403) ngay khi co bang ghep cap, khong gan voi bien trang thai nao. Sau khi lo chay xong (corrective 17/17, llm_only 16/16, unscored=0) va voi --pairable-only, hai trung binh roi 0.747 va 0.481 CHINH LA hai trung binh ghep cap tren cung 16 cau. Cau canh bao nay nay sai, va mau thuan voi bang Tinh trang cham ngay duoi no trong cung file — khoi Lo cham CHUA XONG o dong 361 co dieu kien if s_corr.unscored or s_base.unscored nen da tu tat dung thiet ke.
+- **Impact**:
+  docs/ragas.md la tai lieu dem ra hoi dong. No dang bao nguoi doc rang bang ket qua chinh KHONG doc duoc, va vien dan mot su co (403 het credit) da khong con ton tai. Nguoi doc hoac bo qua ket qua that (p=0.0042, n=16), hoac hieu nham rang lo cham van con do. Cung lop loi voi ISSUE-071: cau van hard-code song sot qua chinh su kien lam no sai.
+- **Reproducer**:
+  ```bash
+  python -c "import io;d=io.open('docs/ragas.md',encoding='utf-8').read();stale='403),' in d;done=('17/17' in d) and ('16/16' in d);print(('FAIL' if (stale and done) else 'PASS'),'canh_bao_lo_do=',stale,'bang_noi_da_xong=',done)"
+  ```
+- **Hypothesized cause**:
+  Cau canh bao hard-code trong nhanh if pc[n] ma khong kiem trang thai unscored, trong khi khoi ngay duoi no lam dung
+- **Linked to**: ISSUE-071
+
+<!-- emitted 2026-09-14 -->
+
+---
+
+### ISSUE-074 · Muc Tai lap cua docs/ragas.md ghi thieu co --pairable-only, chay theo no ra so khac va ton tien that
+
+- **Severity**: HIGH
+- **Status**: OPEN
+- **Component**: repro
+- **Description**:
+  scripts/build_ragas_report.py in khoi Tai lap co dinh la python scripts/build_ragas_report.py, trong khi tai lieu hien tai duoc sinh boi lenh co --pairable-only. Chay dung lenh ghi trong doc thi nhanh llm_only mo rong tu 16 cau ghep cap len toan bo 51 cau: bang doi thanh 18/51 da cham va 33 chua cham, muc ghep cap doi mau, va script goi 33 luot API that.
+- **Impact**:
+  Tai lieu noi sai ve cach sinh ra chinh no. Nguoi lam theo huong dan se (a) khong tai lap duoc con so in trong file, (b) tieu khoang 3.6 USD o gia do duoc 0.11 USD moi cau, (c) ghi de docs/ragas.md thanh khung lo cham do trong khi lo da xong. Da xay ra that trong phien audit 2026-09-14.
+- **Reproducer**:
+  ```bash
+  python -c "import io,re;d=io.open('docs/ragas.md',encoding='utf-8').read();m=re.search(r'\x60\x60\x60\n(python scripts/build_ragas_report\.py[^\n]*)\n\x60\x60\x60',d);cmd=m.group(1) if m else '';bad=('16/16' in d) and ('--pairable-only' not in cmd);print(('FAIL' if bad else 'PASS'),'| Tai_lap ghi:',repr(cmd))"
+  ```
+- **Hypothesized cause**:
+  Khoi Tai lap hard-code chuoi lenh thay vi in lai tham so that su da dung de sinh bao cao
+
+<!-- emitted 2026-09-14 -->
+
+---
+
+### ISSUE-075 · Bang 4 nhanh hua o nay do RAGAS lap — loi hua khong thuc hien duoc
+
+- **Severity**: MEDIUM
+- **Status**: OPEN
+- **Component**: eval
+- **Description**:
+  scripts/build_arms_table.py sinh chu thich cho o trong cua nhanh llm_only: (can RAGAS) nghia la o nay do RAGAS faithfulness (viec 3 cua Tuan 6) lap. RAGAS da xong 2026-09-14 (corrective 17/17, llm_only 16/16) nhung hai o Leakage A/B va Coverage E cua nhanh llm_only VAN trong — va phai trong: faithfulness 0.481 do muc bam ngu canh, khong phai leakage cung khong phai coverage. Chinh docs/ragas.md canh bao DUNG de faithfulness ganh claim ve hallucination.
+- **Impact**:
+  Tuan 6 nhin nhu con thieu viec trong khi no da xong 3/3. Hoi dong doc bang se di tim o duoc lap va khong thay. Rui ro nang hon: ai do lap o bang con so faithfulness — dung cai tron metric ma docs/ragas.md cam bang mot canh bao rieng.
+- **Reproducer**:
+  ```bash
+  python -c "import io;a=io.open('docs/static-vs-corrective.md',encoding='utf-8').read();r=io.open('docs/ragas.md',encoding='utf-8').read();promise=('RAGAS faithfulness' in a) and ('lấp' in a);done='16/16' in r;print(('FAIL' if (promise and done) else 'PASS'),'| bang_con_hua=',promise,'| ragas_da_xong=',done)"
+  ```
+- **Hypothesized cause**:
+  Chu thich viet luc chua biet RAGAS se tra ve metric loai gi; DEC-065 sau do chot chi lay Faithfulness nhung chu thich khong duoc cap nhat theo
+- **Linked to**: DEC-065
+
+<!-- emitted 2026-09-14 -->
+
+---
+
+## Cập nhật sau vòng vá — 2026-09-14 (audit Tuần 6)
+
+**Rollback point:** `271dd9a`. ⚠️ Lúc vá, working tree **đang dirty 3 file của Đạt**
+(`data/concept_variants.jsonl` nhãn vừa duyệt · `docs/ragas.md` · `docs/static-vs-corrective.md`
+lô chấm vừa xong). Rollback **chỉ** được nhắm vào file code:
+`git checkout -- src/eval/arms.py scripts/build_ragas_report.py scripts/build_arms_table.py tests/test_arms.py`
++ `rm tests/test_ragas_report_text.py`, rồi sinh lại 2 doc.
+**TUYỆT ĐỐI không** `git checkout` 3 file kia — đó là công việc người, không tái tạo được.
+
+| ISSUE | Trạng thái | Cách đóng |
+|---|---|---|
+| **073** | `RESOLVED` | Tách `canh_bao_hai_trung_binh(con_thieu)`; cảnh báo nay gắn vào `unscored`, lô xong thì in dòng xác nhận thay vì cảnh báo sai. Bỏ luôn số `403` khỏi câu văn |
+| **074** | `RESOLVED` | Tách `lenh_tai_lap(pairable_only, model, limit)`; mục *Tái lập* in đúng cờ đã sinh ra tài liệu, kèm cảnh báo cờ này đổi mẫu số |
+| **075** | `RESOLVED` | Ô bảng đổi `— (cần RAGAS)` → `— (không có TerminalAction)`; chú thích nói rõ ô trống là **vĩnh viễn**, không phải việc treo |
+
+**risk_accepted:**
+- R1 (đổi chuỗi ô làm test cũ đỏ) → MITIGATE: `test_fmt_cell_noi_ro_can_ragas` viết lại thành
+  `test_fmt_cell_noi_LY_DO_CO_CHE_chu_khong_hua_ragas_se_lap`, assert **cấm** chữ "RAGAS" trong ô.
+- R2 (**vá 073 sai chiều — lô dở mà mất cảnh báo**, hỏng nặng hơn lỗi gốc) → MITIGATE: khoá
+  **cả hai chiều** bằng `test_lo_con_do_thi_VAN_canh_bao` + `test_lo_xong_thi_KHONG_con_canh_bao`.
+- R3 (in `sys.argv` thô làm doc hết tái lập byte-identical) → MITIGATE: **không** in argv; dựng
+  lệnh từ `args` đã parse, chỉ liệt kê cờ **đổi nội dung**. `--cache-only` cố ý bị loại, có test khoá.
+- R4 (vá văn bản làm trôi con số) → **ACCEPT sau khi verify: 0 con số đổi.** Chụp mọi token số
+  của 2 doc trước/sau (`ragas` 17 loại · `static-vs-corrective` 40 loại) → `diff` rỗng cả hai.
+- R5 (lẫn vào working tree dirty của Đạt) → MITIGATE: rollback liệt kê từng file, xem trên.
+
+**Verify:** 3 reproducer của 073/074/075 đều chuyển **FAIL → PASS**. Test **391 → 398 PASS**, exit 0.
+
+**Lỗi bắt được trong lúc vá:** bản vá 075 lượt đầu **trích lại nguyên văn lời hứa cũ** để bác bỏ nó
+(*"bản trước hứa … do RAGAS faithfulness lấp"*) — reproducer vẫn FAIL, đúng. Một câu hứa được trích
+dẫn vẫn là một câu hứa với người đi grep. Đã viết lại để trong repo không còn câu nào **hình dạng**
+lời hứa đó.
+
+**Ghi chú ngoài phạm vi vá (chưa sửa):** `build_ragas_report.py` help của `--pairable-only` còn ghi
+`(48 câu -> 10)`; số đúng là 59 → 16. Không thuộc 073/074/075 nên để nguyên, cần thì mở ISSUE riêng.

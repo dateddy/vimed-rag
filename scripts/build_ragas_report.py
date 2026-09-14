@@ -148,6 +148,50 @@ def judge_co_cache(judge, cache: dict, model: str, *, cache_only: bool = False):
     return bao, hong
 
 
+def canh_bao_hai_trung_binh(con_thieu: bool) -> str:
+    """Câu đứng dưới bảng ghép cặp — **phụ thuộc lô chấm xong hay chưa**.
+
+    ⛔ ISSUE-073. Bản trước in câu cảnh báo *"hai trung bình rời đứng trên hai
+    tập câu khác nhau"* **vô điều kiện**. Nó đúng chừng nào còn câu chưa chấm;
+    lô chấm xong thì hai trung bình rời **trùng** hai trung bình ghép cặp, và
+    câu ấy thành lời nói dối về chính tài liệu chứa nó — trong khi bảng
+    "Tình trạng chấm" ở cuối cùng file lại nói ngược lại.
+
+    Tách thành hàm thuần để điều kiện này **kiểm được bằng test**, không phải
+    bằng việc đọc lại script. Đây là lần thứ hai repo gặp đúng lỗi này
+    (ISSUE-071: worksheet hard-code một câu đã thành sai).
+    """
+    if con_thieu:
+        return ("⚠️⚠️ **ĐỪNG so hai trung bình rời ở hai bảng trên.** Chúng "
+                "đứng trên hai tập câu khác nhau (lô chấm dừng giữa chừng), "
+                "nên hiệu của chúng **không phải** là hiệu ứng. Chỉ bảng ghép "
+                "cặp này mới đọc được.\n")
+    return ("✅ **Lô chấm đã xong**, nên hai bảng trên đứng trên đúng bộ câu "
+            "của bảng ghép cặp này — ba con số khớp nhau là vì thế, không "
+            "phải trùng hợp.\n")
+
+
+def lenh_tai_lap(*, pairable_only: bool, model: str, limit: int) -> str:
+    """Lệnh **thật sự** đã sinh ra tài liệu, không phải một chuỗi cố định.
+
+    ⛔ ISSUE-074. Nội dung báo cáo phụ thuộc cờ: thiếu ``--pairable-only`` thì
+    nhánh LLM-only nở từ tập ghép cặp ra toàn bộ 59 câu — mẫu số mọi bảng đổi
+    theo, **và** script đi gọi API thật cho phần chênh (đo được: ~$0,11/câu).
+    Một tài liệu ghi sai lệnh sinh ra chính nó thì không tái lập được.
+
+    Chỉ liệt kê cờ **đổi nội dung**. ``--cache-only`` cố tình KHÔNG vào đây:
+    nó chặn gọi API chứ không đổi con số nào đã có.
+    """
+    lenh = ["python scripts/build_ragas_report.py"]
+    if pairable_only:
+        lenh.append("--pairable-only")
+    if model != DEFAULT_JUDGE_MODEL:
+        lenh.append(f"--model {model}")
+    if limit:
+        lenh.append(f"--limit {limit}")
+    return " ".join(lenh)
+
+
 def bang_faith(s, nhan: str) -> list[str]:
     tb = s.mean_faithfulness
     tb_txt = "—" if tb is None else f"**{tb:.3f}**"
@@ -302,10 +346,10 @@ def main() -> int:
                  f"cao hơn · p = {pval:.4f}**. Dùng kiểm định dấu chứ không "
                  "t-test — n nhỏ và phân bố faithfulness không rõ dạng, cùng "
                  "lý do đã ghi ở DEC-055.\n")
-        L.append("⚠️⚠️ **ĐỪNG so hai trung bình rời ở hai bảng trên.** Chúng "
-                 "đứng trên hai tập câu khác nhau (lô chấm dừng giữa chừng ở "
-                 "403), nên hiệu của chúng **không phải** là hiệu ứng. Chỉ "
-                 "bảng ghép cặp này mới đọc được.\n")
+        # Gắn vào `unscored` chứ không in vô điều kiện — cùng cơ chế mà khối
+        # "Lô chấm CHƯA XONG" ở cuối file đã làm đúng. Lý do: ISSUE-073.
+        L.append(canh_bao_hai_trung_binh(
+            bool(s_corr.unscored or s_base.unscored)))
 
     L.append("## B4 — hai máy dò câu “ANSWER nhưng nội dung là từ chối”\n")
     L.append("Hai phép dò **độc lập** với nhau: một quét văn bản "
@@ -370,7 +414,15 @@ def main() -> int:
                  "Chúng nằm ngoài mọi mẫu số ở trên.\n")
 
     L.append("## Tái lập\n")
-    L.append("```\npython scripts/build_ragas_report.py\n```\n")
+    # In lại ĐÚNG cờ đã sinh ra tài liệu này, không in chuỗi cố định (ISSUE-074).
+    L.append("```\n" + lenh_tai_lap(pairable_only=args.pairable_only,
+                                    model=args.model,
+                                    limit=args.limit) + "\n```\n")
+    if args.pairable_only:
+        L.append("⚠️ **Cờ `--pairable-only` là một phần của lệnh, không phải "
+                 "tuỳ chọn cho nhanh.** Bỏ nó ra thì nhánh LLM-only nở từ "
+                 "**16 câu ghép cặp** lên **51 câu**, mẫu số mọi bảng đổi "
+                 "theo, và script gọi API thật cho phần chênh.\n")
     L.append("Điểm judge được cache ở `data/processed/ragas_scores.json` "
              "(gitignore) nên chạy lại **không tốn lượt API nào**. `--refresh` "
              "để chấm lại từ đầu.\n")
