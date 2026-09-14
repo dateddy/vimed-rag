@@ -1,51 +1,52 @@
-"""Streamlit demo cho ViMed-RAG — T3.6.
+"""Streamlit demo cho ViMed-RAG — C3 (Tuần 7).
 
-HAI TAB, có chủ đích tách rời:
+BA TAB, có chủ đích tách rời:
 
-1. **Truy hồi thật** — `HybridRetriever` + `BgeReranker` trên Qdrant Cloud.
-   Đây là phần T3.6 mở khoá, và cũng đóng nốt DoD Tuần 2 ("UI hiển thị được
-   raw chunk") vốn treo từ Session 5 vì lúc đó chưa có retriever.
+1. **Hỏi đáp (hệ đầy đủ)** — `RAGPipeline` chạy **đầu-cuối thật**: policy gate
+   → truy hồi hybrid → rerank → grader → (rewrite → guard) → generator. Đây là
+   hệ được đo ở Tuần 6, và là thứ đem đi demo.
+2. **Truy hồi thật** — chỉ `HybridRetriever` + `BgeReranker`, **dừng ở truy
+   hồi**. Công cụ soi: xem chunk thô + score trước khi grader phán quyết. Cho
+   đổi mode/size vì nó không chạy grader.
+3. **Corrective loop (Fake)** — `FakeRetriever` + `FakeGenerator`, score kéo
+   bằng slider. Xem 3 nhánh mà không tốn lượt API nào.
 
-2. **Corrective loop (Fake)** — giữ nguyên demo cũ, score điều khiển bằng
-   slider để xem 3 nhánh ANSWER / CAUTION / ABSTAIN.
+## Điều kiện DEC-039 đặt ra đã được thoả
 
-⚠️⚠️ **FILE NÀY ĐANG ĐỨNG YÊN Ở TUẦN 3 TRONG KHI HỆ ĐÃ ĐI TỚI TUẦN 6.**
-
-Bản trước viết: *"KHÔNG nối retriever thật vào `RAGPipeline` — DEC-039, ngưỡng
-`0.6` đã bị bác bỏ, ở ngưỡng đó 10/30 câu A/B vẫn được trả lời"*. Lý do đó
-**đã hết hiệu lực**, và đây là cách nó hết:
+Bản Tuần 3 viết: *"KHÔNG nối retriever thật vào `RAGPipeline` — ngưỡng `0.6` đã
+bị bác bỏ"*. Chuỗi gỡ nó, đừng trích gộp:
 
 * **DEC-051** hiệu chỉnh ngưỡng bằng LOOCV → `+2,430 logit = sigmoid 0,919`.
-* **DEC-052** đóng số đó vào `config.yaml` (`incorrect 0.919` / `correct 0.933`)
-  — ngưỡng `0.6` **không còn tồn tại ở đâu** ngoài mấy dòng chữ trong file này.
-* **DEC-061** thêm guard lượt 2 → leakage **0/30**, coverage **17/21** không đổi.
+* **DEC-052** đóng hai số vào `config.yaml` (`incorrect 0.919`/`correct 0.933`).
+* **DEC-061** thêm guard lượt 2 → leakage **0/30**, coverage **17/21** giữ nguyên.
 
-Nên điều kiện mà DEC-039 đặt ra đã được thoả, và cái còn thiếu bây giờ **không
-phải một lý do, mà là công sức**: tab chạy `RAGPipeline` **đầu-cuối thật** chưa
-được viết. Đó là việc **C3 của Tuần 7**.
+## ⛔ Quyết định hiển thị nằm ở `app/display.py`, KHÔNG ở file này
 
-⛔ **HAI TAB HIỆN CÓ ĐỀU KHÔNG PHẢI HỆ THẬT** — đừng demo mà nói ngược:
+Lỗi B3 — câu `action=ANSWER` hiện 5 nguồn cạnh một câu nói *"ngữ cảnh không
+chứa thông tin"* (`E-21`) — được vá bằng `nen_hien_nguon()`, có **22 test
+khoá cả hai chiều**. File Streamlit **không có test nào chạm tới**, nên mọi
+điều kiện hiển thị phải sống ở `display.py`; viết lại điều kiện tại đây là
+đúng cách bản vá trôi mất (ISSUE-071 · 073 · 074 đều cùng hình dạng đó).
 
-1. **Truy hồi thật** — `HybridRetriever` + `BgeReranker` trên Qdrant Cloud.
-   Thật, nhưng **dừng ở truy hồi**: không sinh câu trả lời, không có policy
-   gate, không có vòng corrective.
-2. **Corrective loop (Fake)** — đủ 3 nhánh ANSWER / CAUTION / ABSTAIN nhưng
-   chạy bằng `FakeRetriever` + `FakeGenerator`, score kéo bằng slider.
-
-→ **Hệ quả cho B3** (câu `ANSWER` hiện 5 nguồn cạnh một câu nói *"không có
-thông tin"*, `A-01`/`E-21`): lỗi đó **chưa hiện ra ở UI này**, vì không tab nào
-chạy generator thật. Nó sẽ hiện ra **ngay khi** tab đầu-cuối được viết — nên
-chỗ vá đúng là **lúc viết tab đó**, không phải một bản vá riêng bây giờ.
+Tương tự, mọi chỗ in nội dung chunk phải đi qua `doc_nguon()` (= `strip_byline`):
+corpus trong Qdrant **vẫn còn byline** (DEC-020) và đường đọc không có tầng nào
+cắt hộ.
 
 CHẠY:
     streamlit run app/streamlit_app.py
 
-Tab 1 cần `.env` (QDRANT_URL + QDRANT_API_KEY) và model bge-m3 + reranker đã
-cache (~4,5 GB). Tab 2 chạy được không cần gì.
+Tab 1 cần `.env` (QDRANT_URL + QDRANT_API_KEY + **GEMINI_API_KEY**, biến này
+mang khoá OpenRouter — tên là lịch sử) và model bge-m3 + reranker đã cache
+(~4,5 GB). Tab 2 không cần khoá LLM. Tab 3 chạy được không cần gì.
+
+⚠️ Trên HF Space, `GEMINI_API_KEY` phải được thêm vào **Secrets** — Space hiện
+chỉ có `QDRANT_URL` + `QDRANT_API_KEY` (DEPLOY.md bước 2), đủ cho tab 2 nhưng
+**không** đủ cho tab 1.
 """
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -55,6 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st  # noqa: E402
 
+from app.display import doc_nguon, ly_do_an_nguon, nen_hien_nguon  # noqa: E402
 from src.config import load_config  # noqa: E402
 from src.generation.generator import FakeGenerator  # noqa: E402
 from src.pipeline.grader import Grader  # noqa: E402
@@ -118,7 +120,155 @@ def _grader_verdict(cfg, score: float) -> tuple[str, str]:
 
 
 # --------------------------------------------------------------------------- #
-# Tab 1 — truy hồi thật
+# Tab đầu-cuối — hệ THẬT (C3 + B3, Tuần 7)
+# --------------------------------------------------------------------------- #
+@st.cache_resource(show_spinner="Dựng pipeline đầu-cuối…")
+def _pipeline(_api_key: str):
+    """`RAGPipeline` thật. Nối dây theo đúng `scripts/export_runs.py:203-228`.
+
+    **Bỏ `RecordingRetriever`** so với script đó: nó chỉ tồn tại để giữ điểm
+    lượt truy hồi ĐẦU cho LOOCV, thứ UI không dùng tới.
+
+    Tham số tên `_api_key` (gạch dưới) để Streamlit **không** đưa khoá vào khoá
+    cache — `st.cache_resource` bỏ qua tham số bắt đầu bằng `_`.
+    """
+    from src.generation.generator import GeminiGenerator
+    from src.pipeline.rewriter import LLMRewriter
+    from src.retrieval.retriever import HybridRetriever
+
+    cfg = load_config()
+    embedder, reranker, client = _real_parts()
+
+    # ⚠️ KHÔNG nhận mode/size từ người dùng — xem caption trong `tab_e2e`.
+    retr = HybridRetriever(
+        cfg,
+        embedder,
+        collection=collection_name(cfg.qdrant.collection, cfg.chunking.size),
+        mode="hybrid",
+        reranker=reranker,
+        client=client,
+    )
+    return RAGPipeline(
+        cfg=cfg,
+        retriever=retr,
+        generator=GeminiGenerator(cfg.generation, _api_key, model=cfg.models.llm),
+        grader=Grader(cfg.grader),
+        rewriter=LLMRewriter(cfg.generation, _api_key, model=cfg.models.llm),
+    )
+
+
+#: Nhãn + màu cho từng `TerminalAction`. ABSTAIN KHÔNG dùng màu đỏ: từ chối
+#: đúng là hệ thống **làm việc**, không phải hệ thống hỏng. Tô đỏ nó là tự bôi
+#: xấu đúng trục đóng góp của đề tài.
+_BADGE = {
+    "ANSWER": ("🟢", "Trả lời", "success"),
+    "ANSWER_WITH_CAUTION": ("🟡", "Trả lời KÈM CẢNH BÁO", "warning"),
+    "ABSTAIN": ("🔵", "Từ chối có hiệu chỉnh", "info"),
+}
+
+
+def tab_e2e(cfg) -> None:
+    st.caption(
+        "**Hệ đầy đủ**: policy gate → truy hồi hybrid → rerank → grader → "
+        "(rewrite → guard) → sinh câu trả lời có trích dẫn. Đây là thứ được đo "
+        "ở Tuần 6."
+    )
+    st.markdown(
+        f"Cấu hình **cố định** `hybrid` · chunk `{cfg.chunking.size}` · "
+        f"`top_k_dense={cfg.retrieval.top_k_dense}` · "
+        f"`rerank_max_length={cfg.retrieval.rerank_max_length}` · ngưỡng "
+        f"`{cfg.grader.incorrect_threshold}`/`{cfg.grader.correct_threshold}`.\n\n"
+        "⚠️ Tab này **cố ý không cho đổi chế độ truy hồi** — khác tab *Truy hồi "
+        "thật*. Ngưỡng grader chỉ được hiệu chỉnh cho **đúng một** cấu hình "
+        "(LOOCV trên 51 câu, DEC-051); chạy grader ở cấu hình khác là để demo "
+        "mô tả sai chính nó."
+    )
+
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        st.error(
+            "Thiếu `GEMINI_API_KEY` (biến này mang khoá **OpenRouter** — tên là "
+            "lịch sử). Local: đặt trong `.env`. Trên HF Space: thêm vào "
+            "**Secrets**, xem `deploy/hf-space/DEPLOY.md` bước 2."
+        )
+        return
+
+    query = st.text_input(
+        "Câu hỏi:", "Biến chứng loét chân ở bệnh nhân tiểu đường?", key="q_e2e"
+    )
+    if not (st.button("Hỏi", type="primary", key="b_e2e") and query.strip()):
+        return
+
+    try:
+        pipe = _pipeline(api_key)
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"Không dựng được pipeline: {exc}")
+        return
+
+    t0 = time.perf_counter()
+    try:
+        with st.spinner("Đang chạy corrective loop… (rerank trên CPU nên chậm)"):
+            kq = pipe.answer(query)
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"Pipeline lỗi: {exc}")
+        st.warning(
+            "**TCP mở mà TLS reset = cluster Qdrant free tier đang NGỦ**, không "
+            "phải lỗi `.env`/DNS/firewall. Vào console bấm resume.\n\n"
+            "Lỗi **402/403** = hết credit OpenRouter, không phải lỗi khoá."
+        )
+        return
+    took = time.perf_counter() - t0
+
+    icon, nhan, kieu = _BADGE.get(kq.action.value, ("⚪", kq.action.value, "info"))
+    c1, c2 = st.columns([3, 1])
+    getattr(c1, kieu)(f"{icon} **{nhan}** · `action = {kq.action.value}`")
+    c2.metric("Thời gian", f"{took:.1f}s")
+
+    st.markdown("### Câu trả lời")
+    st.write(kq.answer)
+
+    if kq.rewritten_query:
+        st.caption(f"🔁 Truy vấn đã viết lại: *{kq.rewritten_query}*")
+
+    # ----------------------------------------------------------------- #
+    # Khối nguồn — CHỖ VÁ B3.
+    # Quyết định nằm ở `app/display.py`, có 22 test khoá. KHÔNG viết lại
+    # điều kiện tại đây: đó đúng là cách bản vá trôi mất.
+    # ----------------------------------------------------------------- #
+    if nen_hien_nguon(kq):
+        st.markdown(f"### Nguồn ({len(kq.chunks)})")
+        for i, c in enumerate(kq.chunks, 1):
+            pos = f"đoạn {c.chunk_idx}/{c.n_chunks}" if c.chunk_idx is not None else ""
+            with st.expander(
+                f"[{i}] {c.score:.4f} · {c.title or '(không tiêu đề)'} · {pos}",
+                expanded=i == 1,
+            ):
+                st.caption(
+                    f"`doc_id={c.doc_id}` · khoa: {', '.join(c.specialties) or '—'} "
+                    f"· nguồn: {c.source or '—'}"
+                )
+                st.write(doc_nguon(c))
+    else:
+        st.info(f"**Không hiển thị nguồn.** {ly_do_an_nguon(kq)}")
+
+    with st.expander("🔬 Trace — đường đi thật của corrective loop", expanded=False):
+        st.caption(
+            "Đây là trục đóng góp của đề tài: mỗi bước ghi lại được, nên "
+            "abstention **kiểm chứng được** thay vì phải tin."
+        )
+        for i, b in enumerate(kq.trace, 1):
+            phan = [f"**{i}. {b.step}**"]
+            if b.state:
+                phan.append(f"`{b.state}`")
+            if b.score is not None:
+                phan.append(f"score `{b.score:.4f}`")
+            if b.note:
+                phan.append(f"— {b.note}")
+            st.markdown(" · ".join(phan))
+
+
+# --------------------------------------------------------------------------- #
+# Tab 2 — truy hồi thật (không sinh câu trả lời)
 # --------------------------------------------------------------------------- #
 def tab_real(cfg) -> None:
     st.caption(
@@ -215,7 +365,11 @@ def tab_real(cfg) -> None:
                 f"`doc_id={c.doc_id}` · khoa: {', '.join(c.specialties) or '—'} "
                 f"· nguồn: {c.source or '—'}"
             )
-            st.write(c.text)
+            # `doc_nguon` = strip_byline. Corpus trong Qdrant VẪN còn byline
+            # (DEC-020), và không có tầng nào cắt hộ ở đường đọc — chỗ duy nhất
+            # đang cắt là `generation/context.py`, tức LLM không thấy byline
+            # nhưng MÀN HÌNH thì có. Đừng đổi lại thành `c.text`.
+            st.write(doc_nguon(c))
 
 
 # --------------------------------------------------------------------------- #
@@ -275,7 +429,12 @@ def main() -> None:
     st.title("🩺 ViMed-RAG — Hỏi đáp y tế tiếng Việt")
 
     cfg = load_config()
-    t1, t2 = st.tabs(["🔎 Truy hồi thật", "🧪 Corrective loop (Fake)"])
+    # Tab đầu-cuối đứng ĐẦU: nó là hệ thật, hai tab kia là công cụ soi.
+    t0, t1, t2 = st.tabs(
+        ["🩺 Hỏi đáp (hệ đầy đủ)", "🔎 Truy hồi thật", "🧪 Corrective loop (Fake)"]
+    )
+    with t0:
+        tab_e2e(cfg)
     with t1:
         tab_real(cfg)
     with t2:
@@ -285,8 +444,7 @@ def main() -> None:
     st.caption(
         "⚠️ Hệ thống nghiên cứu, KHÔNG thay thế tư vấn y tế. Nhãn abstention "
         "theo khả năng truy xuất + policy, KHÔNG theo đánh giá lâm sàng; "
-        "chưa có reviewer y khoa. UI này mới là **truy hồi + demo Fake**, "
-        "chưa phải hệ đầu-cuối."
+        "chưa có reviewer y khoa."
     )
 
 
