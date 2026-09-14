@@ -264,8 +264,9 @@ E2 → ablation reranker on/off → ablation chunk 256 vs 512.
   ban đầu chỉ định cắt cho nhanh. Bảng: `docs/retrieval-eval-deploy.md`.
   ✅ **ĐÃ CHỐT VÀO `config.yaml` từ 2026-09-08** — `correct_threshold: 0.933` ·
   `incorrect_threshold: 0.919` (`config/config.yaml:101-102`), **đã nối pipeline**
-  (DEC-056 đo end-to-end 59 câu trên chính hai số này). DEC-051 **supersedes** điều
-  kiện "phải có tập giữ lại" của DEC-039 bằng LOOCV.
+  (DEC-056 đo end-to-end 59 câu trên chính hai số này). Chuỗi đúng, đừng trích gộp:
+  **DEC-051** hiệu chỉnh bằng LOOCV (supersedes điều kiện "phải có tập giữ lại" của
+  DEC-039) → **DEC-052** đóng hai số vào `config.yaml` → **DEC-061** thêm guard lượt 2.
   ⚠️ Số `sigmoid 0,933` ở bảng trên là **điểm giữa dải đo của DEC-042**; số cùng giá trị
   đang chạy trong config có **nguồn gốc khác** — ngưỡng CAO NHẤT mà bất kỳ fold LOOCV
   nào sinh ra (DEC-051). Trùng giá trị, **đừng trích bảng này làm căn cứ cho config**;
