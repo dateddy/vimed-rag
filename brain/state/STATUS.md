@@ -3,7 +3,13 @@
 > Owner: Đạt. Dự án **1 người** từ 2026-08-08 (DEC-013) — file này là state DUY NHẤT.
 > Ghi đè mỗi session; **không** tạo `STATUS-v2`, **không** tách lại theo người.
 
-**Cập nhật lần cuối:** 2026-09-14 (Session 16 — **TUẦN 6 ĐÓNG 3/3. Lô RAGAS chấm xong, BLOCKER CREDIT GỠ. Ghép cặp 16 câu: corrective 0,747 vs LLM-only 0,481, p = 0,0042. ISSUE-069 ĐÓNG — Đạt duyệt `concept_variants.jsonl`, bảng độ nhạy nay trích được. Audit Tuần 6 ra ISSUE-073/074/075, vá cả 3. Sửa 1 chỗ drift trong `constraints.md`. DEC-070. **TUẦN 7: key chỉ-đọc cho Space nghiệm thu xong (DEC-071, đóng việc treo mở từ Session 6) · 🎉 RỦI RO DEMO SỐ 1 ĐÓNG — Space `datvu107-dateddy/vimed` RUNNING trên cpu-basic, 15,9 s/truy vấn (DEC-072). Còn lại Tuần 7: UI đầu-cuối (C3+B3) + latency/cost.** 399 test PASS. ⛔ 3 commit CHƯA PUSH + 7 file chưa commit**)
+**Cập nhật lần cuối:** 2026-09-15 (Session 18 — **✅ 6 COMMIT ĐÃ PUSH, `origin` hỏng đã sửa**
+(URL GitHub bị ghi đè bằng URL HF Space dị dạng ở Session 17 → `git push` thất bại 2 session
+liền; URL gốc không còn ở đâu trên máy, phải hỏi lại người). **Vá 3 câu drift ngưỡng trong
+chính file này** — nó còn khai `correct_threshold = 0.6 · chưa nối pipeline`, sai từ DEC-051
+(2026-09-08); một chỗ nằm **trong bảng**, dạng nguy hiểm nhất. **ISSUE-070 lần thứ tư.**
+Còn lại Tuần 7: UI đầu-cuối (C3+B3) + latency/cost. 399 test.
+— *Nền Session 16:* **TUẦN 6 ĐÓNG 3/3. Lô RAGAS chấm xong, BLOCKER CREDIT GỠ. Ghép cặp 16 câu: corrective 0,747 vs LLM-only 0,481, p = 0,0042. ISSUE-069 ĐÓNG — Đạt duyệt `concept_variants.jsonl`, bảng độ nhạy nay trích được. Audit Tuần 6 ra ISSUE-073/074/075, vá cả 3. Sửa 1 chỗ drift trong `constraints.md`. DEC-070. **TUẦN 7: key chỉ-đọc cho Space nghiệm thu xong (DEC-071, đóng việc treo mở từ Session 6) · 🎉 RỦI RO DEMO SỐ 1 ĐÓNG — Space `datvu107-dateddy/vimed` RUNNING trên cpu-basic, 15,9 s/truy vấn (DEC-072). Còn lại Tuần 7: UI đầu-cuối (C3+B3) + latency/cost.** 399 test PASS. ~~⛔ 3 commit CHƯA PUSH + 7 file chưa commit~~ → **cả hai đã xong 2026-09-15, xem dòng Session 18 ở trên**)
 
 ## ✅ TUẦN 6 ĐÓNG 3/3 — không còn blocker nào
 
@@ -16,15 +22,30 @@
 Việc phụ đã đóng: **B1** Wilson (064) · **B2** nhãn tay 2 nửa (062, 069) · **B3** gộp vào C3 ·
 **B4** coverage hai tầng (066) · **B5** whitelist (067) · **B6+B7** thành Limitations (068).
 
-## ⛔ VIỆC TREO RỦI RO NHẤT — 3 COMMIT CHƯA PUSH
+## ✅ ĐÃ PUSH — nhưng lý do nó treo lâu thì phải nhớ
 
-`origin/main` còn ở `271dd9a`. Trên ổ cứng này có thêm:
+**2026-09-15: `origin/main` = `6e96433`, 6 commit đã lên GitHub**, gồm `71aa8fe`
+(**nhãn tay Đạt duyệt**, không tái tạo được bằng máy). Rủi ro "mất máy = mất nhãn
+người" **ĐÓNG**.
 
-- `71aa8fe` `data(eval)` — **nhãn tay Đạt duyệt**, không tái tạo được bằng máy
-- `6201618` `fix(eval)` — vá ISSUE-073/074/075 + 7 test mới
-- `54c47d5` `docs(eval)` — kết quả RAGAS đầy đủ
+⚠️ **Lý do thật khiến nó treo 2 session KHÔNG phải quên push — `origin` đã hỏng:**
 
-**Mất máy = mất nhãn người.** `git push origin main`. Giữ nhịp: push ngay sau mỗi lô.
+```
+remote.origin.url = git@hf.co:https://huggingface.co/spaces/datvu107-dateddy/vimed
+                    -> git từ chối: "protocol 'git@hf.co:https' is not supported"
+```
+
+URL GitHub bị **ghi đè** bằng URL HF Space dị dạng (Session 17, lúc làm deploy).
+`git push` **thất bại mọi lần**, và không file nào trong repo còn giữ URL GitHub gốc
+(`.git/config` · `FETCH_HEAD` · `packed-refs` đều sạch; máy không có `gh`) — nên URL
+phải hỏi lại người. Đã đặt lại: `https://github.com/dateddy/vimed-rag`.
+
+**Bài học:** `DEPLOY.md` đẩy Space bằng `hf upload`, **không** bằng `git push` — remote
+git tới Space **chưa bao giờ cần tồn tại**. Muốn thêm thì đặt tên khác (`space`),
+**đừng đụng `origin`**. Kiểm nhanh trước mỗi lô: `git remote -v` phải ra `github.com`.
+
+Giữ nhịp: push ngay sau mỗi lô, và **đọc output của `git push`** — nó đã báo lỗi 2
+session liền mà không ai đọc.
 
 ## Số ĐƯỢC TRÍCH — và số đã HẾT HIỆU LỰC
 
@@ -120,7 +141,8 @@ thành `0–11% (CI 95% Wilson)`. Đúng lý do DEC-064 tồn tại.
 
 ## 3 việc kế tiếp — Tuần 7 bắt đầu
 
-1. **`git push origin main`** — xem mục CHƯA PUSH ở trên. Làm trước mọi thứ khác.
+1. ~~**`git push origin main`**~~ ✅ **ĐÓNG 2026-09-15** — 6 commit lên GitHub, `origin`
+   hỏng đã sửa. Xem mục đầu file: nguyên nhân là **URL bị ghi đè**, không phải quên push.
 2. ~~**🔴 Smoke test HF Spaces — rủi ro demo số 1**~~ ✅ **ĐÓNG 2026-09-15 (DEC-072).**
    Space **`datvu107-dateddy/vimed`** (docker · cpu-basic · private) **RUNNING**.
    Đo `"Triệu chứng tăng huyết áp?"`: **20,8 s** (lượt 1, ấm máy) · **15,8 s** · **15,9 s**.
@@ -240,8 +262,14 @@ E2 → ablation reranker on/off → ablation chunk 256 vs 512.
   Trong cả dải: **9/12 câu E được trả lời, 0/30 câu A/B lọt lưới**. Tức cắt cửa sổ
   subword làm ngưỡng **DỄ đặt hơn**, không chỉ rẻ hơn — đây là kết quả ngoài dự kiến,
   ban đầu chỉ định cắt cho nhanh. Bảng: `docs/retrieval-eval-deploy.md`.
-  ⚠️ **Vẫn chưa chốt vào `config.yaml`** — DEC-039 đòi tập giữ lại, điều kiện đó chưa
-  đổi. `correct_threshold` vẫn để 0.6 kèm cảnh báo, KHÔNG được nối pipeline.
+  ✅ **ĐÃ CHỐT VÀO `config.yaml` từ 2026-09-08** — `correct_threshold: 0.933` ·
+  `incorrect_threshold: 0.919` (`config/config.yaml:101-102`), **đã nối pipeline**
+  (DEC-056 đo end-to-end 59 câu trên chính hai số này). DEC-051 **supersedes** điều
+  kiện "phải có tập giữ lại" của DEC-039 bằng LOOCV.
+  ⚠️ Số `sigmoid 0,933` ở bảng trên là **điểm giữa dải đo của DEC-042**; số cùng giá trị
+  đang chạy trong config có **nguồn gốc khác** — ngưỡng CAO NHẤT mà bất kỳ fold LOOCV
+  nào sinh ra (DEC-051). Trùng giá trị, **đừng trích bảng này làm căn cứ cho config**;
+  căn cứ nằm ở `docs/threshold-calibration.md`.
 - **⛔ NGƯỠNG `0.6/0.3` KHÔNG AN TOÀN — 10/30 câu nhóm A/B VẪN ĐƯỢC TRẢ LỜI**
   (DEC-039). Quét ngưỡng trên max-logit, `vimed_rag_512` hybrid:
 
@@ -250,11 +278,13 @@ E2 → ablation reranker on/off → ablation chunk 256 vs 512.
   | +2,50 | 0,924 | 9/12 | 5 | **0/30** |
   | **+2,27** | **0,906** | 9/12 | 5 | **0/30** ← mép an toàn |
   | +2,00 | 0,881 | 9/12 | 5 | 4/30 |
-  | **+0,41** | **0,600 ← config hiện tại** | 9/12 | 5 | **10/30 = 33%** |
+  | **+0,41** | **0,600 ← config thời DEC-039, ĐÃ BỎ** | 9/12 | 5 | **10/30 = 33%** |
 
-  Có **khoảng trống sạch** từ logit +2,27 trở lên. **Vẫn KHÔNG đổi số trong
-  `config.yaml`** (DEC-039): ngưỡng đó chọn trên chính 42 câu dùng để đánh giá, không
-  có tập giữ lại → lạc quan. Chốt ở Tuần 6, bắt buộc tách tập.
+  ⚠️ **Dòng cuối là LỊCH SỬ, không phải cấu hình đang chạy.** Config hiện tại là
+  **0,933 / 0,919** (DEC-051) — không có dòng nào trong bảng này mô tả nó.
+  Có **khoảng trống sạch** từ logit +2,27 trở lên. Lo ngại "chọn ngưỡng trên chính 42
+  câu dùng để đánh giá → lạc quan" của DEC-039 **đã được xử lý bằng LOOCV**, không phải
+  bằng tách tập: xem DEC-051 · `docs/threshold-calibration.md`.
 - **✅ ĐO LẠI TRÊN 21 CÂU (DEC-043) — độ phân giải có tác dụng, nhưng không cứu claim.**
   `recall@10` trên 12 câu bằng nhau **tuyệt đối 0,750** ở cả 6 cấu hình; trên 21 câu đã
   tách ra: **dense/512 0,714** đứng đầu · hybrid/512 0,667 · sparse/256 0,571.
@@ -447,7 +477,9 @@ E2 → ablation reranker on/off → ablation chunk 256 vs 512.
 
 ## Việc treo ngoài code
 
-- **⛔ 3 commit chưa push** — xem mục đầu file. Việc treo rủi ro nhất hiện nay.
+- ~~**⛔ 3 commit chưa push**~~ ✅ **ĐÓNG 2026-09-15** (thật ra là **6**, không phải 3 —
+  Session 17 đẻ thêm 3 mà mục này không được cập nhật). Nguyên nhân gốc: **`origin` bị
+  ghi đè bằng URL HF Space dị dạng**, xem mục đầu file.
 - **⚠️ `brain/` từng mô tả trạng thái đã chết — lần thứ hai (ISSUE-070 tái diễn).**
   Audit 2026-09-14 bắt được STATUS/handoff/DECISIONS còn ghi *blocker 403 · còn 7 lượt ·
   p = 0,0391 · ISSUE-069 mở* trong khi cả bốn đã sai. Đã viết lại. **Bài học:** STATUS
