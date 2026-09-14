@@ -8,7 +8,11 @@
 liền; URL gốc không còn ở đâu trên máy, phải hỏi lại người). **Vá 3 câu drift ngưỡng trong
 chính file này** — nó còn khai `correct_threshold = 0.6 · chưa nối pipeline`, sai từ DEC-051
 (2026-09-08); một chỗ nằm **trong bảng**, dạng nguy hiểm nhất. **ISSUE-070 lần thứ tư.**
-Còn lại Tuần 7: UI đầu-cuối (C3+B3) + latency/cost. 399 test.
+**✅ C3+B3 ĐÓNG (DEC-073)** — Streamlit nay 3 tab, tab đầu chạy `RAGPipeline` thật; lỗi
+"5 nguồn cạnh câu từ chối" vá ở `app/display.py` (thuần, 22 test, khoá hai chiều), vá kèm
+byline lọt màn hình. Smoke 3 nhánh chạy thật. **399 → 421 test PASS.**
+⛔ **Space CHƯA có `GEMINI_API_KEY`** — tab mới sẽ chết trên Space tới khi thêm secret.
+**Còn lại Tuần 7: latency p50/p95 + cost/1.000 query.**
 — *Nền Session 16:* **TUẦN 6 ĐÓNG 3/3. Lô RAGAS chấm xong, BLOCKER CREDIT GỠ. Ghép cặp 16 câu: corrective 0,747 vs LLM-only 0,481, p = 0,0042. ISSUE-069 ĐÓNG — Đạt duyệt `concept_variants.jsonl`, bảng độ nhạy nay trích được. Audit Tuần 6 ra ISSUE-073/074/075, vá cả 3. Sửa 1 chỗ drift trong `constraints.md`. DEC-070. **TUẦN 7: key chỉ-đọc cho Space nghiệm thu xong (DEC-071, đóng việc treo mở từ Session 6) · 🎉 RỦI RO DEMO SỐ 1 ĐÓNG — Space `datvu107-dateddy/vimed` RUNNING trên cpu-basic, 15,9 s/truy vấn (DEC-072). Còn lại Tuần 7: UI đầu-cuối (C3+B3) + latency/cost.** 399 test PASS. ~~⛔ 3 commit CHƯA PUSH + 7 file chưa commit~~ → **cả hai đã xong 2026-09-15, xem dòng Session 18 ở trên**)
 
 ## ✅ TUẦN 6 ĐÓNG 3/3 — không còn blocker nào
@@ -160,13 +164,19 @@ thành `0–11% (CI 95% Wilson)`. Đúng lý do DEC-064 tồn tại.
    **secret**, `QDRANT_URL` là **variable** (liệt kê lại được để kiểm; secret write-only
    set hỏng không biết). **Không phải sửa code**: `config.py:165` `os.environ.setdefault`
    nên env của Space thắng `.env`.
-3. **C3 + B3 gộp làm một — UI đầu-cuối.** Streamlit **vẫn đứng yên ở Tuần 3**, chưa có
-   tab đầu-cuối nào (B3 đã xác nhận: lỗi "5 nguồn cạnh câu từ chối" **chưa hiện ra** ở UI
-   này vì không tab nào chạy generator thật). Khi viết tab đó **bắt buộc** dùng
-   `answer_content.is_refusal_text()` để **ẩn khối nguồn** ở câu từ chối.
-   Rồi mới tới latency p50/p95 tách stage + cost/1.000 query.
-   ⚠️ Dùng số **đo**: **~45s/câu** nhánh từ chối · **~27s** nhánh trả lời. **Đừng** dùng
-   17,2s dự tính của DEC-042. Phải chạy `export_runs.py --no-cache` mới có bảng token sạch.
+3. ~~**C3 + B3 — UI đầu-cuối**~~ ✅ **ĐÓNG 2026-09-15 (DEC-073).** Streamlit nay **3 tab**,
+   tab đầu là `RAGPipeline` chạy thật. Lỗi "5 nguồn cạnh câu từ chối" vá ở
+   `app/display.py` — **thuần Python, 22 test khoá hai chiều**, không đụng pipeline.
+   Vá kèm: **byline nay được cắt ở đường HIỂN THỊ** (trước đó tab truy hồi in `c.text`
+   thô → màn hình hiện tên bác sĩ thật). Smoke 3 nhánh đã chạy thật. **399 → 421 test.**
+4. **CÒN LẠI CỦA TUẦN 7 — latency p50/p95 tách stage + cost/1.000 query.**
+   Phải chạy `export_runs.py --no-cache` mới có bảng token sạch.
+   ⚠️ Số **~45s** (từ chối) / **~27s** (trả lời) trong các bản trước là của lô Tuần 6;
+   smoke 2026-09-15 trên máy này ra **38,3s** (trả lời, có gánh nạp reranker lười) và
+   **100,6s** (từ chối, 2 lượt rerank). **Cả hai đều KHÔNG phải benchmark** — máy không
+   được kiểm soát tải, và STATUS đã ghi cùng cấu hình từng đo ra 1,72–9,35 s/cặp tuỳ tải.
+   → **Task này tồn tại chính là để chốt số.** Đừng trích 38,3/100,6 lẫn 45/27 làm kết quả.
+   ⚠️ **Đừng** dùng 17,2s dự tính của DEC-042.
 
 **Buffer:** E2 evidence-highlighting **cắt đầu tiên** nếu tràn. Thứ tự cắt (DEC-015):
 E2 → ablation reranker on/off → ablation chunk 256 vs 512.
@@ -494,11 +504,22 @@ E2 → ablation reranker on/off → ablation chunk 256 vs 512.
   `ragas_scores.json` (cache điểm judge).
   Thứ **commit được** là `docs/*.md`. `calibration_scores.json` (8,5 KB) đã whitelist
   (DEC-067) nên `docs/risk-coverage.png` dựng lại được từ clone sạch.
-- **⚠️ LỖI HIỂN THỊ CHƯA VÁ — câu ANSWER hiện 5 nguồn cạnh một câu nói "không có thông
-  tin"** (`A-01`, `E-21`, DEC-056). Grader cho qua, generator từ chối, nhưng
-  `PipelineResult.chunks` vẫn đầy. **Chỗ vá đúng là LÚC VIẾT tab đầu-cuối (C3)**, ở
-  **Streamlit**, không ở pipeline — B3 đã xác nhận UI hiện tại chưa hiện ra lỗi này.
-  Dụng cụ có sẵn: `answer_content.is_refusal_text()`.
+- ~~**⚠️ LỖI HIỂN THỊ CHƯA VÁ — câu ANSWER hiện 5 nguồn cạnh câu "không có thông tin"**~~
+  ✅ **ĐÓNG 2026-09-15 (DEC-073).** Vá ở `app/display.py::nen_hien_nguon()` — tầng VẼ,
+  không đụng pipeline, nên `17/21` · `0/30` · `p=0,0042` **không đổi một chữ số**.
+  ⚠️ **Hai điều đừng trích sai từ đây:**
+  (a) `A-01` là ca **tiền-guard** (`runs.jsonl` sinh 08-09, trước DEC-061; nó lọt ở
+  **lượt 2**). Với `allow_turn2_promotion: false` đang chạy, B3 chỉ còn sinh ra được ở
+  **lượt 1** → ca còn sống là **`E-21`**. Đừng viết "hệ thống có 2 ca B3".
+  (b) **UI đọc `chunks`, KHÔNG BAO GIỜ đọc `retrieved`** — 32/40 câu ABSTAIN có
+  `retrieved` không rỗng (DEC-049), hiện nó ra là dựng lại đúng lỗi vừa vá.
+  Khoá bằng máy: `test_nen_hien_nguon_KHONG_BAO_GIO_doc_retrieved` cho `retrieved` **ném
+  khi bị chạm**.
+- ~~**⚠️ Byline lọt ra màn hình**~~ ✅ **ĐÓNG 2026-09-15 (DEC-073).** Trước đó
+  `strip_byline` **chỉ** được áp ở `generation/context.py` (đường dựng prompt) — tức LLM
+  không thấy byline **nhưng người xem thì có**, vì tab truy hồi in `c.text` thô. Nay mọi
+  chỗ UI in nội dung chunk đi qua `app/display.py::doc_nguon()`. **Corpus trong Qdrant
+  vẫn còn byline** (DEC-020 không đổi) — nên **đường đọc MỚI nào cũng phải tự cắt**.
 - **⚠️ `data/testset_e_patient.jsonl` PHẢI giữ đúng khuôn JSONL — mỗi bản ghi MỘT dòng.**
   2026-09-08 sửa tay lúc soi làm bản ghi trải nhiều dòng; JSON vẫn hợp lệ nhưng
   `eval_register_shift.py:89` đọc `json.loads(l)` **từng dòng** nên crash. Muốn đọc cho
@@ -516,6 +537,17 @@ E2 → ablation reranker on/off → ablation chunk 256 vs 512.
   ⚠️ Nghiệm thu bằng `python scripts/smoke_qdrant_readonly.py --from-env` — **ĐẠT = ĐỌC
   pass VÀ GHI fail**. Phép này **không để lại artifact**, nên trạng thái "đã nghiệm thu"
   là lời khai; nghi thì chạy lại, mất 10 giây.
+- **⛔ SPACE CHƯA CÓ `GEMINI_API_KEY` — tab đầu-cuối sẽ CHẾT trên Space.** `DEPLOY.md`
+  bước 2 set đúng **2** biến: `QDRANT_URL` (variable) + `QDRANT_API_KEY` (secret). Đủ cho
+  tab *Truy hồi thật* (nó dừng ở truy hồi), **không** đủ cho tab mới. Thêm bằng đúng
+  đường `[System.IO.File]::WriteAllText` của DEPLOY.md — **đừng** `Set-Content -Encoding
+  utf8` (BOM nuốt dòng đầu, đã dính 1 lần). Tab đã in sẵn lỗi thân thiện nếu thiếu khoá,
+  nên triệu chứng sẽ rõ, không phải trang trắng.
+- **Space sẽ mở PUBLIC — Đạt chọn phương án (b) 2026-09-15** (public + video dự phòng +
+  chấp nhận chi phí), vì **credit đã đặt trần** nên bán kính thiệt hại có chặn. Hệ quả
+  phải nhớ: **ai có link cũng tiêu được credit**. Kiểm trước buổi bảo vệ:
+  `GET https://openrouter.ai/api/v1/key`. **Video dự phòng là bắt buộc** trong phương án
+  này — hết credit giữa buổi bảo vệ thì Space còn sống nhưng tab đầu-cuối trả 402/403.
 - **Giọng bệnh nhân nhóm E do LLM mô phỏng**, không phải câu người bệnh thật → hiệu ứng
   đo được là **cận dưới** của độ lệch thật. Phải vào Limitations.
 - **Rủi ro tiến độ vẫn là số 1:** năng lực 1/2 nhưng scope giữ nguyên (DEC-015). Thứ tự
