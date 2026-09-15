@@ -11,8 +11,10 @@ chính file này** — nó còn khai `correct_threshold = 0.6 · chưa nối pip
 **✅ C3+B3 ĐÓNG (DEC-073)** — Streamlit nay 3 tab, tab đầu chạy `RAGPipeline` thật; lỗi
 "5 nguồn cạnh câu từ chối" vá ở `app/display.py` (thuần, 22 test, khoá hai chiều), vá kèm
 byline lọt màn hình. Smoke 3 nhánh chạy thật. **399 → 421 test PASS.**
-⛔ **Space CHƯA có `GEMINI_API_KEY`** — tab mới sẽ chết trên Space tới khi thêm secret.
-**Còn lại Tuần 7: latency p50/p95 + cost/1.000 query.**
+**✅ DEPLOY ĐÓNG (DEC-074)** — Space **public**, chạy hệ đầy đủ, sha `97d0fcaf4789`,
+`GEMINI_API_KEY` đã vào Secrets. Đo thật bằng Playwright: policy **0,6 s** · trả lời
+**16,5–26,0 s** · từ chối **33,5–40,9 s** · page-ready **5,7–8,3 s**. Cold start **<1 phút**.
+**Còn lại Tuần 7: latency p50/p95 tách stage + cost/1.000 query.**
 — *Nền Session 16:* **TUẦN 6 ĐÓNG 3/3. Lô RAGAS chấm xong, BLOCKER CREDIT GỠ. Ghép cặp 16 câu: corrective 0,747 vs LLM-only 0,481, p = 0,0042. ISSUE-069 ĐÓNG — Đạt duyệt `concept_variants.jsonl`, bảng độ nhạy nay trích được. Audit Tuần 6 ra ISSUE-073/074/075, vá cả 3. Sửa 1 chỗ drift trong `constraints.md`. DEC-070. **TUẦN 7: key chỉ-đọc cho Space nghiệm thu xong (DEC-071, đóng việc treo mở từ Session 6) · 🎉 RỦI RO DEMO SỐ 1 ĐÓNG — Space `datvu107-dateddy/vimed` RUNNING trên cpu-basic, 15,9 s/truy vấn (DEC-072). Còn lại Tuần 7: UI đầu-cuối (C3+B3) + latency/cost.** 399 test PASS. ~~⛔ 3 commit CHƯA PUSH + 7 file chưa commit~~ → **cả hai đã xong 2026-09-15, xem dòng Session 18 ở trên**)
 
 ## ✅ TUẦN 6 ĐÓNG 3/3 — không còn blocker nào
@@ -402,6 +404,15 @@ E2 → ablation reranker on/off → ablation chunk 256 vs 512.
   model 1 nhãn (đo `[0.9841, 0.0003]`, trùng sigmoid thủ công của logit `[+4.125,
   −8.179]`) — tức lý do "CrossEncoder không có công tắc normalize" ở DEC-033 là **SAI**,
   đừng dựa vào nó nữa. Vẫn không dùng, vì 2 lý do khác ghi trong DEC-037.
+- **⛔ BẪY ĐO GIỜ (mới, 2026-09-15): DỤNG CỤ ĐO tự nó làm hỏng số — phồng 17×.** Đo
+  page-ready của Space bằng cách **bật một Chromium MỚI cho mỗi mẫu**: 8,1 · 5,9 ·
+  **103,7** s. Dùng **một** browser cho cả 5 mẫu: **5,7–8,3 s**, ổn định. Đối chứng
+  quyết định: `curl /_stcore/health` chạy **xen kẽ** vẫn **0,84–0,99 s** suốt cả hai lần
+  → nghẽn nằm ở **laptop đang đo**, không ở Space. Phiên này đã **kết luận nhầm một lần**
+  ("cold start 73–85 s") rồi tự bác bỏ bằng phép đo có đối chứng.
+  → **Quy tắc cho Task latency/cost:** mỗi phép đo phải có **một đối chứng rẻ chạy song
+  song** (thứ mà nếu nó cũng chậm thì lỗi ở máy, không ở hệ). Cùng lớp với cảnh báo
+  "đừng tin số giờ lấy từ `eval_retrieval.py` khi máy đang bận" ngay dưới.
 - **BẪY ĐO GIỜ: mode chạy ĐẦU TIÊN gánh luôn bắt tay TLS.** Lần đo đầu ra `hybrid` 2,36s
   vs `dense` 0,63s → tưởng hybrid đắt gấp 4. Hâm nóng kết nối trước vòng lặp thì hybrid
   còn 0,88s. `smoke_retrieval.py` đã có bước hâm nóng; **T3.4 đo giờ chính thức phải giữ
@@ -537,17 +548,26 @@ E2 → ablation reranker on/off → ablation chunk 256 vs 512.
   ⚠️ Nghiệm thu bằng `python scripts/smoke_qdrant_readonly.py --from-env` — **ĐẠT = ĐỌC
   pass VÀ GHI fail**. Phép này **không để lại artifact**, nên trạng thái "đã nghiệm thu"
   là lời khai; nghi thì chạy lại, mất 10 giây.
-- **⛔ SPACE CHƯA CÓ `GEMINI_API_KEY` — tab đầu-cuối sẽ CHẾT trên Space.** `DEPLOY.md`
-  bước 2 set đúng **2** biến: `QDRANT_URL` (variable) + `QDRANT_API_KEY` (secret). Đủ cho
-  tab *Truy hồi thật* (nó dừng ở truy hồi), **không** đủ cho tab mới. Thêm bằng đúng
-  đường `[System.IO.File]::WriteAllText` của DEPLOY.md — **đừng** `Set-Content -Encoding
-  utf8` (BOM nuốt dòng đầu, đã dính 1 lần). Tab đã in sẵn lỗi thân thiện nếu thiếu khoá,
-  nên triệu chứng sẽ rõ, không phải trang trắng.
-- **Space sẽ mở PUBLIC — Đạt chọn phương án (b) 2026-09-15** (public + video dự phòng +
-  chấp nhận chi phí), vì **credit đã đặt trần** nên bán kính thiệt hại có chặn. Hệ quả
-  phải nhớ: **ai có link cũng tiêu được credit**. Kiểm trước buổi bảo vệ:
+- ~~**⛔ SPACE CHƯA CÓ `GEMINI_API_KEY`**~~ ✅ **ĐÓNG 2026-09-15 (DEC-074).** Đã set qua
+  `--secrets-file` (khoá **không** đi qua dòng lệnh nên không rơi vào lịch sử shell).
+  Space nay có **3** biến: `QDRANT_URL` (variable) · `QDRANT_API_KEY` · `GEMINI_API_KEY`.
+- **⛔ ĐẨY LẠI `app/` PHẢI ĐẨY CẢ THƯ MỤC.** `streamlit_app.py` `from app.display import …`
+  — đẩy thiếu `display.py` là **build xanh rồi chết `ModuleNotFoundError`** khi mở.
+  ⚠️ `--exclude "**/__pycache__/**"` **bị Git Bash bung glob** thành đường dẫn Windows và
+  `hf upload` báo "unexpected extra arguments". Cách đi được: `rm -rf app/__pycache__`
+  rồi đẩy không cần `--exclude`.
+- **Space đang PUBLIC — Đạt chọn phương án (b) 2026-09-15** (public + video dự phòng +
+  chấp nhận chi phí), **credit đã đặt trần** nên bán kính thiệt hại có chặn. Hệ quả phải
+  nhớ: **ai có link cũng tiêu được credit**. Kiểm trước buổi bảo vệ:
   `GET https://openrouter.ai/api/v1/key`. **Video dự phòng là bắt buộc** trong phương án
   này — hết credit giữa buổi bảo vệ thì Space còn sống nhưng tab đầu-cuối trả 402/403.
+- **⚠️ PRO hết 1/10, KHÔNG gia hạn (Đạt tự kiểm soát). Bảo vệ 23–27/9 → biên 4–8 ngày.**
+  Space Docker trên `cpu-basic` **đòi PRO**; hết hạn = **link public trong DoD chết**.
+  Trượt lịch một tuần là mất demo. Đây là **ràng buộc lịch cứng**, không phải nhắc nhở.
+- **⚠️ Space ngủ sau 48 giờ** (`sleep_time=172800`) và **không có persistent storage**
+  (`used_storage=0`) → mỗi lần khởi động lại, người mở đầu tiên trả **~28 s nạp model**
+  (cộng 24 s container). **Đụng vào Space trước buổi bảo vệ** — đúng kỷ luật đã áp cho
+  cluster Qdrant.
 - **Giọng bệnh nhân nhóm E do LLM mô phỏng**, không phải câu người bệnh thật → hiệu ứng
   đo được là **cận dưới** của độ lệch thật. Phải vào Limitations.
 - **Rủi ro tiến độ vẫn là số 1:** năng lực 1/2 nhưng scope giữ nguyên (DEC-015). Thứ tự
