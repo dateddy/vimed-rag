@@ -47,6 +47,24 @@ Gộp hai cái này lại thì Tuần 6 **không tách được** risk–coverag
 thiết kế, chỉ cơ chế 2 mới nằm trên đường cong hiệu chỉnh. `TraceStep.step = "POLICY"` và
 `note` mang `rule_id` là chỗ giữ khác biệt đó.
 
+### Cơ chế thứ BA — từ chối ở tầng NỘI DUNG, không có trong `trace` (DEC-073)
+
+`action = ANSWER` nhưng generator tự viết *"ngữ cảnh không chứa thông tin"* (`E-21`).
+Grader cho qua, generator từ chối. **Không** phải lỗi: prompt bảo nó làm thế, nên đây là
+lớp phòng thủ cuối cùng đang chạy. Nó **không** xuất hiện trong `trace` — chỉ đọc được từ
+câu chữ. Dụng cụ: `answer_content.is_refusal_text()`.
+
+### Bất biến hiển thị — UI đọc `chunks`, KHÔNG BAO GIỜ đọc `retrieved` (DEC-049 · DEC-073)
+
+`PipelineResult` có hai trường chunk, khác nhau có chủ đích: `chunks` = nguồn câu trả lời
+dựa vào (rỗng ở mọi nhánh ABSTAIN); `retrieved` = nguyên văn retriever trả về, **giữ lại
+kể cả khi từ chối** vì eval nhóm A/B cần. Đo: **32/40 câu ABSTAIN có `retrieved` không
+rỗng** — hiện nó ra là mời người đọc hiểu ngược câu từ chối.
+
+Quyết định hiển thị sống ở `app/display.py` (thuần, khoá bằng test cả hai chiều), **không**
+trong callback Streamlit. Mọi chỗ in nội dung chunk phải qua `doc_nguon()` = `strip_byline`:
+corpus trong Qdrant **vẫn còn byline** (DEC-020) và đường đọc không có tầng nào cắt hộ.
+
 ## Kiến trúc kỹ thuật đã chốt (mục 5)
 
 - **Orchestration:** Python thuần, `RAGPipeline._route()`, state = dataclass, `trace` list.
