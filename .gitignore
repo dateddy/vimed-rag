@@ -15,6 +15,15 @@ data/processed/*
 # ⛔ KHÔNG whitelist `runs.jsonl` (2,3 MB): nó chỉ dùng để ĐỐI CHỨNG CHÉO, và
 # script đã tự degrade kèm thông báo khi thiếu (build_risk_coverage.py:361).
 !data/processed/calibration_scores.json
+# NGOẠI LỆ CÓ CHỦ Ý (Tuần 7) — cùng lý do như trên, khác chỗ: 20 KB + 0,5 KB, là
+# ĐẦU VÀO BẮT BUỘC của `scripts/build_perf_report.py` -> `docs/latency-cost.md`
+# (bảng latency + cost của DoD Tuần 7). Không whitelist thì clone sạch phải chạy
+# lại lô ~35 phút + đo lại Space mới dựng lại nổi bảng.
+# Chúng KHÔNG thay `runs.jsonl`: file kia vẫn không whitelist (2,3 MB) và vẫn là
+# nguồn của cột TOKEN trong mục 1 — nên mục 1 của báo cáo là phần clone sạch
+# KHÔNG dựng lại được. Đánh đổi có ý thức, giống hệt lý do ở khối trên.
+!data/processed/bench_latency.jsonl
+!data/processed/bench_space.json
 
 # Python
 __pycache__/

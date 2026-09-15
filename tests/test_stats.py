@@ -16,7 +16,7 @@ import math
 
 import pytest
 
-from src.eval.stats import Z, fmt_pct, rule_of_three, sign_test, wilson
+from src.eval.stats import Z, fmt_pct, quantile, rule_of_three, sign_test, wilson
 
 
 # --------------------------------------------------------------- wilson
@@ -190,9 +190,10 @@ def test_khong_co_ban_sao_thu_tu():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    ten_ham = {"wilson", "rule_of_three", "sign_test", "fmt_pct"}
+    ten_ham = {"wilson", "rule_of_three", "sign_test", "fmt_pct", "quantile"}
     for name in ("analyze_leakage.py", "calibrate_threshold.py",
-                 "build_risk_coverage.py", "eval_register_shift.py"):
+                 "build_risk_coverage.py", "eval_register_shift.py",
+                 "bench_latency.py", "build_perf_report.py"):
         path = root / "scripts" / name
         if not path.exists():
             continue
@@ -203,3 +204,56 @@ def test_khong_co_ban_sao_thu_tu():
         }
         trung = dinh_nghia & ten_ham
         assert not trung, f"{name} định nghĩa lại {trung} — import từ src.eval.stats"
+
+
+# --------------------------------------------------------------------------- #
+# quantile — thêm ở Tuần 7 cho bảng latency p50/p95
+# --------------------------------------------------------------------------- #
+
+
+def test_quantile_moc_co_ban():
+    xs = [1.0, 2.0, 3.0, 4.0, 5.0]
+    assert quantile(xs, 0.0) == 1.0
+    assert quantile(xs, 0.5) == 3.0
+    assert quantile(xs, 1.0) == 5.0
+
+
+def test_quantile_noi_suy_tuyen_tinh():
+    """p75 cua [1,2,3,4] roi GIUA 3 va 4 -> 3.25, khong phai 3 hay 4."""
+    assert quantile([1.0, 2.0, 3.0, 4.0], 0.75) == 3.25
+
+
+def test_quantile_khong_phu_thuoc_thu_tu_dau_vao():
+    assert quantile([5.0, 1.0, 3.0, 2.0, 4.0], 0.5) == 3.0
+
+
+def test_quantile_mot_phan_tu():
+    assert quantile([7.5], 0.95) == 7.5
+
+
+def test_quantile_day_rong_thi_NEM():
+    """Tra 0.0 cho day rong la cach mot bang latency lang le bao '0 giay'."""
+    with pytest.raises(ValueError):
+        quantile([], 0.5)
+
+
+def test_quantile_p_ngoai_khoang_thi_NEM():
+    with pytest.raises(ValueError):
+        quantile([1.0, 2.0], 1.5)
+
+
+def test_quantile_KHAC_stdlib_o_n_nho__ly_do_khong_muon_thu_vien():
+    """Khoa bang MAY cai docstring noi bang loi.
+
+    `statistics.quantiles()` mac dinh method='exclusive' cho ket qua KHAC noi
+    suy tuyen tinh, va khac NHIEU o n nho. Mau ANSWER cua du an chi co 18 cau.
+    Neu mot ban sua tuong lai thay hai cai nay tuong duong roi doi sang stdlib,
+    test nay do — kem con so chung minh muc chenh.
+    """
+    import statistics
+
+    xs = [float(i) for i in range(1, 19)]  # n = 18, dung co mau nhanh ANSWER
+    cua_ta = quantile(xs, 0.95)
+    cua_stdlib = statistics.quantiles(xs, n=100)[94]
+    assert cua_ta != cua_stdlib
+    assert cua_ta == pytest.approx(17.15)

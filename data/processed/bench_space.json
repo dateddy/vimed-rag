@@ -1,0 +1,35 @@
+{
+  "space": "datvu107-dateddy/vimed",
+  "hardware": "cpu-basic",
+  "ngay": "2026-09-15",
+  "nhanh": {
+    "ABSTAIN — policy": [
+      0.7,
+      0.6
+    ],
+    "ANSWER": [
+      20.4,
+      18.6
+    ],
+    "ABSTAIN — truy hồi": [
+      37.3,
+      32.0
+    ]
+  },
+  "page_ready": [
+    11.6,
+    95.6,
+    6.6,
+    8.9,
+    6.0,
+    5.9
+  ],
+  "health_s": [
+    0.93,
+    0.88,
+    0.82,
+    0.87,
+    0.96,
+    0.89
+  ]
+}

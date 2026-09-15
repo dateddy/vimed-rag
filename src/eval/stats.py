@@ -112,6 +112,36 @@ def sign_test(diffs: list[float]) -> tuple[int, int, float]:
     return neg, pos, min(1.0, 2 * tail)
 
 
+def quantile(xs: list[float], p: float) -> float:
+    """Phân vị ``p`` (0–1) bằng **nội suy tuyến tính** giữa hai thứ tự kề.
+
+    Thêm ở Tuần 7 cho bảng latency p50/p95. Đặt ở đây chứ không trong script
+    báo cáo vì đúng lý do module này tồn tại: p95 sẽ được trích ở **nhiều** chỗ
+    (bảng latency, slide, phần Q&A), và hai bản sao thì sớm muộn dùng hai quy
+    ước khác nhau.
+
+    ⚠️ **Định nghĩa được viết ra thay vì mượn `statistics.quantiles()`** — có
+    chủ đích. Stdlib mặc định ``method="exclusive"`` cho kết quả **khác** nội
+    suy tuyến tính, và khác **nhiều** ở n nhỏ: mẫu ANSWER chỉ có **18 câu**, ở
+    cỡ đó lựa chọn quy ước dịch p95 vài giây. Một con số đi vào báo cáo thì
+    quy ước sinh ra nó phải đọc được, không nằm trong mặc định của thư viện.
+
+    ``p95`` trên n nhỏ vốn là ước lượng thô — với n = 18 nó nội suy giữa mẫu
+    thứ 17 và 18, tức **gần như chính là max**. Trích kèm n, đừng trích trần.
+    """
+    if not xs:
+        raise ValueError("quantile của dãy rỗng")
+    if not 0.0 <= p <= 1.0:
+        raise ValueError(f"p phải trong [0, 1], nhận {p}")
+    ys = sorted(xs)
+    if len(ys) == 1:
+        return float(ys[0])
+    k = (len(ys) - 1) * p
+    lo = int(k)
+    hi = min(lo + 1, len(ys) - 1)
+    return float(ys[lo] + (ys[hi] - ys[lo]) * (k - lo))
+
+
 def fmt_pct(k: int, n: int) -> str:
     """``k/n`` kèm phần trăm và khoảng tin cậy Wilson, dạng Markdown.
 
