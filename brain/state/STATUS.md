@@ -14,7 +14,9 @@ byline lọt màn hình. Smoke 3 nhánh chạy thật. **399 → 421 test PASS.*
 **✅ DEPLOY ĐÓNG (DEC-074)** — Space **public**, chạy hệ đầy đủ, sha `97d0fcaf4789`,
 `GEMINI_API_KEY` đã vào Secrets. Đo thật bằng Playwright: policy **0,6 s** · trả lời
 **16,5–26,0 s** · từ chối **33,5–40,9 s** · page-ready **5,7–8,3 s**. Cold start **<1 phút**.
-**Còn lại Tuần 7: latency p50/p95 tách stage + cost/1.000 query.**
+**🎉 TUẦN 7 ĐÓNG 4/4 (DEC-075)** — `docs/latency-cost.md`: corrective **$0,59** vs LLM-only
+**$1,43**/1.000 query (**rẻ hơn 2,4 lần**) · ANSWER p50 **22,8 s** · ABSTAIN p50 **43,1 s** ·
+rerank chiếm **85%**. **431 test PASS. Còn lại: Tuần 8 — báo cáo + slides + video.**
 — *Nền Session 16:* **TUẦN 6 ĐÓNG 3/3. Lô RAGAS chấm xong, BLOCKER CREDIT GỠ. Ghép cặp 16 câu: corrective 0,747 vs LLM-only 0,481, p = 0,0042. ISSUE-069 ĐÓNG — Đạt duyệt `concept_variants.jsonl`, bảng độ nhạy nay trích được. Audit Tuần 6 ra ISSUE-073/074/075, vá cả 3. Sửa 1 chỗ drift trong `constraints.md`. DEC-070. **TUẦN 7: key chỉ-đọc cho Space nghiệm thu xong (DEC-071, đóng việc treo mở từ Session 6) · 🎉 RỦI RO DEMO SỐ 1 ĐÓNG — Space `datvu107-dateddy/vimed` RUNNING trên cpu-basic, 15,9 s/truy vấn (DEC-072). Còn lại Tuần 7: UI đầu-cuối (C3+B3) + latency/cost.** 399 test PASS. ~~⛔ 3 commit CHƯA PUSH + 7 file chưa commit~~ → **cả hai đã xong 2026-09-15, xem dòng Session 18 ở trên**)
 
 ## ✅ TUẦN 6 ĐÓNG 3/3 — không còn blocker nào
@@ -171,14 +173,29 @@ thành `0–11% (CI 95% Wilson)`. Đúng lý do DEC-064 tồn tại.
    `app/display.py` — **thuần Python, 22 test khoá hai chiều**, không đụng pipeline.
    Vá kèm: **byline nay được cắt ở đường HIỂN THỊ** (trước đó tab truy hồi in `c.text`
    thô → màn hình hiện tên bác sĩ thật). Smoke 3 nhánh đã chạy thật. **399 → 421 test.**
-4. **CÒN LẠI CỦA TUẦN 7 — latency p50/p95 tách stage + cost/1.000 query.**
-   Phải chạy `export_runs.py --no-cache` mới có bảng token sạch.
-   ⚠️ Số **~45s** (từ chối) / **~27s** (trả lời) trong các bản trước là của lô Tuần 6;
-   smoke 2026-09-15 trên máy này ra **38,3s** (trả lời, có gánh nạp reranker lười) và
-   **100,6s** (từ chối, 2 lượt rerank). **Cả hai đều KHÔNG phải benchmark** — máy không
-   được kiểm soát tải, và STATUS đã ghi cùng cấu hình từng đo ra 1,72–9,35 s/cặp tuỳ tải.
-   → **Task này tồn tại chính là để chốt số.** Đừng trích 38,3/100,6 lẫn 45/27 làm kết quả.
-   ⚠️ **Đừng** dùng 17,2s dự tính của DEC-042.
+4. ~~**latency p50/p95 tách stage + cost/1.000 query**~~ ✅ **ĐÓNG 2026-09-15 (DEC-075).**
+   `docs/latency-cost.md`. **TUẦN 7 ĐÓNG HẾT.**
+
+## 🎉 TUẦN 7 ĐÓNG 4/4 — số vận hành ĐƯỢC TRÍCH
+
+| | |
+|---|---|
+| **cost/1.000 query** | corrective **$0,59** · LLM-only **$1,43** → **corrective RẺ HƠN 2,4 lần** |
+| **latency local** (54 câu sạch) | ANSWER p50 **22,8 s** / p95 **26,0 s** (n=17) · ABSTAIN-truy-hồi p50 **43,1 s** / p95 **53,9 s** (n=29) · ABSTAIN-policy **0,0 s** (n=8, **0 lượt LLM**) |
+| **rerank** | **85% tổng thời gian** — chỗ tối ưu, không phải LLM |
+| **latency Space** | policy **0,6–0,7 s** · trả lời **18,6–20,4 s** · từ chối **32,0–37,3 s** |
+
+⚠️ **Bốn điều phải nói kèm mỗi lần trích:**
+1. **Corrective rẻ hơn vì output đắt gấp 8,3 lần input.** Có ngữ cảnh → trả lời ngắn
+   (96 token out); không có → nói dài (559). Prompt corrective to hơn (1.161) nhưng
+   bên đắt là bên output. Đây là **claim bán được**, không phải ô trong bảng.
+2. **`p95` ở n nhỏ gần như chính là max** — ANSWER chỉ 17 câu. Trích kèm **n**.
+3. **5/59 câu bị LOẠI** vì đo lúc máy bận (A-03·A-12·A-13·A-17·E-19). Mẫu số là **54**.
+4. **Local và Space trả lời hai câu khác nhau** — local tách được stage trên 59 câu
+   nhưng là laptop; Space là sản phẩm thật nhưng không tách stage được. Đăng cả hai.
+
+⚠️ **HẾT HIỆU LỰC, đừng trích lại:** `~45s`/`~27s` (lô Tuần 6, không tách stage) ·
+`38,3s`/`100,6s` (smoke 2026-09-15, **máy bận**) · `17,2s` (dự tính DEC-042).
 
 **Buffer:** E2 evidence-highlighting **cắt đầu tiên** nếu tràn. Thứ tự cắt (DEC-015):
 E2 → ablation reranker on/off → ablation chunk 256 vs 512.
